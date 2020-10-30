@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ActionUrlAuth">
+ 
+ 	<!--  메뉴 액션 정보 로드  -->
+    <select id="selectActionUrls" parameterType="String" resultType="com.shinsegae_inc.core.vo.MenuActionVO">
+       SELECT /* ActionUrlAuth.selectActionUrls */
+               MENU_CD AS menuCd
+		     , AC_URL AS acUrl
+		     , LOG_YN AS logYn
+		FROM TZF_MENUACTION_L
+		WHERE SYS_ID = #{SYS_ID}
+		ORDER BY MENU_CD
+    </select>
+    
+    <select id="authMenuForOther" parameterType="Map" resultType="int">
+       SELECT /* ActionUrlAuth.authMenuForOther */
+              COUNT (*) AS CNT
+		 FROM (SELECT 1
+		          FROM DUAL
+		         WHERE    EXISTS
+		                     (SELECT 1
+		                        FROM TZF_USERROLE_L A,
+		                             TZF_ROLEMENU_L B
+		                       WHERE     A.ROLE_NO = B.ROLE_NO
+		                             AND B.SYS_ID = #{SYS_ID}
+		                             AND MENU_CD = #{MENU_CD}
+		                             AND A.USER_NO = #{USER_NO}
+		                             )
+		               OR EXISTS
+		                     (SELECT 1
+		                        FROM TZF_USERMENU_L
+		                       WHERE     USER_NO = #{USER_NO}
+		                             AND SYS_ID = #{SYS_ID}
+		                             AND MENU_CD = #{MENU_CD}
+		                      ))
+    </select>
+     
+    
+</mapper>

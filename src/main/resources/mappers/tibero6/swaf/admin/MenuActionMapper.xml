@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : MenuAction.xml
+    Description   : Menu Action URL 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.05.27  thkims       1.0        최초 생성
+-->
+<mapper namespace="MenuAction">
+
+	<!--  1. 조회  -->
+	<!--  1.1. OBJ 기본 리스트   -->
+    <select id="selectActionBaseList"  parameterType="hashMap" resultType="hashMap">
+	    SELECT /* MenuAction.selectActionBaseList */
+	    	   SYS_ID
+	    	 , MENU_CD
+	    	 , OBJ_ID
+	    	 , OBJ_NM
+	    	 , OBJ_CLS_CD
+	    	 , OBJ_ACTN_CLS_CD
+	    	 , OBJ_TP_CD
+	    	 , AC_URL
+	    	 , SORT_SEQ
+	    	 , LOG_YN
+		  FROM TZF_MENUACTION_L
+		 WHERE SYS_ID = #{SYS_ID}
+		   AND MENU_CD =  #{MENU_CD}
+		   AND OBJ_TP_CD = '10'
+		 ORDER BY SORT_SEQ
+	</select>
+	
+    <!--  1.2. OBJ 추가 리스트   -->
+    <select id="selectActionAddList"  parameterType="hashMap" resultType="hashMap">
+	    SELECT /* MenuAction.selectActionAddList */
+	    	   SYS_ID
+	    	 , MENU_CD
+	    	 , OBJ_ID
+	    	 , OBJ_NM
+	    	 , OBJ_CLS_CD
+	    	 , OBJ_ACTN_CLS_CD
+	    	 , OBJ_TP_CD
+	    	 , AC_URL
+	    	 , SORT_SEQ
+	    	 , LOG_YN
+		  FROM TZF_MENUACTION_L
+		 WHERE SYS_ID = #{SYS_ID}
+		   AND MENU_CD =  #{MENU_CD}
+		   AND OBJ_TP_CD = '20'
+		 ORDER BY SORT_SEQ
+	</select>
+    
+    
+    <!--  2. 메뉴 액션 등록  -->
+    <insert id="insertMenuAction" parameterType="hashMap">
+        INSERT /* MenuAction.insertMenuAction */ 
+          INTO TZF_MENUACTION_L
+	         (
+	              SYS_ID
+	            , MENU_CD
+	            , OBJ_ID
+	            , OBJ_NM
+	            , OBJ_CLS_CD
+	            
+	            , OBJ_ACTN_CLS_CD
+	            , OBJ_TP_CD
+	            , AC_URL
+	            , SORT_SEQ
+	            , LOG_YN
+	            
+	            , REG_USER_NO
+	            , REG_DTM
+	            , MOD_USER_NO
+	            , MOD_DTM
+	        )
+	    VALUES 
+	       (
+	            #{SYS_ID}
+			  , #{MENU_CD}
+			  , #{OBJ_ID}
+			  , #{OBJ_NM}
+			  , #{OBJ_CLS_CD}
+			  
+			  , #{OBJ_ACTN_CLS_CD}
+			  , #{OBJ_TP_CD}
+			  , #{AC_URL}
+			  , #{SORT_SEQ}
+			  , #{LOG_YN}
+			  
+			  , #{session.USER_NO}
+			  , SYSDATE
+			  
+			  , #{session.USER_NO}
+			  , SYSDATE
+             )
+    </insert>
+    
+    <!-- 3. 메뉴 액션 수정 -->
+    <update id="updateMenuAction" parameterType="hashMap">
+        UPDATE /* MenuAction.updateMenuAction */
+               TZF_MENUACTION_L
+           SET OBJ_ACTN_CLS_CD 	= #{OBJ_ACTN_CLS_CD}
+			 , OBJ_NM			= #{OBJ_NM}
+			 , AC_URL			= #{AC_URL}
+			 , LOG_YN			= #{LOG_YN}
+			 , SORT_SEQ			= #{SORT_SEQ}
+             , MOD_USER_NO  			= #{session.USER_NO}
+             , MOD_DTM  		= SYSDATE
+        WHERE MENU_CD 			= #{MENU_CD}
+          AND SYS_ID			= #{SYS_ID}
+          AND OBJ_ID			= #{OBJ_ID}
+    </update>
+    
+    
+    <!--  4. 메뉴 액션 삭제  -->
+    <delete id="deleteMenuAction" parameterType="hashMap">
+        DELETE /* MenuAction.deleteMenuAction */
+          FROM TZF_MENUACTION_L
+         WHERE SYS_ID = #{SYS_ID}
+           AND MENU_CD = #{MENU_CD}
+           AND OBJ_ID  = #{OBJ_ID}
+    </delete>
+    <!--  4.1 전체 메뉴 액션 삭제  -->
+    <delete id="deleteMenuActionAll" parameterType="hashMap">
+        DELETE /* MenuAction.deleteMenuActionAll */
+          FROM TZF_MENUACTION_L
+         WHERE SYS_ID = #{SYS_ID}
+           AND MENU_CD = #{MENU_CD}
+    </delete>
+    
+</mapper>

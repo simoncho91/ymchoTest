@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_SiIm030Mapper.xml
+    Description   : 배합목적등록 IF
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.09  ishift       1.0        최초 생성
+-->
+<mapper namespace="If_SiIm030Mapper">
+	<!-- 배합목적 신규 등록  -->
+	<insert id="mergeSiIm030" parameterType="CmMap">
+		/* ODM DB MERGE : If_SiIm030Mapper.mergeSiIm030 */ 
+		MERGE INTO TSI_FCIX_L A
+		USING DUAL
+		ON (A.V_FUNC_ID = #{v_func_id})
+		WHEN MATCHED THEN
+		  UPDATE SET 
+		      V_FUNC_NM_EN = #{v_func_nm_en}
+		    , V_FUNC_NM_KO = #{v_func_nm_ko}
+		    , V_FUNC_NM_CN = #{v_func_nm_cn}
+		    , V_FUNC_NM_EU = #{v_func_nm_eu}
+		    , V_FUNC_NM_JP = #{v_func_nm_jp}
+		<!--, V_IF_YN            = 'Y' -->
+		    , V_UPDATE_USER_ID = 'ISHIFT_BATCH'
+		    , V_UPDATE_DTM  = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+		WHEN NOT MATCHED THEN
+		  INSERT
+		  (
+		     V_FUNC_ID
+		   , V_FUNC_NM_EN
+		   , V_FUNC_NM_KO
+		   , V_FUNC_NM_CN
+		   , V_FUNC_NM_EU
+		   , V_FUNC_NM_JP
+		   , V_DEL_YN
+		<!-- , V_IF_YN -->
+		   , V_REG_USER_ID
+		   , V_REG_DTM
+		   , V_UPDATE_USER_ID
+		   , V_UPDATE_DTM
+		   )
+		  VALUES
+		 (
+		     #{v_func_id}
+		   , #{v_func_nm_en}
+		   , #{v_func_nm_ko}
+		   , #{v_func_nm_cn}
+		   , #{v_func_nm_eu}
+		   , #{v_func_nm_jp}
+		   , 'Y'
+		<!-- , 'Y' -->
+		   , #{s_userid}
+		   , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+		   , 'ISHIFT_BATCH'
+		   , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+		 )
+	</insert>
+
+	<update id="deleteSiIm030" parameterType="CmMap">
+		UPDATE TSI_FCIX_L SET V_DEL_YN = 'Y' WHERE V_FUNC_ID = #{v_func_id}
+	</update>
+
+
+</mapper>

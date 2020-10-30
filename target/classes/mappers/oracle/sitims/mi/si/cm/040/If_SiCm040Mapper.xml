@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_SiCm040Mapper.xml
+    Description   : MSDS 설정
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.11  kykwak       1.0        최초 생성
+-->
+<mapper namespace="If_SiCm040Mapper">
+
+	<!-- MSDS 등록  -->
+	<insert id="SiMsdsReg" parameterType="CmMap">
+			INSERT /* If_SiCm040Mapper.SiMsdsReg */
+				INTO 
+				TSI_MSDS_CL_L 
+                	(V_CLASS_CD
+                     , V_CLASS_NM
+                     , V_UCLASS_CD
+                     , N_SEQ_NO
+                     , V_USE_YN
+                     , V_TYPE
+                     , V_DESCRIPTION
+                     , V_REG_USER_ID
+                     , V_REG_DTM
+                     , V_UPDATE_USER_ID
+                     , V_UPDATE_DTM
+                    )
+             VALUES (  #{i_sMsdsId}
+                     , #{i_sMenuNm}
+                     , #{i_sMsdsTopId}
+                     , #{i_sSeqNo}
+                     , #{i_sFlagUse}
+                     , #{i_sType}
+                     , #{i_tDescription}
+                     , #{i_sRegUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     , #{i_sUpdateUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                    ) 
+	</insert>
+	
+	<!-- MSDS 수정-->
+	<update id="SiMsdsModify" parameterType="CmMap">
+		UPDATE /* If_SiCm040Mapper.SiMsdsModify */
+			TSI_MSDS_CL_L
+			SET
+				V_CLASS_NM = #{i_sMenuNm},
+				N_SEQ_NO = #{i_sSeqNo},
+				V_USE_YN = #{i_sFlagUse},
+				V_TYPE = #{i_sType},
+				V_DESCRIPTION = #{i_tDescription}, 
+				V_UPDATE_USER_ID = #{i_sUpdateUserId}, 
+				V_UPDATE_DTM = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			WHERE V_CLASS_CD = #{i_sMsdsId}
+	
+	</update>
+    
+    <!-- MSDS 삭제  -->
+    <delete id="SiMsdsDelete" parameterType="CmMap">
+    
+    	DELETE /* If_SiCm040Mapper.SiMsdsDelete */
+    	FROM TSI_MSDS_CL_L 
+    	WHERE  V_CLASS_CD = #{i_sMsdsId}
+    
+    </delete>
+    
+</mapper>

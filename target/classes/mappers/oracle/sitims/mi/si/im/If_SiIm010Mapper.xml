@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_SiIm030Mapper.xml
+    Description   : 배합목적등록 IF
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.09  ishift       1.0        최초 생성
+-->
+<mapper namespace="If_SiIm010Mapper">
+<!-- 	성분DB관리 마스터정보 저장 -->
+	<insert id="insertSiim010Info" parameterType="CmMap">
+		INSERT /* If_SiIm010Mapper.insertSiim010Info */	 
+			INTO TSI_CON_M (
+			V_CON_CD
+			, N_VER_SEQ
+			, V_FLAG
+			, V_REQ_CON_ID
+			, V_CI_YN
+			, N_MAX_ALLOW_WT
+			, V_ALLERGEN_YN
+			, V_FLAG_BAN
+			, V_FLAG_PERMIT
+			, V_COMMENT
+			, V_MAX_INPUT_APPLY_YN
+			, V_CONFIRM_YN
+			, V_ZCERT
+			, V_CON_NM_KO 
+			, V_CON_NM_EN 
+			, V_CON_NM_CN 
+			, V_CON_NM_JP 
+			, V_CON_NM_EU 
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_MATEVIEW_YN
+		)VALUES(
+			#{i_sConCd}			
+			, #{i_nVerSeq}
+			, #{i_sFlag}
+			, #{i_sReqConId}
+			, #{i_sCiYn}
+			, #{i_nMaxAllowWt}
+			, #{i_sAllergenYn}
+			, #{i_sFlagBanB}
+			, #{i_sFlagBanL}
+			, #{i_sComment}
+			, NULL
+			, #{i_sConfirmYn}
+			, #{i_sZcert}
+			, #{i_sConNmKo}
+			, #{i_sConNmEn} 
+			, #{i_sConNmCn} 
+			, #{i_sConNmJp} 
+			, #{i_sConNmEu} 
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, #{i_sMateViewYn}
+		)
+	</insert>
+	
+	<!-- 	성분DB관리 사용금지/배합제한 저장 -->
+	<insert id='insertSiim010Ban' parameterType="CmMap">
+		INSERT /* If_SiIm010Mapper.insertSiim010Ban */ 
+		INTO TSI_CON_BAN_D(
+			V_CON_CD
+			, N_VER_SEQ
+			, V_GL_CD
+			, V_FLAG
+			, V_COMMENT
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sConCd}
+			, #{i_nVerSeq}
+			, #{i_sFlagBanCode}
+			, #{i_sFlagBan} 
+			, #{i_sCommentBan}  
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)		
+	</insert>
+	
+	<!-- 	성분DB관리 CasNo 저장 -->
+	<insert id='insertSiim010CasNo' parameterType="CmMap">
+		INSERT /* If_SiIm010Mapper.insertSiim010CasNo */ 
+		INTO TSI_CON_CAS_D(
+			V_CON_CD
+			, N_VER_SEQ
+			, N_SEQ_NO
+			, V_CAS_NO
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM
+		)VALUES(
+			#{i_sConCd}
+			, #{i_nVerSeq}
+			, #{i_nSeqNo}
+			, #{i_sCasNo}   
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)		
+	</insert>
+	<!-- 	성분DB관리 기능 저장 -->
+	<insert id='insertSiim010Func' parameterType="CmMap">
+		INSERT /* If_SiIm010Mapper.insertSiim010Func */ 
+		INTO TSI_CONFC_D(
+			V_CON_CD
+			, N_VER_SEQ
+			, N_SEQ_NO
+			, V_FUNC_ID_EN
+			, V_FUNC_ID_KO
+			, V_FUNC_ID_CN
+			, V_FUNC_ID_EU
+			, V_FUNC_ID_JP
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sConCd}
+			, #{i_nVerSeq}
+			, #{i_nSeqNo}
+			, #{i_sFuncCdEn}
+			, #{i_sFuncCdKo}
+			, #{i_sFuncCdCn}
+			, NVL(#{i_sFuncCdEu},#{i_sFuncCdEn})
+			, NVL(#{i_sFuncCdJp},#{i_sFuncCdEn}) 
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<!-- 	성분DB관리 마스터정버 수정 -->
+	<update id='updateSiim010Info' parameterType="CmMap">
+		UPDATE /* If_SiIm010Mapper.updateSiim010Info */ 
+		TSI_CON_M SET
+			V_FLAG                  =   #{i_sFlag}
+			, V_REQ_CON_ID        =   #{i_sReqConId}
+			, V_CI_YN                =   #{i_sCiYn}
+			, N_MAX_ALLOW_WT         =   #{i_nMaxAllowWt}
+			, V_ALLERGEN_YN           =   #{i_sAllergenYn}
+			, V_FLAG_BAN             =   #{i_sFlagBanB}
+			, V_FLAG_PERMIT          =   #{i_sFlagBanL}
+			, V_COMMENT              =   #{i_sComment}
+			, V_MAX_INPUT_APPLY_YN    =   NULL
+			, V_CONFIRM_YN           =   #{i_sConfirmYn}
+			, V_ZCERT				 =	 #{i_sZcert}
+			, V_CON_NM_KO			 =	 #{i_sConNmKo}  
+			, V_CON_NM_EN			 =	 #{i_sConNmEn}  
+			, V_CON_NM_CN			 =	 #{i_sConNmCn}  
+			, V_CON_NM_JP			 =	 #{i_sConNmJp} 
+			, V_CON_NM_EU			 =	 #{i_sConNmEu}   	
+			, V_MATEVIEW_YN			= #{i_sMateViewYn}
+			, V_UPDATE_USER_ID		 =	 #{i_sUserId}
+			, V_UPDATE_DTM			 =	 TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_CON_CD = #{i_sConCd}
+		AND N_VER_SEQ = #{i_nVerSeq}
+	</update>
+		
+	<update id='updateOdmConcdReqRegCompl' parameterType="CmMap">
+		UPDATE /* If_SiIm010Mapper.updateOdmConcdReqRegCompl */
+		TODM_CONRQ_M SET
+			V_STATE         = 'CO_ST04'
+			,V_REG_CON_CD = #{i_sConCd}
+			, V_UPDATE_USER_ID    = #{i_sUserId}                                         
+			, V_UPDATE_DTM        = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')			
+		WHERE V_REQ_CON_ID = #{i_sReqConId}
+	</update>
+	
+	<update id='deleteSiim010Info' parameterType="CmMap">
+		UPDATE /* If_SiIm010Mapper.updateSiim010Info */ 
+		TSI_CON_M SET
+			V_CONFIRM_YN           =   'Y'
+			, V_DEL_YN          	 =   'Y'
+			, V_UPDATE_USER_ID		 =	 #{i_sUserId}
+			, V_UPDATE_DTM			 =	 TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_CON_CD = #{i_sConCd}
+		AND N_VER_SEQ = #{i_nVerSeq}
+	</update>
+</mapper>

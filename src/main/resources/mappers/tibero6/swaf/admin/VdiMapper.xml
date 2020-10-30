@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : VdiMapper.xml
+    Description   : Vdi IP 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2019.02.28  손홍신       1.0        최초 생성
+-->
+<mapper namespace="Vdi">
+ 	<resultMap type="hashmap" id="vdiMap">
+		<result column="vdi_no"		property="VDI_NO"		jdbcType="VARCHAR" />
+		<result column="vdi_domain"		property="VDI_DOMAIN"	jdbcType="VARCHAR" />
+		<result column="vdi_ip"		property="VDI_IP"	jdbcType="VARCHAR" />
+		<result column="vdi_desc"		property="VDI_DESC"	jdbcType="VARCHAR" />
+		<result column="sort_seq"		property="SORT_SEQ"	jdbcType="VARCHAR" />
+		<result column="use_yn"			property="USE_YN"		jdbcType="VARCHAR" />
+
+
+		
+	</resultMap>
+	<!-- 1. VDI 조회 -->
+	<select id="selectVdiList" parameterType="Map" resultMap="vdiMap">
+		SELECT /* Vdi.selectVdiList */
+			   A.VDI_NO,
+			   A.VDI_DOMAIN,
+		       A.VDI_IP,
+		       A.VDI_DESC,
+		       A.USE_YN,
+		       A.SORT_SEQ
+		  FROM TZF_VDI_D A
+		 WHERE 1=1
+		 <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(VDI_DOMAIN)">
+		   AND A.VDI_DOMAIN LIKE '%'||TRIM(#{VDI_DOMAIN})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(VDI_IP)">
+		   AND A.VDI_IP LIKE '%'||TRIM(#{VDI_IP})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USE_YN) and !USE_YN.equals('all')">
+		   AND A.USE_YN = #{USE_YN}
+		</if>
+		 ORDER BY SORT_SEQ
+	</select>
+	
+	<!-- 2. VDI 저장 -->
+	<insert id="insertVdi" parameterType="Map">
+		<selectKey keyProperty="VDI_NO" resultType="string" order="BEFORE">
+		SELECT LPAD(NVL(MAX(VDI_NO)+1,1),10,'0')  AS VDI_NO FROM TZF_VDI_D
+		</selectKey>
+		INSERT /* Vdi.insertVdi */
+		INTO TZF_VDI_D(
+		    VDI_NO,
+		    VDI_DOMAIN,
+		    VDI_IP,
+		    VDI_DESC,
+		    USE_YN,
+		    SORT_SEQ,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{VDI_NO},
+				#{VDI_DOMAIN},
+			    #{VDI_IP},
+			    #{VDI_DESC},
+			    #{USE_YN},
+			    TO_NUMBER(#{SORT_SEQ}),
+			    #{session.USER_NO},
+			    SYSDATE,
+			    #{REG_IP}
+			)
+	</insert>
+	
+	<!-- 3. VDI 수정 -->
+	<update id="updateVdi" parameterType="Map">
+		UPDATE /* Vdi.updateVdi */
+			TZF_VDI_D SET 
+			VDI_DOMAIN 	= #{VDI_DOMAIN},
+			VDI_IP 		= #{VDI_IP},
+			VDI_DESC 	= #{VDI_DESC},
+			USE_YN      = #{USE_YN},
+			SORT_SEQ    = TO_NUMBER(#{SORT_SEQ}),
+			MOD_USER_NO      = #{session.USER_NO},
+			MOD_DTM     = SYSDATE,
+			MOD_IP      = #{MOD_IP}
+		WHERE VDI_NO 	= #{VDI_NO}
+	</update>
+	
+	<!-- 4. VDI 삭제 -->
+	<delete id="deleteVdi" parameterType="Map">
+		DELETE /* Vdi.deleteVdi */
+		  FROM TZF_VDI_D
+		 WHERE VDI_NO  = #{VDI_NO}
+	</delete>
+	
+	
+	<!-- 5. VDI 조회 -->
+	<select id="isAccessVdi" parameterType="String" resultType="int">
+		SELECT /* Vdi.isAccessVdi */ COUNT(0) FROM TZF_VDI_D WHERE #{remoteIp} LIKE REPLACE(VDI_IP, '*', '%') AND USE_YN = 'Y'
+	</select>
+	
+	<!-- 5. VDI YN 조회 -->
+	<select id="selectVdiYn" parameterType="String" resultType="String">
+		SELECT /* Vdi.selectVdiYn */ VDI_YN FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND MENU_CD = #{MENU_CD}
+	</select>
+</mapper>

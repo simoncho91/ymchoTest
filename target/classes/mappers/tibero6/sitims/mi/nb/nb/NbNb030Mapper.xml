@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : NbNb030Mapper.xml
+    Description   : 공지사항
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.29  ymcho       1.0        최초 생성
+-->
+<mapper namespace="NbNb030Mapper">
+	
+	<!--	공지사항등록 기본 SQL	-->
+	<sql id="NbNb030ListInclude">	
+		FROM TSI_NOTICE_L TNL
+		WHERE 1=1
+			AND V_DEL_YN = 'N'
+		 <if test="i_sStDate != '' and i_sEnDate != '' and i_sStDate != null and i_sEnDate != null">
+	 		AND SUBSTR(TNL.V_REG_DTM, 1, 8) BETWEEN #{i_sStDate} AND #{i_sEnDate}
+		 </if>
+         <if test="i_sSearchNm != null and i_sSearchNm !=''">
+         	AND (UPPER(TNL.V_TITLE) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+         	OR UPPER(FN_GET_USERNM(V_REG_USER_ID)) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%')
+         </if>
+	</sql>
+	
+	<!--	공지사항 리스트 조회	-->
+	<select id="selectNbNb030List"  parameterType="CmMap" resultType="CmMap">
+	SELECT * FROM /* NbNb030Mapper.selectNbNb030List */
+		(SELECT ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_REG_DTM DESC, V_RECORD_ID DESC
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+					
+					,T.*
+		FROM (
+			SELECT
+				V_RECORD_ID,
+	 			V_TITLE,
+	 			C_CONTENT,
+	 			N_RET_CNT,
+	 			V_TOP_YN,
+	 			V_DEL_YN,
+	 			V_REG_USER_ID,
+	 			FN_GET_USERNM(V_REG_USER_ID) V_REG_USER_NM,
+				TO_DATE(SUBSTRING(V_REG_DTM,'1','8'), 'yyyy/mm/dd') AS V_REG_DTM,
+				V_UPDATE_USER_ID,
+				FN_GET_USERNM(V_UPDATE_USER_ID) V_UPDATE_USER_NM,
+				TO_DATE(SUBSTRING(V_UPDATE_DTM,'1','8'), 'yyyy/mm/dd') AS V_UPDATE_DTM
+			<include refid="NbNb030ListInclude"/>
+			) T
+		) TEMP
+		 WHERE 1=1
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+	</select>
+	
+	<!--	공지사항 Count조회	-->
+	<select id="getNbNb030ListCount" parameterType="CmMap" resultType="java.lang.Integer">	
+		SELECT /* NbNb030Mapper.getNbNb030ListCount */ 
+			COUNT(*) AS CNT
+		<include refid="NbNb030ListInclude"/>
+	</select>
+	
+	<!-- 공지사항 상세조회 -->
+	<select id="getNbNb030Info" parameterType="CmMap" resultType="CmMap">
+		SELECT  /* NbNb030Mapper.getNbNb030Info */ 
+			V_RECORD_ID
+			,V_TITLE
+			,C_CONTENT
+			,N_RET_CNT
+			,V_REG_USER_ID
+			,FN_GET_USERNM_MASK(V_REG_USER_ID,#{s_groupid},'TIIMS') V_REG_USER_NM
+			,V_UPDATE_USER_ID
+			,FN_GET_USERNM(V_UPDATE_USER_ID) V_UPDATE_USER_NM
+			,V_UPDATE_DTM
+		FROM TSI_NOTICE_L
+		WHERE V_RECORD_ID = #{i_sRecordId}
+	</select>
+	
+	<!-- 공지사항 신규 등록  -->
+	<insert id="insertNbNb030List" parameterType="CmMap">
+	<selectKey keyProperty="i_sRecordId" resultType="String" order="BEFORE">
+    	 SELECT /* NbNb030Mapper.insertNbNb030SelectKey */
+    	 		   'NL' || LPAD(TO_NUMBER(NVL(SUBSTR(MAX(V_RECORD_ID),3,11),'0'))+1,10,0)
+         FROM TSI_NOTICE_L
+         WHERE	V_RECORD_ID LIKE 'NL%'
+    </selectKey>
+		INSERT INTO /* NbNb030Mapper.insertNbNb030List */
+				TSI_NOTICE_L
+                	(
+                	V_RECORD_ID,
+		 			V_TITLE,
+		 			C_CONTENT,
+		 			N_RET_CNT,
+		 			V_TOP_YN,
+		 			V_DEL_YN,
+		 			V_NOTI_YN,
+		 			V_REG_USER_ID,
+					V_REG_DTM,
+					V_UPDATE_USER_ID,
+					V_UPDATE_DTM
+                    )
+             VALUES (
+             		 #{i_sRecordId}
+             		 , #{i_sTitle}
+                     , #{i_sReqText}
+                     , 0
+                     , 'N'
+                     , 'N'
+                     , 'N'
+                     , #{i_sUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     , #{i_sUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     )
+	</insert>
+
+	<!-- 공지사항 삭제 -->
+	<update id="deleteNbNb030List" parameterType="CmMap">
+		UPDATE TSI_NOTICE_L /* NbNb030Mapper.deleteNbNb030List */
+		SET
+			V_DEL_YN = 'Y'
+		WHERE
+			V_RECORD_ID = #{i_sRecordId}
+	</update>
+	
+	<!-- 공지사항 수정 -->
+	<update id="updateNbNb030List" parameterType="CmMap">
+			UPDATE TSI_NOTICE_L /* NbNb030Mapper.updateNbNb030List */
+			SET
+			  V_TITLE = #{i_sTitle}
+	 		  , C_CONTENT = #{i_sReqText}
+			  , V_UPDATE_USER_ID = #{i_sUserId}
+			  , V_UPDATE_DTM  = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			WHERE
+				V_RECORD_ID = #{i_sRecordId}
+	
+	</update>
+</mapper>

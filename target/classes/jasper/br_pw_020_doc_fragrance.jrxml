@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="pif_fragrance" language="groovy" pageWidth="595" pageHeight="842" columnWidth="510" leftMargin="43" rightMargin="42" topMargin="42" bottomMargin="42">
+	<property name="ireport.zoom" value="1.652892561983472"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="table">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<queryString>
+		<![CDATA[SELECT * FROM DUAL]]>
+	</queryString>
+	<field name="now_date" class="java.lang.String"/>
+	<field name="v_fragrance_nm" class="java.lang.String"/>
+	<field name="v_fragrance_cd" class="java.lang.String"/>
+	<field name="v_category" class="java.lang.String"/>
+	<field name="v_addr1" class="java.lang.String"/>
+	<field name="v_addr2" class="java.lang.String"/>
+	<field name="v_addr3" class="java.lang.String"/>
+	<field name="v_logo" class="java.lang.String"/>
+	<field name="v_phone_num" class="java.lang.String"/>
+	<field name="v_fax_num" class="java.lang.String"/>
+	<field name="v_manager_nm_en" class="java.lang.String"/>
+	<field name="v_sign" class="java.lang.String"/>
+	<field name="v_sign_flag" class="java.lang.String"/>
+	<field name="v_cpnm" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="97" splitType="Stretch">
+			<image scaleImage="FillFrame">
+				<reportElement x="0" y="0" width="204" height="87"/>
+				<imageExpression><![CDATA[$F{v_logo}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement  x="323" y="71" width="186" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_fax_num}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement  x="323" y="29" width="187" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_addr3}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement  x="323" y="57" width="186" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_phone_num}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement  x="323" y="43" width="187" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_cpnm}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement  x="323" y="1" width="187" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_addr1}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement  x="323" y="15" width="187" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_addr2}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="452" splitType="Stretch">
+			<staticText>
+				<reportElement  x="1" y="108" width="100" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fragrance name : ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement  x="0" y="128" width="100" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Fragrance code  : ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement  x="0" y="149" width="100" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Application          : ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement  x="0" y="201" width="511" height="171"/>
+				<textElement textAlignment="Justified">
+					<font size="12" isBold="false"/>
+				</textElement>
+				<text><![CDATA[We certify that the above fragrance compound complies with the 46th fragrance safety Standards of the International Fragrance Association (IFRA) when it is used in the above application.
+The IFRA Standards regarding use restrictions are standard for the safe use of fragrance compound and are based on an evaluation by independent experts of all toxicological and dermatological data relating to the ingredient concentrations and exposure to the final product and are enforced by the IFRA Scientific Committee.
+
+Please contact us for clarification or in case any restrictions are potentially problematic for compliance.
+]]></text>
+			</staticText>
+			<staticText>
+				<reportElement  x="0" y="14" width="511" height="30"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="20" isBold="true"/>
+				</textElement>
+				<text><![CDATA[IFRA CERTIFICATE]]></text>
+			</staticText>
+			<image>
+				<reportElement x="0" y="44" width="511" height="11"/>
+				<imageExpression><![CDATA["jasper/images/line2.png"]]></imageExpression>
+			</image>
+			<image>
+				<reportElement x="0" y="3" width="511" height="11"/>
+				<imageExpression><![CDATA["jasper/images/line2.png"]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="100" y="110" width="410" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font pdfFontName="static/sitims/fonts/malgun.ttf" pdfEncoding="Identity-H" isPdfEmbedded="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{v_fragrance_nm}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="100" y="130" width="410" height="20"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{v_fragrance_cd}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="100" y="150" width="411" height="20"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{v_category}]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="200">
+			<image>
+				<reportElement positionType="FixRelativeToBottom" x="265" y="4" width="232" height="167"/>
+				<imageExpression><![CDATA[$F{v_sign_flag}.equals("N")? "jasper/images/no_sign2.jpg":"jasper/images/blankImg.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="279" y="106" width="58" height="19" forecolor="#323232"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="11"/>
+					<paragraph lineSpacing="1_1_2"/>
+				</textElement>
+				<text><![CDATA[Signature : ]]></text>
+			</staticText>
+			<image>
+				<reportElement positionType="FixRelativeToBottom" x="415" y="72" width="120" height="60"/>
+				<imageExpression><![CDATA[$F{v_sign_flag}.equals("N")? "jasper/images/blankImg.png":""+$F{v_sign}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="338" y="106" width="100" height="19"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$F{v_manager_nm_en}]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement x="334" y="120" width="95" height="9"/>
+				<imageExpression><![CDATA["jasper/images/line2.png"]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="280" y="81" width="115" height="20" forecolor="#323232"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{v_sign_flag}.equals("N")? "":""+$F{now_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="311" y="49" width="115" height="20" forecolor="#323232"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{v_sign_flag}.equals("N")? " "+$F{now_date}:""]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="605">
+			<staticText>
+				<reportElement x="0" y="13" width="511" height="20"/>
+				<textElement textAlignment="Right">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[ANNEX : Definition of IFRA Category]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="38" width="425" height="18"/>
+				<textElement textAlignment="Center">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="38" width="81" height="18"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[IFRA Category]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="56" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Lip Products of all types (solid and liquid lipsticks, balms, clear or colored, etc.), Toys]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="56" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 1]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="68" width="425" height="14"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Deodorant and Antiperspirant Products of all types (pump spray, aerosol spray, stick, roll-on, underarm and body, etc.)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="68" width="81" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 2]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="82" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Hydroalcoholic Products applied to recently shaved skin (EDT)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="82" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 3A]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="94" width="425" height="16"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Hydroalcoholic Products applied to recently shaved skin (Fine Fragrance)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="94" width="81" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 3B]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="110" width="425" height="31"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Eye Products of all types (eye shadow, mascara, eyeliner, eye make-up, etc.)including eye care, Men’s Facial Creams and Balms, Baby Creams, Lotions, Oils]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="110" width="81" height="31"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 3C]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="141" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Tampons]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="141" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 3D]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="153" width="425" height="30"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Hydroalcoholic Products applied to unshaved skin (EDT), Ingredients of Perfume Kits, Scent Pads, Foil packs, Scent Strips for hydroalcoholic products]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="153" width="81" height="30"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 4A]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="183" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Hydroalcoholic Products applied to unshaved skin (Fine Fragrance)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="183" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 4B]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="195" width="425" height="34"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Hair Styling Aids Sprays of all types (pumps, aerosol sprays, etc.), Body Creams, Oils, Lotions of all types (except baby creams, lotions, oils), Fragrance Compounds for Cosmetic Kits, Foot Care Products, Hair deodorant,]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="195" width="81" height="34"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 4C]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="229" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Fragrancing cream]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="229" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 4D]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="241" width="425" height="32"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Women’s Facial Creams/Facial Make-up, Hand Cream, Facial Masks, Baby Powder and Talc, Hair permanent and other hair chemical treatments (e.g. relaxers) but not hair dyes, Wipes or Refreshing tissues for face, neck, hands and body]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="241" width="81" height="32"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 5]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="273" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Mouthwash, Toothpaste]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="273" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 6]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="285" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Intimate Wipes, Baby Wipes]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="285" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 7A]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="297" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Insect Repellent (intended to be applied to the skin)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="297" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 7B]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="309" width="425" height="22"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Make-up Removers of all types (not including face cleansers), Hair Styling Aids Non-Spray of all types (mousse, gels, leave-in conditioners, etc.), Nail Care, Powders and talcs (not including baby powders and talcs)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="309" width="81" height="22"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 8A]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="331" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Hair Dyes]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="331" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 8B]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="343" width="425" height="47"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Conditioner (Rinse-Off), Liquid Soap, Shampoos of all types (including baby shampoos), Face Cleansers of all types (washes, gels, scrubs, etc.), Shaving Creams of all types (stick, gels, foams, etc.), Depilatory, Body Washes of all types (including baby washes) and Shower Gels of all types, Bar Soap (Toilet Soap), Bath Gels, Foams, Mousses, Salts, Oils and Other Products added to bathwater]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="343" width="81" height="47"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 9A]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="390" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Feminine hygiene - pads, liners, Toilet paper]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="390" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 9B]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="402" width="425" height="23"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Facial tissues, Napkins, Paper towels, Other' Aerosols (incl. air freshener sprays but not deodorants/ antiperspirants, hair styling aids spray and animal sprays)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="402" width="81" height="23"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 9C]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="425" width="425" height="44"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Handwash Laundry Detergents of all types, Fabric Softeners of all types including fabric softener sheets, Other Household Cleaning Products (fabric cleaners, soft surface cleaners, carpet cleaners, etc.), Machine W ash Laundry Detergents (liquids, powders, tablets, etc.) including laundry bleaches, Hand Dishwashing Detergent, Hard Surface Cleaners of all types (bathroom and kitchen cleansers, furniture polish, etc.), Shampoo for pets, Dry cleaning kits]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="425" width="81" height="44"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 10A]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="469" width="425" height="12"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ Diapers, Toilet seat wipes]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="469" width="81" height="12"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 10B]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="481" width="425" height="57"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ All non-skin contact including Candles, Air Fresheners and Fragrancing of all types (plug-ins, solid substrate, membrane delivery, ambient, electrical..) excluding aerosol products, Liquid refills for air fresheners (cartridge systems), Insecticides (mosquito coil, paper, electrical, for clothing etc.) excluding aerosols Toilet Blocks, Joss Sticks, Incense, Machine only Laundry detergent (e.g. liquitabs), Plastic articles (excluding toys), Fuels, Fragranced lamp ring, Scent pack, Paints, Floor wax]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="481" width="81" height="57"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 11A]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="1" y="538" width="425" height="65"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[ All incidental skin contact including: Pot pourri, fragrancing sachets, liquid refills for air fresheners (non-cartridge systems), Reed diffusers, Shoe Polishes, Deodorizers/Maskers not intended for skin contact (e.g. fabric drying machine deodorizers, carpet powders), Machine dish-wash detergent and deodorizers, Scratch and Sniff (sampling technology), Cat litter, Animal sprays (all types), Treated Textiles (e.g. starch sprays, fabric treated with fragrances after wash, deodorizers for textiles or fabrics, tights with moisturizers), Odored distilled water (that can be added to steam irons)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement style="table" x="426" y="538" width="81" height="65"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Class 11B]]></text>
+			</staticText>
+		</band>
+	</detail>
+</jasperReport>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var grdRole;
+
+//layout Sub1 (layout c)
+var layoutSub;
+
+
+
+//layout sub1 - sa
+var grdUser;//grdUser
+
+//layout sub1 - sb
+var frmUser;//frmUser
+
+//layout sub1 - sc
+var grdRoleUser;//grdRoleUser
+
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+var rowIndexSub = 0;
+
+//DataProcessor
+
+//DataStore
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/
+    // Layout
+    dhtmlx.image_path = dhtmlx_image_path;
+    layoutMain = new dhtmlXLayoutObject({
+        parent: "layoutObj",
+        pattern: "3E",
+        skin: dhtmlx_skin
+    });
+    
+    /* Form-조건 */
+    var a = layoutMain.cells('a');
+    a.setText('검색조건');
+    a.setHeight(SearchFormHeight[1]);
+    
+    var strLabel =  [{ type: "label", list:[
+						                	{ type:"combo" , name:"CO_CD" , label:"회사", readonly:true },
+						                	{ type:"newcolumn"   },
+						                	{ type:"input" , name:"ROLE_NO", label:"권한그룹코드", className:"offsetRight"},
+						                    { type:"newcolumn"   },
+						                	{ type:"input" , name:"ROLE_NM", label:"권한그룹명", className:"offsetRight"}
+						                	
+					 ]}
+                    ];
+    strLabel.unshift(SearchFormStyle4);
+    frmSearch = a.attachForm(strLabel);
+    
+    /* Grid-Role */
+    var b = layoutMain.cells('b');
+    b.setText('권한그룹 목록');
+    grdRole = b.attachGrid();
+    grdRole.setHeader(["NO","회사","권한그룹코드","권한그룹명","설명","사용여부"]);
+    grdRole.setColumnIds("NO,CO_CD,ROLE_NO,ROLE_NM,ROLE_DESC,USE_YN");
+    grdRole.setColTypes("ro,ro,ro,ro,ro,ro");
+    grdRole.setInitWidths('40,100,100,100,*,80');
+    fn_initGrid(grdRole);
+    
+    
+	// Layout Sub1
+    layoutSub = new dhtmlXLayoutObject({
+        parent: layoutMain.cells('c'),
+        pattern: "3W",
+        skin: dhtmlx_skin
+    });
+    
+    /* Grid-Sub1 */
+    var sa = layoutSub.cells('a');
+    sa.setText('사용자 목록');
+    sa.setWidth(600); 
+    grdUser = sa.attachGrid();
+    grdUser.setHeader(["사용자번호","로그인ID","이름","회사코드"]);
+    grdUser.setColumnIds("USER_NO,LOGIN_ID,USER_NM,CO_CD");
+    grdUser.setColTypes("ro,ro,ro,ro");
+    grdUser.setInitWidths('120,120,*,120');
+
+    fn_initGrid(grdUser);
+    
+    /* Form-Sub2 */
+    var sb = layoutSub.cells('b');
+    sb.setText('추가');
+    sb.setWidth(80); 
+    
+    var strLabel = [{ type:"newcolumn", height:50 },
+                    {type: "label", list: [
+                        { type:"button",   name:"ADD_USER",  value:"추가", width:30, height:10}
+	                ]},
+	                {type: "label", list: [
+                        { type:"button",   name:"DEL_USER",  value:"제거", width:30, height:10}
+  	                ]}
+	               ];
+    frmUser = sb.attachForm(strLabel);
+    frmUser.bind(grdUser);
+    
+    
+    /* Grid-Sub2 */
+    var sc = layoutSub.cells('c');
+    sc.setText('등록된 사용자');
+    grdRoleUser = sc.attachGrid();
+    grdRoleUser.setHeader(["사용자번호","로그인","이름","회사코드"]);
+    grdRoleUser.setColumnIds("USER_NO,LOGIN_ID,USER_NM,CO_CD");
+    grdRoleUser.setColTypes("ro,ro,ro,ro");
+    grdRoleUser.setInitWidths('120,120,*,120');
+    fn_initGrid(grdRoleUser);
+    
+    // DataStore 초기화
+    fn_initDS();
+    
+    // 나머지 초기화
+    //layoutMain.setAutoSize("a;b", "b;c");
+    fn_init();
+
+    // 최초 조회
+    fn_search();
+
+    /****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+	// frmSearch onChange
+	frmSearch.getCombo("CO_CD").attachEvent("onChange",function(value, text) {
+		grdRole.clearAll();
+		
+		grdUser.clearAll();
+		frmUser.clear();
+		grdRoleUser.clearAll();
+ 	});
+    
+	// grdRole Row Change
+ 	grdRole.attachEvent("onSelectStateChanged",function(id) {
+     	var sRoleNo = grdRole.cells(id, grdRole.getColIndexById("ROLE_NO")).getValue();
+ 	    saveMode = 'U';
+     	
+ 		fn_searchUser();
+ 		fn_searchRoleUser();
+ 	});
+	
+ 	// grdUser DBClick
+ 	grdUser.attachEvent("onRowDblClicked",function(rId,cInd) {
+     	fn_save();
+ 	});
+ 	
+	// grdRoleUser DBClick
+ 	grdRoleUser.attachEvent("onRowDblClicked",function(rId,cInd) {
+     	fn_del();
+ 	});
+ 	
+ 	// frmUser Button Click
+	frmUser.attachEvent("onButtonClick", function(name){
+		// 추가버튼 클릭
+		if("ADD_USER" == name){
+			fn_save();
+	    }else if("DEL_USER" == name){
+			fn_del();
+	    }
+		
+	});
+});
+
+// DataStore 초기화
+function fn_initDS() {
+
+    var postParam = new Object();
+    postParam.grpcd = "dsCoCd:SY001:Y";
+
+    fn_ajaxGetDsForCombo({ postParam : postParam
+		                 , success : 
+		                	 function(responseData) { 
+							                            frmSearch.getCombo("CO_CD").load(responseData.dsCoCd); 
+								                	    frmSearch.getCombo("CO_CD").setComboValue("SINC");
+								                	 }
+	});
+}
+
+// 조회 - 권한그룹
+function fn_search() {
+    if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(frmSearch);
+		
+	    fn_ajaxGetGrid({ gridName         : grdRole
+	             , url                 : "/dhtmlx/admin/roleUser/selectList.do"
+	             , postParam           : postParam
+	             , success             : function() {
+									                 grdRole.selectRow(rowIndex);
+									                 saveMode = 'U';
+									                }
+	    });
+    }
+}
+
+function fn_searchSub(){
+	fn_searchUser();
+	fn_searchRoleUser();
+}
+
+// 조회 - 전체사용자
+function fn_searchUser() {
+    var postParam 		= fn_getPostParam(frmSearch);
+    postParam.ROLE_NO 	= grdRole.cells(grdRole.getSelectedRowId(), grdRole.getColIndexById("ROLE_NO")).getValue();
+	
+    fn_ajaxGetGrid({ gridName         : grdUser
+             , url                 : "/dhtmlx/admin/roleUser/selectUserList.do"
+             , postParam           : postParam
+             , success             : function() {
+								                 grdUser.selectRow(rowIndexSub);
+								                 saveMode = 'U';
+								                }
+    });
+}
+
+// 조회 - 권한그룹사용자
+function fn_searchRoleUser() {
+    var postParam 		= fn_getPostParam(frmSearch);
+    postParam.ROLE_NO 	= grdRole.cells(grdRole.getSelectedRowId(), grdRole.getColIndexById("ROLE_NO")).getValue();
+	
+    fn_ajaxGetGrid({ gridName         : grdRoleUser
+             , url                 : "/dhtmlx/admin/roleUser/selectRoleUserList.do"
+             , postParam           : postParam
+             , success             : function() {
+								                 grdRoleUser.selectRow(rowIndexSub);
+								                 saveMode = 'U';
+								                }
+    });
+}
+
+// 신규
+function fn_new() {
+    saveMode = 'I';
+    
+    grdUser.clearAll();
+    frmUser.clear();
+    grdRoleUser.clearAll();
+ 
+}
+
+
+// 저장 - 권한그룹사용자
+function fn_save() {
+	
+	var postParam = fn_getPostParam(frmUser);
+	
+	postParam.saveMode 	= "I";
+	postParam.ROLE_NO	= grdRole.cells(grdRole.getSelectedRowId(), grdRole.getColIndexById("ROLE_NO")).getValue();
+	
+	if (fn_validateForm(frmUser)) {
+	     fn_ajaxSaveForm({ url      : "/dhtmlx/admin/roleUser/saveUser.do"
+	              , postParam   : postParam
+	              , postType    : 'save'
+		          , success     : fn_searchSub
+	     });
+	 }
+}
+
+function fn_saveSuccess() {
+	fn_search();
+}
+
+// 삭제 - 권한그룹사용자
+function fn_del() {
+	
+   var postParam = fn_getPostParam(frmSearch);
+	   postParam.ROLE_NO	= grdRole.cells(grdRole.getSelectedRowId(), grdRole.getColIndexById("ROLE_NO")).getValue();
+	   postParam.USER_NO	= grdRoleUser.cells(grdRoleUser.getSelectedRowId(), grdRoleUser.getColIndexById("USER_NO")).getValue();
+   
+   if (saveMode == 'U') {
+	   dhtmlx.confirm("삭제하시겠습니까?", function(result){
+		   if (result) {
+		       fn_ajaxSaveForm({ url      : "/dhtmlx/admin/roleUser/deleteUser.do"
+				           , postParam   : postParam
+				           , postType    : 'save'
+				           , success     : fn_searchSub
+		           });
+		   }
+	   });
+   }
+}
+
+</script>
+</html>

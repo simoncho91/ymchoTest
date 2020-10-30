@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : SiIm030Mapper.xml
+    Description   : 배합목적등록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.29  ymcho       1.0        최초 생성
+-->
+<mapper namespace="SiIm030Mapper">
+	
+	<!--	배합목적등록 기본 SQL	-->
+	<sql id="siIm030ListInclude">	
+		FROM TSI_FCIX_L TFI
+		WHERE 1=1
+			AND V_DEL_YN = 'N'
+		<if test="i_sNewChkVal != null and i_sNewChkVal eq 'true'">
+			AND SYSDATE-TO_DATE(V_UPDATE_DTM,'YYYYMMDDHH24MISS')<![CDATA[<=]]>14
+		</if>
+		<if test="i_sSearchNm != null and i_sSearchNm !=''">
+				AND	UPPER(TFI.V_FUNC_NM_EN) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+				OR	UPPER(TFI.V_FUNC_NM_KO) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+				OR	UPPER(TFI.V_FUNC_NM_CN) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+				OR	UPPER(TFI.V_FUNC_NM_EU) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+				OR	UPPER(TFI.V_FUNC_NM_JP) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+		</if>
+	</sql>
+	
+	<!--	배합목적 리스트 조회	-->
+	<select id="selectSiIm030List"  parameterType="CmMap" resultType="CmMap">
+	SELECT * FROM /* SiIm030Mapper.selectSiIm030List */
+		(SELECT ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_REG_DTM DESC
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+					
+					,T.*
+		FROM (
+			SELECT
+				V_FUNC_ID,
+	 			V_FUNC_NM_EN,
+	 			V_FUNC_NM_KO,
+	 			V_FUNC_NM_CN,
+	 			V_FUNC_NM_EU,
+	 			V_FUNC_NM_JP,
+				V_DEL_YN,
+				V_REG_DTM,
+				V_UPDATE_USER_ID,
+				V_UPDATE_DTM
+			<include refid="siIm030ListInclude"/>
+			) T
+		) TEMP
+		 WHERE 1=1
+		 <if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		 </if>
+	</select>
+	
+	<!--	배합목적 Count조회	-->
+	<select id="getSiIm030ListCount" parameterType="CmMap" resultType="java.lang.Integer">	
+		SELECT /* SiIm030Mapper.getSiIm030ListCount */ 
+			COUNT(*) AS CNT
+		<include refid="siIm030ListInclude"/>
+	</select>
+	
+	<!-- 배합목적 신규 등록  -->
+	<insert id="insertSiIm030List" parameterType="CmMap">
+	<selectKey keyProperty="v_func_id" resultType="String" order="BEFORE">
+    	  SELECT 
+    	 		   'FI' || LPAD(TO_NUMBER(NVL(SUBSTR(MAX(V_FUNC_ID),3,11),'0'))+1,10,0)
+         FROM TSI_FCIX_L
+         WHERE	V_FUNC_ID LIKE 'FI%'
+    </selectKey>
+		INSERT INTO 
+				TSI_FCIX_L
+                	(
+                	V_FUNC_ID
+                	 , V_FUNC_NM_EN
+                     , V_FUNC_NM_KO
+                     , V_FUNC_NM_CN
+                     , V_FUNC_NM_EU
+                     , V_FUNC_NM_JP
+                     , V_DEL_YN
+                     , V_IF_YN
+                     , V_REG_USER_ID
+                     , V_REG_DTM
+                     , V_UPDATE_USER_ID
+                     , V_UPDATE_DTM
+                    )
+             VALUES (
+             		 #{v_func_id}
+             		 , #{v_func_nm_en}
+                     , #{v_func_nm_ko}
+                     , #{v_func_nm_cn}
+                     , #{v_func_nm_eu}
+                     , #{v_func_nm_jp}
+                     , 'N'
+                     , 'N'
+                     , #{i_sRegUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     , #{i_sUpdateUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     )
+	</insert>
+	
+	<!-- 배합목적 삭제 -->
+	<update id="deleteSiIm030List" parameterType="CmMap">
+		UPDATE TSI_FCIX_L 
+		SET
+			V_DEL_YN = 'Y'
+			, V_IF_YN = 'N'
+		WHERE
+			V_FUNC_ID = #{v_func_id}
+	</update>
+	
+	<!-- 배합목적 수정 -->
+	<update id="updateSiIm030List" parameterType="CmMap">
+			UPDATE TSI_FCIX_L 
+			SET
+			  V_FUNC_NM_EN = #{v_func_nm_en}
+	 		  , V_FUNC_NM_KO = #{v_func_nm_ko}
+	 		  , V_FUNC_NM_CN = #{v_func_nm_cn}
+	 		  , V_FUNC_NM_EU = #{v_func_nm_eu}
+	 		  , V_FUNC_NM_JP = #{v_func_nm_jp}
+			  , V_UPDATE_USER_ID = #{i_sUpdateUserId}
+			  , V_UPDATE_DTM  = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			  , V_IF_YN = 'N'
+			WHERE
+				V_FUNC_ID = #{v_func_id}
+	
+	</update>
+</mapper>

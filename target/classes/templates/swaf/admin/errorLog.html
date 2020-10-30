@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<link id='template_6'   rel='stylesheet' type='text/css' href='/css/dhtmlx/template_6.css'>
+<link id='cssDhtmlx'   rel='stylesheet' type='text/css' href='/dhtmlx6/codebase/suite_long.min.css'>
+<script type='text/javascript' src='/dhtmlx6/codebase/suite.min.js'></script>
+<script>
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var grdMain;
+
+//layout - c
+var frmMain;
+
+//local variable
+var rowIndex = 0;
+
+var dcGrdMain;
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/
+    // Layout
+    dhtmlx.image_path = dhtmlx_image_path;
+    layoutMain = new dhtmlXLayoutObject({
+        parent: "layoutObj",
+        pattern: "2E",
+        skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+    });
+    
+    /* Form-조건 */
+    var a = layoutMain.cells('a');
+    a.setText('검색조건');
+    a.setHeight(SearchFormHeight[2]);
+    var strLabel =  [{ type:'settings', position:'label-left', labelWidth:'115', inputWidth:'172', offsetLeft:'10', offsetTop:'1'}
+                    ,{ type: "label", list:[
+											{ type:"combo" , name:"SYS_ID", label:"시스템ID", readonly:true, className:"offsetRight"},
+											{ type:"newcolumn"   },
+											{ type:"calendar"  , name:"START_DT" , value:"", label: "시작일", dateFormat:"%Y-%m-%d", className:"offsetRight" },
+											{ type:"newcolumn"   },
+											{ type:"calendar"  , name:"END_DT" , value:"", label: "종료일", dateFormat:"%Y-%m-%d", className:"offsetRight" },
+											{ type:"newcolumn"},
+											{ type: "input", name: "LOGIN_ID", label: "사용자ID", className:"offsetRight" }
+						                    ]}
+                     ,{ type: "label", list:[
+											{ type:"combo" , name:"ERR_TP_CD", label:"오류유형", readonly:true, className:"offsetRight" }
+					  ]}
+                    ];
+    frmSearch = a.attachForm(strLabel);
+
+	var today = new Date();
+	frmSearch.setItemValue("START_DT", today);
+	frmSearch.setItemValue("END_DT", today);
+    
+    /* Grid-목록 */
+    layoutSub1 = new dhtmlXLayoutObject({
+        parent: layoutMain.cells('b'),
+        pattern: "2E"
+    });
+    layoutSub1.cells('a').setText('에러 목록');
+    layoutSub1.cells('a').setHeight(402);
+    /* 
+    grdMain = layoutSub1.cells('a').attachGrid();
+    grdMain.setHeader(["NO","발생일시","오류유형","에러","ID","사용자","DB오류코드","패키지명",""]);
+    grdMain.setColumnIds("NO,REG_DTM,ERR_TP_NM,ERR_TITLE,LOGIN_ID,USER_NM,DB_ERR_CD,JV_PKG_NM,ERR_CNTS");
+    grdMain.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro");
+    grdMain.setInitWidths('40,180,100,400,80,80,120,*,0');
+
+    layoutSub1.cells('a').attachStatusBar({
+        text: "<div><span id='pagingArea'></span>&nbsp;<span id='infoArea'></span></div>",
+        paging: true
+    });
+    grdMain.enablePaging(true,50,10,"pagingArea",true,"infoArea");
+    
+    fn_initGrid(grdMain);
+  */
+
+  dcGrdMain = new dhx.DataCollection();
+
+
+	 // 에러 목록 grid
+	 grdMain = new dhx.Grid("grid_container", {
+	     columns: [
+	          { width: 40, id: "NO"      , header: [{ text: "NO" }] }
+	        , { width: 80, id: "REG_DTM"   , header: [{ text: "발생일시" }] }
+	        , { width: 100, id: "ERR_TP_NM"        , header: [{ text: "오류유형" }] }
+	        , { width: 200, id: "ERR_TITLE"      , header: [{ text: "에러" }] }
+	        , { width: 100, id: "LOGIN_ID"   , header: [{ text: "ID" }] }
+	        , { width: 100, id: "USER_NM"     , header: [{ text: "사용자" }] }
+	        , { width: 100, id: "DB_ERR_CD"     , header: [{ text: "DB오류코드" }] }
+	        , { width: 100, id: "JV_PKG_NM"     , header: [{ text: "DB패키지명" }] }
+	     ],
+	     autoWidth: true,
+         resizable: true,
+         selection: "row",
+         height: 402,
+         fitToContainer: true,
+         data: dcGrdMain
+	 });
+	 
+    layoutSub1.cells('a').attachObject("grid_container");
+
+	 
+    /* Form-상세내역 */
+    layoutSub1.cells('b').setText('상세 메세지');
+    frmMain = layoutSub1.cells('b').attachObject("divResult");
+    /* Form-상세내역 */
+    
+    layoutMain.setAutoSize("a", "b");
+    
+    // DataStore 초기화
+    fn_initDS();
+    // 나머지 초기화
+    //layoutMain.setAutoSize("a;b", "b,c");
+    fn_init();
+
+    // 최초 조회
+    fn_search();
+
+    /****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+    /* 
+     grdMain.attachEvent("onRowSelect", function(id,ind){
+        fn_setResult();        
+    });
+     */
+     
+     
+     grdMain.events.on("CellClick", function(row,column,e){
+    	 fn_setResult();
+     });
+    
+});
+
+// DataStore 초기화
+function fn_initDS() {
+
+    var postParam = new Object();
+    postParam.grpcd = "dsSysId:SY002:Y:S;dsErrTpCd:SY006:Y:S";
+
+    fn_ajaxGetDsForCombo({ postParam : postParam
+                         , async:false
+		                 , success : 
+		                	 function(responseData) { 
+		                	                            frmSearch.getCombo("SYS_ID").load(responseData.dsSysId); 
+								                	    frmSearch.getCombo("SYS_ID").setComboValue("SITIMS");
+		                	                            frmSearch.getCombo("ERR_TP_CD").load(responseData.dsErrTpCd); 
+								                	 }
+	});
+}
+
+// 조회
+function fn_search() {
+	
+
+    if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(frmSearch);
+
+	    dcGrdMain.removeAll();
+	    fn_ajax({ gridName         : grdMain
+	             , url                 : "/dhtmlx/admin/errorLog/selectList.do"
+	             , postParam           : postParam
+                 , async:false
+	             , success             : function(responseData) {
+	            	 dcGrdMain.parse(responseData.result.data);
+	            	 //grdMain.data.parse(responseData.result.data);
+	                    
+	                 fn_setResult();        
+									                }
+	    });
+    }
+    /* 
+    if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(frmSearch);
+	    
+	    fn_ajaxGetGrid({ gridName         : grdMain
+	             , url                 : "/dhtmlx/admin/errorLog/selectList.do"
+	             , postParam           : postParam
+                 , async:false
+	             , success             : function(responseData) {
+	                 fn_setResult();        
+									                }
+	    });
+    }
+     */
+}
+
+function fn_setResult() {
+    //document.getElementById('taResult').value = fn_getGridValue(grdMain, "ERR_CNTS"); 
+    
+    //console.log(dcGrdMain.getLength());
+
+    if (dcGrdMain.getLength() > 0) {
+	    selectedCell = grdMain.selection.getCell();
+	    if (selectedCell != undefined) document.getElementById('taResult').value = selectedCell.row["ERR_CNTS"]; 
+    }
+}
+
+</script>
+<body style="overflow:auto">
+    <div id="wrapper">
+        <div id="centerWrap">
+            <div id="appAreaWrap">
+                <div id="appRoleArea">
+                    <div class="title_area_wrap">
+                        <div th:replace="fragments/roleFragment :: role_title"></div>
+                        <div th:replace="fragments/roleFragment :: role_btn_area"></div>
+                    </div>
+                </div>
+                <div id="appArea">
+                    <div id="layoutObj" style="position: relative; "></div>
+                    <div id="divResult" style="disply: hidden; overflow: hidden;width: 100%; height: 100%;">
+                        <textarea id="taResult" style="position: relative; width: 100%; height: 100%; overflow: auto;" readonly></textarea>
+                    </div>
+                    <div id="grid_container" style="disply: hidden; overflow: hidden;width: 100%; height: 100%;  overflow: auto;"></div>
+                </div>
+            </div>
+        </div>
+     </div>
+</body>
+</html>

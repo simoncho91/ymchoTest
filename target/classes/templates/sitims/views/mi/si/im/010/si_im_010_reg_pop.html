@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<html th:replace="~{layout/dhtmlxPopLayout :: layout(~{::script})}">
+
+<script type='text/javascript'>
+var layoutMain,grdMain,frmSearch,chkRowId;
+$(function(){
+	layoutMain = new dhx.Layout('layoutObj',{
+			rows:[
+				{id:'form'}
+				,{id:'toolbar'}
+				,{id:'grid', height: '75%'}
+				,{id:'page'}
+			]
+	});
+	var a = layoutMain.getCell('form');
+	
+// 	frmSearch = new dhx.Form(null,{
+// 		rows:[{type:'input',id:'i_sSearchInciName',name:'i_sSearchInciName',label:'성분명' ,labelPosition: "left", labelWidth: "80", width: "250", gravity: false,hidden:true}]
+// 	});
+// 	a.attach(frmSearch);
+	
+	var	str	= '';
+	str	+= '<table class="sty_sort" id="tbl_search" style="border-top: 2px solid #191919;">';
+	str	+= '  <colgroup>';
+	str	+= '    <col style="width:95px;">';
+	str	+= '    <col style="">';
+	str	+= '  </colgroup>';
+	str	+= '  <tbody>';
+	str	+= '    <tr>';
+	str	+= '      <th>검색 조건</th>';
+	str	+= '      <td><input name="i_sSearchInciName" id="i_sSearchInciName" class="inp_sty01" type="text" placeholder="한글명 OR 영문명 OR CasNo" style="margin-right:8px;width: 308px;"><a href="javascript:fn_search();" class="btnA bg_dark">조회</a></td>';
+	str	+= '    </tr>';
+	str	+= '  </tbody>';
+	str	+= '</table>';
+	a.attachHTML(str);
+
+    var b = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null,{
+		columns:[
+			/*
+			{ width: 50, id: "radio", header: [{text: "선택"}],htmlEnable: true
+		    	, template: function (text, row, col) {
+		    		if(fn_isNull(row)) return "";
+	        		var chkYn = chkRowId==row.id?'checked':'';
+		        	return "<input class=\"custom_radio\" name=\"main_radio\" id=\"main_radio_"+row.n_rnum+"\" type=\"radio\" onclick=\"fn_radioClick('"+row.id+"',this)\" "+chkYn+"></input>"; 
+				}
+			}
+			,*/
+			{ width: 100, id: "v_inci_nm_ko"      , header: [{ text: "성분 한글명",align:"center" }], align:"left" }
+			,{ width: 100, id: "v_inci_nm_en"      , header: [{ text: "성분 영문명",align:"center" }], align:"left" }
+	        ,{ width: 100, id: "v_cas_no1",            header: [{ text: "Cas No.",align:"center" }], align:"left", template: function(text, row, col) {
+					return text + (row.n_cas_cnt > 1 ? ' 외' + (row.n_cas_cnt-1) + '개' : '');
+				} },
+			,{ width: 130, id: "v_state_nm"      , header: [{ text: "요청상태",align:"center" }], align:"center" }
+			,{ width: 100, id: "v_req_dtm"      , header: [{ text: "요청일",align:"center" }], align:"center"}
+			,{ width: 100, id: "v_confm_dtm"      , header: [{ text: "승인일",align:"center" }], align:"center" }
+			,{ width: 130, id: "v_user_vendor_nm"      , header: [{ text: "업체명(담당자)",align:"center" }], align:"center" }
+		//	,{ width: 130, id: "v_opinion"      , header: [{ text: "검토 의견",align:"center" }] }
+		]
+		,autoWidth: true
+		,headerRowHeight: 46
+	    ,resizable: true
+	    ,selection: "row" 
+		,data:dcGrdMain
+	});
+	b.attach(grdMain);
+
+    grdMain.events.on("CellDblClick", function(row,col,e){
+    	var data = grdMain.data.getItem(row.id);
+    	parent.setPopUpData(data);
+    });
+	 grdMain.events.on("cellClick", function(r,c,e){
+		 chkRowId = r.id;
+		 $('#main_radio_'+r.n_rnum).prop('checked',true);
+	 });
+
+	/*
+ 	var gridMainToolbar = new dhx.Toolbar(null,{
+		data:[
+			{	type: "spacer"}
+		 //	,{type:"button",icon:"dxi-plus",value:"선택",id:'btnSel'}
+		 	,{type:"button",icon:"dxi-search",value:"조회",id:'btnSearch'}
+ 		]
+ 	});
+ 	layoutMain.getCell('toolbar').attach(gridMainToolbar);
+    
+    gridMainToolbar.events.on("Click", function(id){
+    	if(id=='btnSel'){
+    		//var rowId=grdMain.data.getItem(0);
+        	var data = grdMain.data.getItem(chkRowId);
+        	parent.setPopUpData(data);
+    	}else if(id=='btnSearch'){
+    	    mainPage.initPaging();    		
+    	}
+    });
+	*/
+
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/si/im/010/selectConList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['radio']
+       		, pageSize : 50
+    });
+    mainPage.initPaging();
+});
+$(document).on('keyup','#i_sSearchInciName',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+function fn_radioClick(rowId,obj){
+	chkRowId = rowId;
+}
+function fn_search() {
+	mainPage.postParam = {"i_sSearchInciName": $('#i_sSearchInciName').val()};
+	mainPage.search(1);
+}
+function fn_close() {
+	fn_popClose();
+}
+
+</script>
+
+</html>

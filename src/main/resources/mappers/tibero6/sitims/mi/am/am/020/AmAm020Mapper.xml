@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : AmAm020Mapper.xml
+    Description   : 제품권한(사용자)
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.08.03  kykwak       1.0        최초 생성
+-->
+<mapper namespace="AmAm020Mapper">
+	<!-- 페이징을 위한 include -->
+	<sql id="AmAm020ListInclude">	
+		FROM TSI_DOAH_UR_L AS A
+		WHERE 1=1
+		<if test="i_arrStr != null">
+			AND
+			<foreach collection="i_arrStr" item="item" index="index" open="(" close=")" separator="OR">
+				 A.V_NATION_GCD LIKE '%'|| UPPER(#{item}) ||'%'
+	        </foreach>
+		</if>	 
+		<if test="i_sBrand != null and i_sBrand != ''">
+			AND	A.V_BRAND_CD = #{i_sBrand}
+		</if>		
+		<if test="i_sCharger != null and i_sCharger != ''">
+			AND UPPER(FN_GET_USERNM(A.V_USER_ID)) LIKE '%'|| UPPER(#{i_sCharger}) ||'%'
+		</if>
+	</sql>
+	<!-- 제품권한(사용자) -->
+	<select id="selectAmAm020List" resultType="CmMap" parameterType="CmMap">
+	SELECT * FROM( /* AmAm020Mapper.selectAmAm020List */
+		SELECT 
+			 ROW_NUMBER() OVER(ORDER BY 
+			 <choose> 
+				<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+					${i_sSortCol} ${i_sSortDir}
+				</when>	 
+				<otherwise>
+					A.V_REG_DTM 
+				</otherwise>	
+			</choose>
+			 ) AS N_NUM
+			 , A.*
+			 FROM(
+			 	SELECT
+					  FN_SUB_CODENM('BRAND_CODE',A.V_BRAND_CD) AS V_BRAND_NM
+					, FN_GET_USERNM(A.V_USER_ID) AS V_USER_NM
+					, FN_GET_USERNM(A.V_REG_USER_ID) AS V_REG_USER_ID
+					, TO_CHAR(TO_DATE(A.V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REG_DTM
+					, A.V_REG_DTM AS V_REG_DTM_EXCEL
+					, FN_GET_USERNM(A.V_UPDATE_USER_ID) AS V_UPDATE_USER_ID
+					, TO_CHAR(TO_DATE(A.V_UPDATE_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_UPDATE_DTM
+					, A.V_UPDATE_DTM AS V_UPDATE_DTM_EXCEL
+					, A.V_USER_ID
+					, A.V_NATION_GCD
+					, replace(replace(replace(replace(replace(replace(A.V_NATION_GCD,'US','미국'),'KO','한국'),'EU','유럽'),'AE','아세안'),'CN','중국'),'|',', ') V_NATION_GNM
+					, A.V_BRAND_CD
+					<include refid="AmAm020ListInclude"/>
+			) A
+		) TEMP
+		 WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+	<!-- 페이징을 위한 리스트 총 개수 -->
+	<select id="getAmAm020ListCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT  /* AmAm020Mapper.getAmAm020ListCount */
+			COUNT(*) AS CNT 
+			<include refid="AmAm020ListInclude"/>
+	</select>
+	<!-- 제품권한(사용자) 신규 등록  -->
+	<insert id="regForProdUser" parameterType="CmMap">
+		INSERT /* AmAm020Mapper.regForProdUser */
+			INTO 
+				TSI_DOAH_UR_L 
+                	 (V_USER_ID
+                     , V_BRAND_CD
+                     , V_NATION_GCD
+                     , V_REG_USER_ID
+                     , V_REG_DTM  
+                     , V_UPDATE_USER_ID
+                     , V_UPDATE_DTM
+                    )
+             VALUES ( #{i_sUserId}
+                     , #{i_sBrandCd}
+                     , #{i_sNationList}
+                     , #{i_sRegUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     , #{i_sUpdateUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     )
+	</insert>
+	<!-- 제품권한(사용자) 삭제 -->
+	<delete id="delForProdUser" parameterType="CmMap">
+		DELETE  /* AmAm020Mapper.delForProdUser */
+			FROM TSI_DOAH_UR_L 
+				WHERE
+				 	V_BRAND_CD = #{i_sBrandCd}
+	       		AND V_USER_ID = #{i_sUserId}
+	</delete>
+	<!-- 제품권한(사용자) 수정 -->
+	<update id="modifyForProdUser" parameterType="CmMap">
+			UPDATE  /* AmAm020Mapper.modifyForProdUser */
+				TSI_DOAH_UR_L 
+			SET                     
+			  V_NATION_GCD = #{i_sNationList}
+			  , V_UPDATE_USER_ID = #{i_sUpdateUserId}
+			  , V_UPDATE_DTM  = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			WHERE
+				 V_USER_ID = #{i_sUserId} AND V_BRAND_CD = #{i_sBrandCd}
+	
+	</update>
+	<!-- 제품권한(사용자) 등록, 수정, 삭제을 위한 유효성 검사 -->
+	 <select id="selectCountForProdUser" parameterType="CmMap" resultType="java.lang.Integer">
+			SELECT /* AmAm020Mapper.selectCountForProdUser */
+				COUNT(*) 
+			FROM TSI_DOAH_UR_L
+			WHERE 
+				V_BRAND_CD = #{i_sBrandCd}
+	           	AND V_USER_ID = #{i_sUserId}
+	</select>
+</mapper>

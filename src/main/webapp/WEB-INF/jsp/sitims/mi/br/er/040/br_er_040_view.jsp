@@ -1,0 +1,209 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ include file="/WEB-INF/jsp/sitims/INCLUDE/cm_server_common.jsp" %>
+<%@ include file="/WEB-INF/jsp/sitims/INCLUDE/cm_body_start.jsp" %>
+
+<script type="text/javascript" src="${ScriptPATH}doT.min.js"></script>
+<script type='text/javascript'>
+
+var layoutMain, layoutA, layoutB, layoutC, layoutCGrid, buttonBar, frm, btnForm;
+var mainGrid;
+var dcGrdMain;
+
+//초기화
+$(function(){
+	//레이아웃 초기화
+	fn_initDhtmlxLayout();
+});
+
+function fn_initDhtmlxLayout(){
+	//기본레이아웃 설정
+	layoutMain	=	new dhx.Layout("layoutObj", {
+		css:"dhx_layout-cell--bordered",
+		rows : [
+			{
+				id : "toolbar-cell",
+				gravity : false,
+			},
+			{cols : [
+				{
+					rows : [
+						{
+							id 			: "a",
+							header 		: "의뢰 내용",
+							resizable 	: true,
+							html 		: "<div id='form'></div>"
+						},
+						{
+							id			: "btnForm"
+						}
+					]
+				}
+			]},
+			{cols : [
+				{
+					id 		 	: "b",
+					header 	 	: "금지어 필터링",
+					width 	  	: "1180px",
+					resizable 	: true,
+					html      	: '<div id="introText"></div><div id="div_filtering"></div>'
+				}
+			]},
+			{cols : [
+				{
+					id 			: "c",
+					header 		: "금지어 요약",
+					width 		: "1180px",
+					resizable 	: true
+				}	
+			]},
+			{cols : [
+				{
+					id 			: "d",
+					header 		: "실증필요 단어 요약",
+					width 		: "1180px",
+					resizable 	: true,
+					html		: '<div id="result_proof"></div>'
+				}	
+			]}
+		]
+	});
+	
+	layoutToolbar  	= 	layoutMain.getCell("toolbar-cell");
+	layoutBtnForm   =   layoutMain.getCell("btnForm");
+	layoutA	   		=	layoutMain.getCell("a");
+	layoutB	   		=	layoutMain.getCell("b");
+	layoutC	   		=	layoutMain.getCell("c");
+	
+	//의뢰내용 폼
+	form = new dhx.Form("form", {
+		rows : [{
+			type 		: "textarea",
+			id   		: "i_sReqText",
+			label 		: "내용입력",
+			labelInline : true,
+			labelWidth  : "70px",
+		}]
+	});
+	
+	var toolbar = new dhx.Toolbar(null, {
+		data : [{type : "button", id : "filtering", icon : "dxi dxi-check", value : "금지어 필터링"}]
+	});
+	
+	layoutBtnForm.attach(toolbar);
+	
+	//툴바 이벤트 바인딩
+	toolbar.events.on("Click", function(id,e){
+		switch(id){
+			case 'filtering' : {
+				fn_filtering();
+			}
+		}
+	});
+	
+	//금지어요약 그리드
+	fn_makeGrid();
+	
+	//인트로텍스트 셋팅
+	var introText = '${introText}';
+	$("#introText").append(introText);
+	
+}
+
+function fn_makeGrid(){
+	dcGrdMain 	= 	new dhx.DataCollection();
+	
+	mainGrid	=	new dhx.Grid(null, {
+		columns : [
+			{width : 200, 	id : "v_word", 			header : [{text : "금지어"}]},
+			{width : 200, 	id : "v_similar_word",	header : [{text : "유사 금지표현"}]},
+			{width : 200, 	id : "v_explain",		header : [{text : "대체표현/실증표현"}]},
+			{width : 200, 	id : "v_example",		header : [{text : "유사 처분사례"}]}
+		],
+		headerRowHeight : 46,
+		autoWidth 		: true,
+		resizable 		: true,
+		selection 		: "row",
+		fitToContainter : true,
+		data 			: dcGrdMain
+	});
+	
+	layoutC.attach(mainGrid);
+}
+
+function fn_filtering(){
+	var value = form.getItem("i_sReqText").getValue();
+	
+	if(isEmpty(value)){
+		alert("금지어를 입력해주세요.");
+	}
+	
+	$.ajax({
+		url			:	"/br/er/040/br_er_040_filtering_ajax.do",
+		data		:	{i_sReqText : value},
+		async 		: 	true,
+        type  		:	"POST",
+        dataType	:	"json",
+		success		:	function(data, textStatus, jqXHR) {
+			var isPresent	=	data.data;
+			
+			if(isPresent == "null"){
+				mainGrid.clear();
+			}else{
+				var forbidList	=	data.data.forbidList;
+				var proofList	=	data.data.proofList;
+				var fLen		=	forbidList.length;
+				var pLen		=	proofList.length;
+				
+				$("#div_filtering").html(data.data.text);
+				
+				//금지어 요약 뿌려주기
+				mainGrid.data.parse(forbidList);
+				
+				if(pLen > 0){
+					var pagefn2		=	doT.template(document.getElementById("dot_result_prooflist").text, undefined, undefined);
+					j$("#result_proof").html(pagefn2(proofList));
+				} else {
+					j$("#result_proof").html("::실증 필요 단어 요약이 없습니다.::");
+				}
+			}
+		},
+		error: function(jqXHR, textStatus, errorThrown) {
+			fn_s_failMsg(jqXHR, textStatus, errorThrown);
+	    	if(fail) fail();
+	    },
+	    complete: function(data) {
+	    //if (bProgressOnEvent) layoutMain.progressOff();
+	    }
+	});
+}
+
+</script>
+
+<div id="appAreaWrap">
+	<div id="appArea">
+		<div id="layoutObj"></div>
+	</div>
+</div>
+
+<script id="dot_result_prooflist" type="text/x-dot-template">
+<table class="table_view" style="width:100%;">
+	<colgroup>
+		<col width="150px;">
+		<col width="*">
+	</colgroup>
+	<tbody>
+		<tr>
+			<th>실증대상</th>
+			<td class="last">
+{{for(var i in it){ }}
+	<font style="color:{{=it[i].v_color}};font-weight:bold;">
+		{{=it[i].v_word}}, 
+	</font>
+{{} }}
+			</td>
+		</tr>
+	</tbody>
+</table>
+</script>
+
+<%@ include file="/WEB-INF/jsp/sitims/INCLUDE/cm_body_end.jsp" %>

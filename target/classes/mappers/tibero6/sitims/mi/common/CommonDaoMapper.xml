@@ -1,0 +1,803 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CommonDao">
+	<sql id ="includeUserList">
+		SELECT M.*
+			,ROW_NUMBER() OVER(ORDER BY
+				<choose> 
+					<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+						${i_sSortCol} ${i_sSortDir}
+					</when>	 
+					<otherwise>
+						REG_DTM
+					</otherwise>	
+				</choose>
+			) AS N_NUM		
+		FROM (
+		SELECT 
+			US.USER_NO V_USER_NO
+			,FN_GET_USERNM_MASK(US.USER_NO,#{s_groupid},'TIIMS') V_USER_NM
+			,US.LOGIN_ID V_LOGIN_ID
+			,US.DEPT_CD V_DEPT_CD
+			,DEPT.V_DEPT_NM	
+			,US.REG_DTM		
+			,US.EMAIL V_EMAIL
+		FROM TZF_USER_M US
+		LEFT JOIN TSI_DEPT_I DEPT ON US.DEPT_CD = DEPT.V_DEPT_CD
+		WHERE 1=1
+		<if test="i_sInput != null and i_sInput != ''">
+			AND (US.USER_NM LIKE '%'||#{i_sInput}||'%' OR US.LOGIN_ID LIKE '%'||#{i_sInput}||'%') 
+		</if>
+		<if test="i_sUserNo != null and i_sUserNo != ''">
+			AND US.USER_NO = #{i_sUserNo} 
+		</if>
+		) M
+	</sql>
+	<select id="getUserList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* CommonDao.getUserList */ 
+		      TEMP.*
+		FROM (
+			<include refid="includeUserList"/>
+		) TEMP
+		WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+			AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+	<select id="getUserCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT /* CommonDao.getUserCount */
+		       COUNT(*)
+		FROM (
+			<include refid="includeUserList"/>
+		)
+		WHERE 1=1
+	</select>
+	
+	<!-- 서브코드 목록 가져오기 -->
+	<select id="CommonDao.getCmSubCodeList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* CommonDao.getCmSubCodeList */
+			   A.GRP_CD,
+		       A.COMM_CD,
+		       A.COMM_CD_NM,
+		       A.USE_YN,
+		       A.SORT_SEQ,
+		       A.BUFFER1,
+		       A.BUFFER2,
+		       A.COMM_CD_DESC
+		  FROM TZF_COMMCD_D A
+		 WHERE A.GRP_CD = #{i_sMstCode}
+		 <if test="i_sSubCode != null and i_sSubCode != ''">
+		   AND UPPER(A.COMM_CD_NM) LIKE '%'||UPPER(TRIM(#{i_sSubCode}))||'%'
+		</if>
+		 <if test="i_sBuffer1 != null and i_sBuffer1 != ''">
+		   AND A.BUFFER1 =  #{i_sBuffer1}
+		</if>
+		 <if test="i_sBuffer2 != null and i_sBuffer2 != ''">
+		   AND A.BUFFER2 =  #{i_sBuffer2}
+		</if>
+		 <if test="i_sBuffer3 != null and i_sBuffer3 != ''">
+		   AND A.BUFFER3 =  #{i_sBuffer3}
+		</if>
+          AND A.USE_YN = 'Y'
+		 ORDER BY SORT_SEQ
+	</select>
+	<!-- dhtmlx 용 서브코드 목록 가져오기 -->
+	<select id="CommonDao.getCodeDhtmlxForComboBox" parameterType="CmMap" resultType="hashMap">
+		SELECT /* CommonDao.getCodeDhtmlxForComboBox */
+			   A.GRP_CD,
+		       A.COMM_CD AS CD,
+		       A.COMM_CD_NM AS NM,
+		       A.USE_YN,
+		       A.SORT_SEQ,
+		       A.BUFFER1,
+		       A.BUFFER2,
+		       A.COMM_CD_DESC,
+		       COMM_CD || ':' || COMM_CD_NM  AS CDNM
+		  FROM TZF_COMMCD_D A
+		 WHERE A.GRP_CD = #{GRP_CD}
+		 <if test="BUFFER1 != null and BUFFER1 != ''">
+		   AND A.BUFFER1 =  #{BUFFER1}
+		</if>
+		 <if test="BUFFER2 != null and BUFFER2 != ''">
+		   AND A.BUFFER2 =  #{BUFFER2}
+		</if>
+		 <if test="BUFFER3 != null and BUFFER3 != ''">
+		   AND A.BUFFER3 =  #{BUFFER3}
+		</if>
+          AND A.USE_YN = 'Y'
+		 ORDER BY SORT_SEQ
+	</select>
+	
+	<sql id = "includeOdmUserList">
+		SELECT M.*
+			,ROW_NUMBER() OVER(ORDER BY
+				<choose> 
+					<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+						${i_sSortCol} ${i_sSortDir}
+					</when>	 
+					<otherwise>
+						V_REG_DTM
+					</otherwise>	
+				</choose>
+			) AS N_NUM	
+		FROM (
+			SELECT 
+				USER_INFO.V_USER_ID
+				,FN_GET_USERNM_MASK(USER_INFO.V_USER_ID,#{s_groupid},'ODM') V_USER_NM
+				,USER_INFO.V_USER_NM_EN
+				,USER_INFO.V_VENDOR_ID
+				,COMPANY.V_VENDOR_NM
+<!-- 				,USER_INFO.V_PHONENO 
+				,USER_INFO.V_EMAIL-->
+				,USER_INFO.V_PHONENO V_PHONENO_DEC_AES
+				,USER_INFO.V_EMAIL V_EMAIL_DEC_AES
+				,USER_INFO.V_REG_DTM
+			FROM TODM_VD_UR_I USER_INFO
+			LEFT JOIN TODM_VD_I COMPANY ON USER_INFO.V_VENDOR_ID = COMPANY.V_VENDOR_ID
+			WHERE 1=1
+			<if test = "i_sSearchName != null and i_sSearchName != ''">
+				AND USER_INFO.V_USER_NM LIKE '%'|| #{i_sSearchName} ||'%'
+			</if>
+			<if test = "i_sVendorLaborId != null and i_sVendorLaborId != ''">
+				AND USER_INFO.V_USER_ID = #{i_sVendorLaborId}
+			</if>
+		) M
+	</sql>
+	
+	<select id ="getOdmUserList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* CommonDao.getOdmUserList */ 
+		       TEMP.*
+		FROM (
+			<include refid="includeOdmUserList"/>
+		) TEMP
+		WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+			AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+	<select id ="getOdmUserCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT /* CommonDao.getOdmUserCount */
+		       COUNT(*)
+		FROM (
+			<include refid="includeOdmUserList"/>
+		)
+		WHERE 1=1
+	</select>
+		
+	<insert id = "insertAttachFile" parameterType="CmMap">
+		INSERT /* CommonDaoMapper.insertAttachFile */
+		INTO TSI_ATTACH(
+			V_ATTACH_ID
+			, V_RECORD_ID
+			, V_UPLOAD_ID
+			, V_REC_TYPE
+			, V_ATTACH_NM
+			, V_ATTACH_PATH
+			, V_ATTACH_EXT
+			, N_ATTACH_SIZE
+			, N_DOWNLD_CNT
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_DEL_YN
+			, V_BUFFER1
+			, V_BUFFER2
+			, V_BUFFER3
+			, V_BUFFER4
+			, V_BUFFER5
+		)VALUES(
+			#{i_sAttachId}
+			,#{i_sAttachPk1}
+			,#{i_sAttachPk2}
+			,NULL
+			,#{i_sAttachLnm}
+			,#{i_sAttachPath}
+			,#{i_sAttachType}
+			,#{i_sAttachSize}
+			,0
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, 'N'
+			, #{i_sBuffer1}
+			, #{i_sBuffer2}
+			, #{i_sBuffer3}
+			, #{i_sBuffer4}
+			, #{i_sBuffer5}
+		)
+	</insert>	
+	
+	<delete id="deleteAttachFile" parameterType="CmMap">
+        DELETE /* CommonDao.deleteAttachFile */
+          FROM  TSI_ATTACH
+         WHERE  1=1
+		<if test="i_sUploadCd != null and i_sUploadCd != ''">
+			AND V_UPLOAD_ID = #{i_sUploadCd}
+		</if>
+		<if test="i_sRecordId != null and i_sRecordId != ''">
+			AND V_RECORD_ID = #{i_sRecordId}
+		</if>
+		<if test="i_sAttachId != null and i_sAttachId != ''">
+			AND V_ATTACH_ID = #{i_sAttachId}
+		</if>		
+		<if test="i_sBuffer1 != null and i_sBuffer1 != ''">
+			AND V_BUFFER1 = #{i_sBuffer1}
+		</if>
+		<if test="i_sBuffer2 != null and i_sBuffer2 != ''">
+			AND V_BUFFER2 = #{i_sBuffer2}
+		</if>
+		<if test="i_sBuffer3 != null and i_sBuffer3 != ''">
+			AND V_BUFFER3 = #{i_sBuffer3}
+		</if>
+		<if test="i_sBuffer4 != null and i_sBuffer4 != ''">
+			AND V_BUFFER4 = #{i_sBuffer4}
+		</if>
+		<if test="i_sBuffer5 != null and i_sBuffer5 != ''">
+			AND V_BUFFER5 = #{i_sBuffer5}
+		</if>
+    </delete>
+	
+	<update id="updateDownloadCnt" parameterType="CmMap">
+        UPDATE /* CommonDaoMapper.updateDownloadCnt */ 
+        TSI_ATTACH SET
+        	N_DOWNLD_CNT = NVL(N_DOWNLD_CNT,0) +1
+         WHERE  1=1
+			AND V_ATTACH_ID = #{i_sAttachId}
+    </update>
+	
+	<sql id="includeAttachFile">
+		SELECT
+			V_ATTACH_ID
+			, V_RECORD_ID
+			, V_UPLOAD_ID
+			, V_REC_TYPE
+			, V_ATTACH_NM
+			, V_ATTACH_PATH
+			, V_ATTACH_EXT
+			, N_ATTACH_SIZE
+			, N_DOWNLD_CNT
+			, V_IF_YN
+			, V_DEL_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM
+			, V_BUFFER1
+			, V_BUFFER2
+			, V_BUFFER3
+			, V_BUFFER4
+			, V_BUFFER5
+		FROM TSI_ATTACH
+		WHERE 1=1
+		<if test="i_sBuffer1 != null and i_sBuffer1 != ''">
+			AND V_BUFFER1 = #{i_sBuffer1}
+		</if>
+		<if test="i_sBuffer2 != null and i_sBuffer2 != ''">
+			AND V_BUFFER2 = #{i_sBuffer2}
+		</if>
+		<if test="i_sBuffer3 != null and i_sBuffer3 != ''">
+			AND V_BUFFER3 = #{i_sBuffer3}
+		</if>
+		<if test="i_sBuffer4 != null and i_sBuffer4 != ''">
+			AND V_BUFFER4 = #{i_sBuffer4}
+		</if>
+		<if test="i_sBuffer5 != null and i_sBuffer5 != ''">
+			AND V_BUFFER5 = #{i_sBuffer5}
+		</if>
+		
+		<if test="   i_sUploadCd != null and i_sUploadCd != ''">
+			AND V_UPLOAD_ID = #{i_sUploadCd}
+		</if>
+		<if test="i_sRecordId != null and i_sRecordId != ''">
+			AND V_RECORD_ID = #{i_sRecordId}
+		</if>
+		<if test="i_sRecordIdLike != null and i_sRecordIdLike != ''">
+			AND V_RECORD_ID Like '%'|| #{i_sRecordIdLike} || '%'
+		</if>
+		<if test="i_sAttachId != null and i_sAttachId != ''">
+			AND V_ATTACH_ID = #{i_sAttachId}
+		</if>
+		<if test="i_arrUploadCd != null">
+			AND V_UPLOAD_ID IN (
+			<foreach collection="i_arrUploadCd" item="item" separator=",">
+				#{item}
+			</foreach>
+			)
+		</if>
+		<if test="i_arrRecordId != null">
+			AND V_RECORD_ID IN (
+			<foreach collection="i_arrRecordId" item="item" separator=",">
+				#{item}
+			</foreach>
+			)
+		</if>
+		
+			  
+	</sql>
+	
+	<select id="selectAttachListCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT /* CommonDao.selectAttachListCount */
+		       COUNT(*) CNT
+		FROM (
+			<include refid="includeAttachFile"/>
+		)
+	</select>
+
+	<select id="selectAttachList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* CommonDao.selectAttachList */
+		       TEMP.*
+		FROM (
+			<include refid="includeAttachFile"/>
+		) TEMP
+	</select>
+	
+	<select id="selectMenuInfoList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* CommonDao.selectMenuInfoList */
+		        NVL(SUB.OBJ_ID, M.MENU_CD) AS MENU_CD
+		      , M.PAR_MENU_CD
+		      , NVL(SUB.OBJ_NM, M.MENU_NM) AS MENU_NM
+		      , M.URL
+		      , LEVEL AS LVL
+		  FROM TZF_MENU_M M
+		  LEFT OUTER JOIN (
+		     SELECT MENU_CD, OBJ_ID, OBJ_NM, AC_URL
+		       FROM TZF_MENUACTION_L 
+		      WHERE AC_URL = #{acUrl}
+		 ) SUB ON M.MENU_CD = SUB.MENU_CD
+		 WHERE 1 = 1
+		 START WITH M.MENU_CD = (
+		          SELECT MENU_CD
+		            FROM TZF_MENU_M
+		           WHERE URL LIKE  #{url} || '%'
+		             AND ROWNUM = 1
+		        )
+		CONNECT BY PRIOR  M.PAR_MENU_CD = M.MENU_CD
+	</select>
+	
+	<insert id="insertDownloadLog" parameterType="CmMap">
+		INSERT /* CommonDao.insertDownloadLog */
+		INTO TSI_FLDN_LG_L(
+			V_USER_ID
+			, V_DOWNLOAD_DTM
+			, V_ATTACH_CLASS
+			, V_PRODUCT_CD
+			, V_ATTACH_ID
+			, V_FILE_NM
+			, V_IP_ADDRESS
+			, V_REG_USER_ID
+			, V_REG_DTM			
+		)VALUES(
+			#{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, #{i_sAttchClass}
+			, #{i_sProductCd}
+			, #{i_sAttachId}
+			, #{i_sFileNm}
+			, #{i_sIpAddr}
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	<sql id="includeConCdBanDescList">
+		SELECT M.*
+			,ROW_NUMBER() OVER(ORDER BY
+				<choose> 
+					<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+						${i_sSortCol} ${i_sSortDir}
+					</when>	 
+					<otherwise>
+						V_CON_CD,V_GL_CD
+					</otherwise>	
+				</choose>
+			) AS N_NUM	
+		FROM (
+			SELECT 
+				V_CON_CD
+				,N_VER_SEQ
+				,V_GL_CD
+				,FN_SUB_CODENM('ODM_EXPORT',V_GL_CD) V_GL_NM
+				,V_FLAG
+				,V_COMMENT
+				,<![CDATA[REPLACE(V_COMMENT,chr(13)||chr(10),'<br/>')]]> V_R_COMMENT
+			FROM TSI_CON_BAN_D BAN
+			WHERE V_CON_CD = #{i_sConCd}
+			AND N_VER_SEQ = #{i_nVerSeq}
+			AND V_FLAG = #{i_sGubun}
+		) M
+	</sql>
+	
+	<select id="getConCdBanDescCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT /* CommonDao.selectAttachListCount */
+		       COUNT(*) CNT
+		FROM (
+			<include refid="includeConCdBanDescList"/>
+		)
+	</select>
+
+	<select id="getConCdBanDescList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* CommonDao.selectAttachList */
+		       TEMP.*
+		FROM (
+			<include refid="includeConCdBanDescList"/>
+		) TEMP
+		WHERE 1=1
+		AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+	</select>
+	
+
+	<select id="getTiimsDashboardInfo" parameterType="CmMap" resultType="CmMap">
+		SELECT /* CommonDao.getTiimsDashboardInfo */
+			SUM(RS000_CNT) RS000_CNT
+			,SUM(RS010_CNT) RS010_CNT
+			,SUM(RS030_CNT) RS030_CNT
+			,SUM(RS040_CNT) RS040_CNT
+			,SUM(KO_NS020_CNT) KO_NS020_CNT
+			,SUM(KO_NS010_CNT) KO_NS010_CNT
+			,SUM(KO_NS030_CNT) KO_NS030_CNT
+			,SUM(EXT_NS020_CNT) EXT_NS020_CNT
+			,SUM(EXT_NS010_CNT) EXT_NS010_CNT
+			,SUM(EXT_NS030_CNT) EXT_NS030_CNT
+			,SUM(AD_REQ_STATUS01_CNT) AD_REQ_STATUS01_CNT
+			,SUM(AD_REQ_STATUS02_CNT) AD_REQ_STATUS02_CNT
+			,SUM(AD_REQ_STATUS03_CNT) AD_REQ_STATUS03_CNT
+			,SUM(AD_REQ_STATUS04_CNT) AD_REQ_STATUS04_CNT
+			,SUM(AD_REQ_STATUS05_CNT) AD_REQ_STATUS05_CNT
+			,SUM(AD_REQ_STATUS06_CNT) AD_REQ_STATUS06_CNT
+			,SUM(AD_REQ_STATUS07_CNT) AD_REQ_STATUS07_CNT
+			,SUM(AD_REQ_STATUS08_CNT) AD_REQ_STATUS08_CNT
+			,SUM(AD_REQ_STATUS09_CNT) AD_REQ_STATUS09_CNT
+		FROM (
+		SELECT 
+			DECODE(MST.V_RECEIP_STATUS,'RS000',DECODE(PROD.V_FINAL_RST,NULL,1,0),0) RS000_CNT
+			,DECODE(MST.V_RECEIP_STATUS,'RS010',1,0) RS010_CNT
+			,DECODE(PROD.V_FINAL_RST,'RS030',1,0) RS030_CNT
+			,DECODE(PROD.V_FINAL_RST,'RS040',1,0) RS040_CNT
+			,0 KO_NS020_CNT 
+			,0 KO_NS010_CNT 
+			,0 KO_NS030_CNT 
+			,0 EXT_NS020_CNT
+			,0 EXT_NS010_CNT
+			,0 EXT_NS030_CNT
+			,0 AD_REQ_STATUS01_CNT
+			,0 AD_REQ_STATUS02_CNT
+			,0 AD_REQ_STATUS03_CNT
+			,0 AD_REQ_STATUS04_CNT
+			,0 AD_REQ_STATUS05_CNT
+			,0 AD_REQ_STATUS06_CNT
+			,0 AD_REQ_STATUS07_CNT
+			,0 AD_REQ_STATUS08_CNT
+			,0 AD_REQ_STATUS09_CNT
+		FROM TSI_PD_D PROD
+		INNER JOIN TSI_PD_M MST ON MST.V_RECORD_ID = PROD.V_RECORD_ID
+		WHERE 1=1
+		<if test="i_sUserBrand != null and i_sUserBrand != '' ">
+			AND PROD.V_BRAND_CD = #{i_sUserBrand}
+		</if>
+		AND MST.V_DEL_YN = 'N'
+		AND PROD.V_DEL_YN = 'N'
+		UNION ALL
+		SELECT 
+			0 RS000_CNT
+			,0 RS010_CNT
+			,0 RS030_CNT
+			,0 RS040_CNT
+			,DECODE(NAT.V_NATION_CD,'KO',(DECODE(NAT.V_REVIEW_STATUS,'NS020',1,0)),0) KO_NS020_CNT
+			,DECODE(NAT.V_NATION_CD,'KO',(DECODE(NAT.V_REVIEW_STATUS,'NS010',1,0)),0) KO_NS010_CNT
+			,DECODE(NAT.V_NATION_CD,'KO',(DECODE(NAT.V_REVIEW_STATUS,'NS030',1,0)),0) KO_NS030_CNT
+			,DECODE(NAT.V_NATION_CD,'KO',0,(DECODE(NAT.V_REVIEW_STATUS,'NS020',1,0))) EXT_NS020_CNT
+			,DECODE(NAT.V_NATION_CD,'KO',0,(DECODE(NAT.V_REVIEW_STATUS,'NS010',1,0))) EXT_NS010_CNT
+			,DECODE(NAT.V_NATION_CD,'KO',0,(DECODE(NAT.V_REVIEW_STATUS,'NS030',1,0))) EXT_NS030_CNT
+			,0 AD_REQ_STATUS01_CNT
+			,0 AD_REQ_STATUS02_CNT
+			,0 AD_REQ_STATUS03_CNT
+			,0 AD_REQ_STATUS04_CNT
+			,0 AD_REQ_STATUS05_CNT
+			,0 AD_REQ_STATUS06_CNT
+			,0 AD_REQ_STATUS07_CNT
+			,0 AD_REQ_STATUS08_CNT
+			,0 AD_REQ_STATUS09_CNT
+		FROM TSI_PD_D PROD
+		INNER JOIN TSI_PD_M MST ON MST.V_RECORD_ID = PROD.V_RECORD_ID
+		INNER JOIN TSI_PD_NA_L NAT ON PROD.V_RECORD_ID = NAT.V_RECORD_ID
+								AND PROD.V_PRODUCT_CD = NAT.V_PRODUCT_CD
+		WHERE 1=1
+		AND V_REVIWER_ID = #{s_userid}
+		AND MST.V_DEL_YN = 'N'
+		UNION ALL
+		SELECT 
+			0 RS000_CNT
+			,0 RS010_CNT
+			,0 RS030_CNT
+			,0 RS040_CNT
+			,0 KO_NS020_CNT 
+			,0 KO_NS010_CNT 
+			,0 KO_NS030_CNT 
+			,0 EXT_NS020_CNT
+			,0 EXT_NS010_CNT
+			,0 EXT_NS030_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS01',1,0) AD_REQ_STATUS01_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS02',1,0) AD_REQ_STATUS02_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS03',1,0) AD_REQ_STATUS03_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS04',1,0) AD_REQ_STATUS04_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS05',1,0) AD_REQ_STATUS05_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS06',1,0) AD_REQ_STATUS06_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS07',1,0) AD_REQ_STATUS07_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS08',1,0) AD_REQ_STATUS08_CNT
+			,DECODE(V_AD_REQ_STATUS_CD,'AD_REQ_STATUS09',1,0) AD_REQ_STATUS09_CNT
+		FROM US_TIMS_MGR.TSI_ADRQ_L
+		WHERE V_RA_ID =#{s_userid}
+		)
+	</select>
+	<!--  -->
+	<select id="getBookMarkList" resultType="CmMap">
+		SELECT  /* CommonDao.getBookMarkList */
+			B.*
+			,A.MENU_NM 
+			,A.SORT_SEQ
+			FROM(   
+			  SELECT  *
+					  FROM (SELECT LEVEL DEPTH,
+								   A.*,
+								   SUBSTR(A.PAR_MENU_CD,1,4) AS TOP_ID
+							  FROM (    SELECT '' AS COM_CD,
+									           A.SYS_ID,
+									           A.PAR_SYS_ID,
+									           A.MENU_CD,
+									           A.MENU_NM,
+									           A.PAR_MENU_CD,
+									           A.SORT_SEQ,
+									           A.URL,
+									           A.USE_YN,
+									           A.PAUS_YN,
+											   A.INQ_AUTH_YN,
+											   A.INS_AUTH_YN,
+											   A.XLS_AUTH_YN,
+											   A.PRT_AUTH_YN,
+											   A.ETC_BTN_1_AUTH_YN,
+											   A.ETC_BTN_2_AUTH_YN,
+											   A.ETC_BTN_3_AUTH_YN,
+											   A.MENU_DESC,
+									           A.PINF_YN,
+									           A.VDI_YN,
+									           A.IMG_URL,
+									           C.COMM_CD_NM AS SYS_NM,
+						           			   D.COMM_CD_NM AS PAR_SYS_NM
+										  FROM TZF_MENU_M A
+										  		, (SELECT * FROM TZF_MENU_M WHERE SYS_ID = 'SITIMS') B
+								  			  	, (SELECT * FROM TZF_COMMCD_D WHERE GRP_CD = 'SY002') C
+							     				, (SELECT * FROM TZF_COMMCD_D WHERE GRP_CD = 'SY002') D
+										 WHERE 1=1
+										   AND A.SYS_ID 	= 'SITIMS'
+					                       AND A.SYS_ID = B.SYS_ID(+)
+									       AND A.PAR_MENU_CD = B.MENU_CD(+)
+						     			  AND A.SYS_ID = C.COMM_CD(+)
+						     			  AND A.PAR_SYS_ID = D.COMM_CD(+)
+								 ) A
+							 START WITH A.PAR_MENU_CD IS NULL
+							CONNECT BY PRIOR A.MENU_CD = A.PAR_MENU_CD
+							ORDER SIBLINGS BY A.SYS_ID, A.SORT_SEQ ASC
+						   ) A
+					   where 1 = 1
+					    AND A.URL IS NOT NULL
+					    AND A.IMG_URL IS NOT NULL
+					    AND A.PAR_MENU_CD NOT IN (
+			                'SYAU', 'SYLO' ,'TMPL'
+			            ) 
+			        )B,
+			        TZF_MENU_M A
+			        ,TZF_ROLEMENU_L C
+        WHERE B.TOP_ID = A.MENU_CD(+)
+        AND B.MENU_CD = C.MENU_CD
+        <if test = "s_groupid != null and s_groupid !=''">
+        	AND C.ROLE_NO = #{s_groupid}
+        </if>
+        ORDER BY A.SORT_SEQ ASC
+	</select>
+	<insert id="insertBookMark" parameterType="CmMap">
+		INSERT INTO  /* CommonDao.insertBookMark */
+			TSI_BOOKMARK(
+				V_USER_ID
+				, V_MENU_ID
+				, N_SEQ_NO
+				, V_REG_DTM
+				, V_REG_USER_ID
+				, V_UPDATE_DTM
+				, V_UPDATE_USER_ID
+			)VALUES(
+				#{i_sUserId}
+				, #{i_sMenuId}
+				, #{i_iSeqNo}
+				, TO_CHAR(SYSDATE, 'yyyymmddhh24miss') 
+				, #{i_sUserId}
+				, TO_CHAR(SYSDATE, 'yyyymmddhh24miss') 
+				, #{i_sUserId}
+			)
+	</insert>
+	<delete id="deleteBookMark" parameterType="CmMap">
+		DELETE  /* CommonDao.deleteBookMark */
+			FROM TSI_BOOKMARK
+		WHERE	
+				V_USER_ID = #{i_sUserId}
+			AND
+				V_MENU_ID = #{i_sMenuId}
+	</delete>
+<!-- 	<update id="editBookmarkList" parameterType="CmMap" >
+		UPDATE 
+			TSI_BOOKMARK 
+		SET
+			N_SEQ = #{i_iSeq},
+			V_UPDATE_DTM = #{i_sUserid},
+		    V_UPDATE_USER_ID = TO_CHAR(SYSDATE, 'yyyymmddhh24miss')
+		WHERE
+				V_USER_ID = #{i_sUserid}
+			AND
+				V_MENU_ID = #{i_sMenuid}	
+	</update> -->
+	<select id="getUserBookmarkList" parameterType="CmMap" resultType="CmMap">
+				SELECT /* CommonDao.getUserBookmarkList */
+					A.V_USER_ID ,
+					A.V_MENU_ID ,
+					A.V_REG_DTM ,
+					A.V_REG_USER_ID,
+					A.N_SEQ_NO,
+					B.MENU_NM ,
+					B.URL ,
+					B.IMG_URL
+				FROM
+					TSI_BOOKMARK A
+				INNER JOIN (
+					SELECT
+						M.MENU_CD 
+						, M.MENU_NM 
+						, M.URL
+						, M.IMG_URL
+					FROM
+						TZF_MENU_M M
+					WHERE M.USE_YN = 'Y' 
+					AND  M.URL IS NOT NULL
+					AND M.MENU_CD NOT LIKE '%SYAU%' 
+					AND M.MENU_CD NOT LIKE '%SYLO%' 
+					AND M.MENU_CD NOT LIKE '%TMPL%'
+						) B ON
+					( A.V_MENU_ID = B.MENU_CD )
+				WHERE
+					A.V_USER_ID = #{i_sUserId} /**P*/
+				ORDER BY
+					A.N_SEQ_NO,
+					A.V_REG_DTM
+	</select>
+	
+	<insert id="insertMailLog" parameterType="CmMap">
+	<selectKey keyProperty="i_sMailLogId" resultType="java.lang.String" order="BEFORE">
+		SELECT	'ML' || LPAD(NVL(SUBSTR(MAX(V_MAIL_LOG_ID), 3), 0) + 1, 6, '0')
+		  FROM	TODM_MAILLOG_L
+		 WHERE	V_MAIL_LOG_ID LIKE 'ML' || '%'
+	</selectKey>
+	INSERT /* CommonDao.insertMailLog */ 
+	INTO TODM_MAILLOG_L(
+		V_MAIL_LOG_ID     
+		, V_TITLE         
+		, V_CONTENT       
+		, V_RECORD_ID     
+		, V_PRODUCT_CD    
+		, V_NATION_CD     
+		, V_DOC_CD        
+		, V_REV_USER_ID   
+		, V_STATUS_YN     
+		, V_REG_USER_ID   
+		, V_REG_DTM       
+	)VALUES( 
+		#{i_sMailLogId}
+		, #{i_sTitle}
+		, #{i_sContents}
+		, #{i_sRecordId}
+		, #{i_sProductCd}
+		, #{i_sNationCd}
+		, #{i_sDocCd}
+		, #{i_sRevUserId}
+		, 'N'	
+		, #{pRegUserId}
+		, TO_CHAR(SYSDATE, 'yyyymmddhh24miss')
+	)
+	</insert>
+	<select id="selectMailLogList" parameterType="CmMap" resultType="CmMap">
+		SELECT
+			V_MAIL_LOG_ID
+			, V_TITLE
+			, V_CONTENT
+			, V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_NATION_CD
+			, V_DOC_CD
+			, FN_SUB_CODENM('FILE_REQ',V_DOC_CD) V_DOC_NM
+			, V_REV_USER_ID
+			, V_STATUS_YN
+			, V_REG_USER_ID			
+			, TO_CHAR(TO_DATE(V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REG_DTM
+			, V_UPDATE_USER_ID
+			, TO_CHAR(TO_DATE(V_UPDATE_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_UPDATE_DTM
+		FROM TODM_MAILLOG_L
+		WHERE 1=1
+		<if test="i_sRecordId != null and i_sRecordId !=''">
+			AND V_RECORD_ID	 = #{i_sRecordId}
+		</if>
+		<if test="i_sProductCd != null and i_sProductCd !=''">
+			AND V_PRODUCT_CD = #{i_sProductCd}
+		</if>
+		<if test="i_sNationCd != null and i_sNationCd !=''">
+			AND V_NATION_CD  = #{i_sNationCd}
+		</if>
+		<if test='i_sFileReqYn == "Y"'>
+			AND V_DOC_CD IS NOT NULL
+		</if>
+		<if test="i_sDocCd != null and i_sDocCd !=''">
+			AND V_DOC_CD     = #{i_sDocCd}
+		</if>
+	</select>
+		
+	<insert id="insertMailMst" parameterType="CmMap">
+		<selectKey keyProperty="i_sMailCd" resultType="java.lang.String" order="BEFORE">
+			SELECT	'LM' || LPAD(NVL(SUBSTR(MAX(V_MAIL_CD), 3), 0) + 1, 6, '0')
+			  FROM	TSI_MAIL_M
+			 WHERE	V_MAIL_CD LIKE 'LM' || '%'
+		</selectKey>
+		INSERT /* CommonDao.insertMailMst */ 
+		INTO TSI_MAIL_M(
+			V_MAIL_CD
+			, V_TYPE_CD
+			, V_TITLE
+			, V_FROM_USER_NM
+			, V_FROM_EMAIL
+			, V_CC_EMAIL
+			, V_RECORD_ID
+			, V_REG_USERID
+			, V_REG_DTM
+		)VALUES( 
+			#{i_sMailCd}
+			, #{i_sTypeCd}
+			, #{i_sTitle}
+			, #{i_sFromUser}
+			, #{i_sFromAddr}
+			, #{i_sCCEmail}			
+			, #{i_sRecordId}
+			, #{pRegUserId}
+			, TO_CHAR(SYSDATE, 'yyyymmddhh24miss')
+		)
+	</insert>
+		
+	<insert id="insertMailRevUser" parameterType="CmMap">
+		<selectKey keyProperty="i_nSeqNo" resultType="java.lang.String" order="BEFORE">
+			SELECT	NVL(MAX(N_SEQ_NO),0) +1
+			  FROM	TSI_MAIL_D
+			 WHERE	V_MAIL_CD = #{i_sMailCd}
+		</selectKey>
+		INSERT /* CommonDao.insertMailRevUser */ 
+		INTO TSI_MAIL_D(
+			V_MAIL_CD
+			, N_SEQ_NO
+			, V_TO_EMAIL
+			, V_REG_USER_ID
+			, V_REG_DTM 
+		)VALUES( 
+			#{i_sMailCd}
+			,#{i_nSeqNo}
+			,#{i_sRevUserId}
+			, #{pRegUserId}
+			, TO_CHAR(SYSDATE, 'yyyymmddhh24miss')
+		)
+	</insert>
+		
+	<insert id="insertMailContent" parameterType="CmMap">
+		INSERT /* CommonDao.insertMailContent */ 
+		INTO TSI_MAIL_C_D(
+			V_MAIL_CD
+			, V_CONTENT
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES( 
+			#{i_sMailCd}
+			,#{i_sContents}
+			, #{pRegUserId}
+			, TO_CHAR(SYSDATE, 'yyyymmddhh24miss')
+		)
+	</insert>
+</mapper>

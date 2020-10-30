@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type="text/javascript" src="/sitims/js/util/cm_function.js"></script>
+<script type='text/javascript'>
+
+// 레이아웃 변수 설정
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage;
+var	i_iNowPageNo	= 1;
+var	i_iPageSize		= 50;
+// 레이아웃 초기화   
+$(function(){
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form', height:'50px'}
+			,{id:'grid', height:'80%',header:"목록"}
+			,{id:'page', resizable: true}
+		]
+	});
+
+// 폼 설정 - 검색조건
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		css: "formSearch--border_bottom",
+		cols:[
+			{type: "input",width:"15", gravity: false, hidden:true}
+			,{type: "datepicker", id:"i_sStDate", name:"i_sStDate", label: "시작일", labelInline: true, labelWidth: "100px", dateFormat: "%Y-%m-%d", width: "250px", gravity:false, editable: true,
+				mark: fn_dhxDispToday	}
+			,{type: "input",width:"15", gravity: false, hidden:true}
+			,{type: "datepicker", id:"i_sEnDate", name:"i_sEnDate", label: "종료일", labelInline: true, labelWidth: "100px", dateFormat: "%Y-%m-%d", width: "250px", gravity:false, editable: true,
+				mark: fn_dhxDispToday	}
+			,{type: "input" , id:"i_sSearchNm", name:"i_sSearchNm", label:"검색명", labelPosition: "left", labelWidth: "100px", width: "430px", gravity: false, icon: "dxi dxi-magnify", placeholder:"구분 or 사용자 or 파일명", required: false}
+// 			,{type: "input",width:"15", gravity: false, hidden:true}
+// 			,{type: "button" , id:"i_sSearch", name:"i_sSearch", value:"검색", size: "medium", view: "flat", color:"secondary"}
+			]
+		});
+	frmSearchCell.attach(frmSearch);
+		
+	var gridCell = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns:[
+			{ width: 100, id: "v_attach_class", align:"center"      , header: [{ text: "구분",align:"center" }], autoWidth: false  }
+			, { width: 100, id: "v_file_nm", align:"left"      , header: [{ text: "파일명",align:"center"}]  }
+			, { width: 100, id: "v_reg_user_id", align:"center"      , header: [{ text: "ID",align:"center"}], autoWidth: false  }
+			, { width: 100, id: "v_user_id", align:"center"      , header: [{ text: "사용자",align:"center"}], autoWidth: false  }
+			, { width: 100, id: "n_v_reg_dtm", align:"center"      , header: [{ text: "날짜",align:"center"}], autoWidth: false  }
+		]
+    	,autoWidth: true
+    	,headerRowHeight: 46
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	
+	gridCell.attach(grdMain);
+ 	 
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/is/hm/010/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    });
+    mainPage.initPaging();
+
+});
+
+function fn_search() {
+	var labelRequired;
+	frmSearch.forEach(function(item, index, array) {
+		
+		console.log(item.config);
+		
+		if(item.config.required && fn_isNull(item.config.value)){
+			labelRequired=item.config.label;
+			return; 
+		}		
+	});
+	if(!fn_isNull(labelRequired)){
+		alert(labelRequired + "을 입력 후 검색바랍니다.");
+		return;
+	}
+    mainPage.search(1);
+}
+
+function fn_excel() {
+	fn_excel_download("/is/hm/010/is_hm_010_list_excel.do", mainPage.postParam);
+}
+
+$(document).on('keyup','#i_sSearchNm',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+$(document).on('click','#i_sSearch',function(e){
+		fn_search();
+});
+
+</script>
+</html>

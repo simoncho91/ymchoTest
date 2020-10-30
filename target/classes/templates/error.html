@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link href="/css/error.css" rel="stylesheet" type="text/css" media="all" />
+</head>
+<body>
+    <div class="wrap">
+        <div class="content">
+            <div class="logo">
+                <span><img src="/images/signal.png"/>서비스 처리중 오류가 발생하였습니다.</span>
+                <p>잠시후 재시도하여 주십시오.<br/>문제가 지속될 경우 관리자에게 문의하여 주세요.</p>
+                <a class="ghost-button" href="javascript:history.go(-1)">이전페이지로 가기</a>
+                <div style="padding-top:40px; align:left">
+	                <p style="color:#2a2c46;text-align: left;"><strong>Date  : <td th:text="${timestamp}"/></strong></p>
+	                <p style="color:#2a2c46;text-align: left;"><strong>Path  : <td th:text="${path}"/></strong></p>
+	                <p style="color:#2a2c46;text-align: left;"><strong>Error : <td th:text="${error}"/></strong></p>
+	                <p style="color:#2a2c46;text-align: left;"><strong>Status  : <td th:text="${status}"/></strong></p>
+	                <p style="color:#2a2c46;text-align: left;"><strong>Message  : <td th:text="${message}"/></strong></p>
+	            </div>  
+            </div>
+        </div>
+        <p class="copy_right">COPYRIGHT&#169; Shinesegae I&C Ltd. 2019 ALL RIGHT RESERVED</p>
+    </div>
+</body>
+</html>

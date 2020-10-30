@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxPopLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+
+<script type='text/javascript'>
+var layoutMain, opinionForm, form;
+$(function(){
+	layoutMain = new dhx.Layout('layoutObj',{
+	     css: "dhx_layout-cell--border_top",
+	     rows :	[
+	    	 {cols : [
+					{
+						rows : [
+							{
+								id : "opinionArea",
+								header : "의견수정",
+								height : "280px",
+								html   : "<div id='form'></div>"
+							},
+							{
+								id	:"btnForm"
+							}
+						]
+					}
+				]
+	    	 }
+		]
+	});
+	
+	opinionForm  	= 	layoutMain.getCell("opinionArea");
+	layoutBtnForm   =   layoutMain.getCell("btnForm");
+	
+	//의뢰내용 폼
+	form = new dhx.Form("form", {
+		rows : [{
+			type 		: "textarea",
+			id   		: "i_sOpinion",
+			label 		: "내용입력",
+			labelInline : true,
+			labelWidth  : "70px",
+		},
+		{
+			type		: "input",
+			id			: "i_sMessageNo",
+			hidden		: true
+		}]
+	});
+	
+	var toolbar = new dhx.Toolbar(null, {
+		data : [
+			{type: "spacer"},
+			{type : "button", id : "modify_btn", value : "수정"},
+			{type : "button", id : "cancel_btn", value : "취소"}
+		]
+	});
+	
+	layoutBtnForm.attach(toolbar);
+	
+	//툴바 이벤트 바인딩
+	toolbar.events.on("Click", function(id,e){
+		switch(id){
+			case 'modify_btn' : {
+				fn_modify();
+				break;
+			}
+			case 'cancel_btn' : {
+				fn_popClose();
+				break;
+			}
+		}
+	});
+	
+	form.getItem("i_sOpinion").setValue("[(${reqVo.i_sOpinion})]");
+	form.getItem("i_sMessageNo").setValue("[(${reqVo.i_sMessageNo})]")
+});
+
+//의견수정
+function fn_modify(){
+	$.ajax({
+		url			:	"/br/pr/020/br_pr_020_opinion_modify_save.do"
+		,data		:	fn_getPostParam(form)
+		,success	:	function(data){
+			fn_s_alertMsg("의견이 수정되었습니다.",function(){
+				parent.document.location.reload();
+			});
+		}
+	});
+}
+</script>
+</html>

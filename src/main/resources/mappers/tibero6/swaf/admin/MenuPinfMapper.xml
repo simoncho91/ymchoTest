@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : MenuPinfMapper.xml
+    Description   : Menu 개인정보 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  손홍신       1.0        최초 생성
+-->
+<mapper namespace="MenuPinf">
+
+	<!--  1. 조회  -->
+    <!--  1.1. 개인정보 항목 조회  -->
+    <select id="selectPinfList"  parameterType="hashMap" resultType="hashMap">
+	    SELECT /* MenuPinf.selectPinfList */
+	           PINF_NO
+		     , PINF_NM
+		FROM TZF_PINF_M
+		ORDER BY SORT_SEQ
+	</select>
+	
+	<!--  1.2. 메뉴 개인정보  -->
+    <select id="selectMenuPinfList"  parameterType="hashMap" resultType="hashMap">
+	    SELECT /* MenuPinf.selectMenuPinfList */
+	           SYS_ID
+		     , MENU_CD
+		     , PINF_NO
+		 FROM TZF_MENUPINF_L
+		WHERE SYS_ID = #{session.SYS_ID}
+		  AND MENU_CD = #{MENU_CD}
+    </select>
+	
+
+	 <!--  2. 메뉴개인정보 등록  -->
+    <insert id="insertMenuPinf" parameterType="hashMap">
+        INSERT /* MenuPinf.insertMenuPinf */ 
+          INTO TZF_MENUPINF_L
+	         (
+	              SYS_ID
+	            , MENU_CD
+	            , PINF_NO
+	            
+	            , REG_USER_NO
+	            , REG_DTM
+	            , REG_IP
+	            
+	            , MOD_USER_NO
+	            , MOD_DTM
+	            , MOD_IP
+	        )
+	    VALUES 
+	       (
+	            #{SYS_ID}
+			  , #{MENU_CD}
+			  , #{PINF_NO}
+			  
+			  , #{session.USER_NO}
+			  , SYSDATE
+			  , #{REG_IP}
+			  
+			  , #{session.USER_NO}
+			  , SYSDATE
+			  , #{MOD_IP}
+             )
+    </insert>
+    
+    
+     <!--  3. 메뉴 개인정보 삭제  -->
+    <delete id="deleteMenuPinf" parameterType="hashMap">
+        DELETE /* MenuPinf.deleteMenuPinf */
+          FROM TZF_MENUPINF_L
+         WHERE SYS_ID = #{SYS_ID}
+           AND MENU_CD = #{MENU_CD}
+           AND PINF_NO = #{PINF_NO}
+    </delete>
+	<!--  3.1. 전체 개인정보 삭제  -->    
+    <delete id="deleteMenuPinfAll" parameterType="hashMap">
+        DELETE /* MenuPinf.deleteMenuPinfAll */
+          FROM TZF_MENUPINF_L
+         WHERE SYS_ID = #{SYS_ID}
+           AND MENU_CD = #{MENU_CD}
+    </delete>
+    
+</mapper>

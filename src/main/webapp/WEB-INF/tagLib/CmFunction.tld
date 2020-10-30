@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<taglib xmlns="http://java.sun.com/xml/ns/j2ee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd"
+    version="2.0">
+    
+    <description>common tag library</description>
+    <display-name>common tag</display-name>
+    <tlib-version>1.0</tlib-version>
+    <short-name>cfn</short-name>
+    <uri>cfn</uri>
+    
+    <function>
+        <description>yyyy.mm.dd</description>
+        <name>cmDatePatten</name>
+        <function-class>com.shinsegae_inc.sitims.common.util.CmFunction</function-class>
+        <function-signature>
+            String getPointDate(java.lang.String)
+        </function-signature>
+    </function>
+    
+    <function>
+        <description>yyyy-mm-dd</description>
+        <name>getDatePatten</name>
+        <function-class>com.shinsegae_inc.sitims.common.util.CmFunction</function-class>
+        <function-signature>
+            String getDatePatten(java.lang.String,java.lang.String)
+        </function-signature>
+    </function>
+    
+	<function>
+        <description>yyyy.mm.dd</description>
+        <name>getStrDateToString</name>
+        <function-class>com.shinsegae_inc.sitims.common.util.CmFunction</function-class>
+        <function-signature>
+            String getStrDateToString(java.lang.String, java.lang.String)
+        </function-signature>
+    </function>
+    <function>
+        <description>html 태그 삭제 \n => br 로 변경</description>
+        <name>removeHTMLChangeBr</name>
+        <function-class>com.shinsegae_inc.sitims.common.util.CmFunction</function-class>
+        <function-signature>
+            String removeHTMLChangeBrWeb(java.lang.String)
+        </function-signature>
+    </function>
+    
+    <function>
+        <description>html 태그 삭제 (br 만 남기고)</description>
+        <name>removeHTML</name>
+        <function-class>com.shinsegae_inc.sitims.common.util.CmFunction</function-class>
+        <function-signature>
+            String removeHTML(java.lang.String)
+        </function-signature>
+    </function>
+</taglib>
+

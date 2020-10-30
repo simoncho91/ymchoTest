@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : Tmpl0030Mapper.xml
+    Description   : Menu 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  손홍신       1.0        최초 생성
+-->
+<mapper namespace="Tmpl0030Mapper">
+		
+	<select id="selectParentMenuList" resultType="Map">
+		SELECT /* Tmpl0030Mapper.selectParentMenuList */
+		       *
+		  FROM (SELECT LEVEL DEPTH,
+					   A.*
+				  FROM (    SELECT '' AS COM_CD,
+						           A.SYS_ID,
+						           A.PAR_SYS_ID,
+						           A.MENU_CD,
+						           A.MENU_NM,
+						           A.PAR_MENU_CD,
+						           A.SORT_SEQ,
+						           A.URL,
+						           A.USE_YN,
+						           A.PAUS_YN,
+								   A.INQ_AUTH_YN,
+								   A.INS_AUTH_YN,
+								   A.XLS_AUTH_YN,
+								   A.PRT_AUTH_YN,
+								   A.ETC_BTN_1_AUTH_YN,
+								   A.ETC_BTN_2_AUTH_YN,
+								   A.ETC_BTN_3_AUTH_YN,
+								   A.MENU_DESC,
+						           A.PINF_YN,
+						           A.VDI_YN,
+						           B.MENU_NM PAR_MENU_NM,
+						           C.COMM_CD_NM AS SYS_NM,
+						           D.COMM_CD_NM AS PAR_SYS_NM
+							  FROM TZF_MENU_M A
+							     , (SELECT * 
+							          FROM TZF_MENU_M 
+							        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(SYS_ID)">
+							         WHERE SYS_ID     = #{SYS_ID}
+							        </if>
+							       ) B
+							     , (SELECT * FROM TZF_COMMCD_D WHERE GRP_CD = 'SY002') C
+							     , (SELECT * FROM TZF_COMMCD_D WHERE GRP_CD = 'SY002') D
+							 WHERE 1=1
+							 <!-- WHERE A.PAUS_YN 	= 'N' -->
+							<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(SYS_ID)">
+							   AND A.SYS_ID 	= #{SYS_ID}
+							</if>
+		                       AND A.SYS_ID = B.SYS_ID(+)
+						       AND A.PAR_MENU_CD = B.MENU_CD(+)
+						       AND A.SYS_ID = C.COMM_CD(+)
+						       AND A.PAR_SYS_ID = D.COMM_CD(+)
+					 ) A
+				 START WITH A.PAR_MENU_CD IS NULL
+				CONNECT BY PRIOR A.MENU_CD = A.PAR_MENU_CD
+				ORDER SIBLINGS BY A.SYS_ID, A.SORT_SEQ
+			   ) A
+		   where 1 = 1
+          <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(MENU_CD)">
+             AND A.MENU_CD LIKE '%'||TRIM(#{MENU_CD})||'%'
+          </if>
+          <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(MENU_NM)">
+             AND A.MENU_NM LIKE '%'||TRIM(#{MENU_NM})||'%'
+          </if>
+          <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(PAR_MENU_CD)">
+              AND A.PAR_MENU_CD LIKE '%'||TRIM(#{PAR_MENU_CD})||'%'
+          </if>
+          <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USE_YN)">
+              AND A.USE_YN = #{USE_YN}
+          </if>
+          AND URL IS NULL
+	</select>
+	
+	<select id="selectMenuList" resultType="Map">
+	SELECT /* Tmpl0030Mapper.selectMenuList */
+          A.SYS_ID,
+          A.PAR_SYS_ID,
+          A.MENU_CD,
+          A.MENU_NM,
+          A.PAR_MENU_CD,
+          A.SORT_SEQ,
+          A.URL,
+          A.USE_YN,
+          A.PAUS_YN,
+		   A.INQ_AUTH_YN,
+		   A.INS_AUTH_YN,
+		   A.XLS_AUTH_YN,
+		   A.PRT_AUTH_YN,
+		   A.ETC_BTN_1_AUTH_YN,
+		   A.ETC_BTN_2_AUTH_YN,
+		   A.ETC_BTN_3_AUTH_YN,
+		   A.MENU_DESC,
+          A.PINF_YN,
+          A.VDI_YN
+  FROM TZF_MENU_M A
+  WHERE 1 = 1
+  	AND A.SYS_ID = #{SYS_ID}
+  	AND A.PAR_MENU_CD = #{MENU_CD}
+	</select>
+    
+</mapper>

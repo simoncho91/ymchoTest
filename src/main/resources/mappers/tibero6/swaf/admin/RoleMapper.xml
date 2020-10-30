@@ -1,0 +1,577 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : RoleMapper.xml
+    Description   : Role 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  손홍신       1.0        최초 생성
+-->
+<mapper namespace="Role">
+	<!-- 1.권한 조회 -->
+	<select id="selectRoleList" resultType="Map">
+		SELECT /* Role.selectRoleList */
+			   A.ROLE_NO,
+		       A.ROLE_NM,
+		       A.USE_YN,
+		       A.ROLE_DESC,
+		       A.CO_CD
+		  FROM TZF_ROLE_M A
+		 WHERE 1=1
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(CO_CD)">
+		   AND A.CO_CD = #{CO_CD}
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(ROLE_NO)">
+		   AND A.ROLE_NO LIKE '%'||TRIM(#{ROLE_NO})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(ROLE_NM)">
+		   AND A.ROLE_NM LIKE '%'||TRIM(#{ROLE_NM})||'%'
+		</if>
+	</select>
+	
+	<!-- 2.메뉴 목록 -->
+	<select id="selectMenuList" resultType="Map">
+		SELECT /* Role.selectMenuList */
+		        LEVEL DEPTH,
+		        AA.*
+		  FROM
+		      (
+		     SELECT A.SYS_ID,
+		            A.PAR_SYS_ID,
+		            A.MENU_CD,
+		            A.MENU_NM,
+		            A.PAR_MENU_CD,
+		            A.SORT_SEQ,
+		            A.INQ_AUTH_YN,
+		            A.INS_AUTH_YN,
+		            A.XLS_AUTH_YN,
+		            A.PRT_AUTH_YN,
+		            A.ETC_BTN_1_AUTH_YN,
+		            A.ETC_BTN_2_AUTH_YN,
+		            A.ETC_BTN_3_AUTH_YN,
+		            A.MENU_DESC,
+		            C.COMM_CD_NM AS SYS_NM,
+		            D.COMM_CD_NM AS PAR_SYS_NM
+		       FROM TZF_MENU_M A,
+		            TZF_COMMCD_D C,
+		            TZF_COMMCD_D D
+		      WHERE A.USE_YN    	= 'Y'
+				<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(SYS_ID)">
+					AND A.SYS_ID = #{SYS_ID}
+				</if>
+		        AND A.SYS_ID      	= C.COMM_CD
+		        AND A.PAR_SYS_ID  	= D.COMM_CD
+		      ) 
+		      AA
+		  START WITH AA.PAR_MENU_CD IS NULL
+		CONNECT BY PRIOR AA.MENU_CD = AA.PAR_MENU_CD
+		  ORDER SIBLINGS BY AA.SORT_SEQ
+		
+		<!-- SELECT /* Role.selectMenuList */
+			   LEVEL DEPTH,
+	           '' AS COM_CD,
+	           A.SYS_ID,
+	           A.PAR_SYS_ID,
+	           A.MENU_CD,
+	           A.MENU_NM,
+	           A.PAR_MENU_CD,
+	           A.SORT_SEQ,
+			   A.INQ_AUTH_YN,
+			   A.INS_AUTH_YN,
+			   A.XLS_AUTH_YN,
+			   A.PRT_AUTH_YN,
+			   A.ETC_BTN_1_AUTH_YN,
+			   A.ETC_BTN_2_AUTH_YN,
+			   A.ETC_BTN_3_AUTH_YN,
+			   A.MENU_DESC,
+	           B.MENU_NM PAR_MENU_NM,
+	           C.COMM_CD_NM AS SYS_NM,
+	           D.COMM_CD_NM AS PAR_SYS_NM
+		  FROM TZF_MENU_M A, TZF_MENU_M B, TZF_COMMCD_D C, TZF_COMMCD_D D
+		 WHERE A.USE_YN = 'Y'
+	       AND A.PAR_MENU_CD = B.MENU_CD(+)
+	       <if test="SYS_ID != null and !SYS_ID.equals('all')">
+		   AND A.SYS_ID = #{SYS_ID}
+		   </if>
+	       AND A.SYS_ID = C.COMM_CD(+)
+	       AND A.PAR_SYS_ID = D.COMM_CD(+)
+		 START WITH A.PAR_MENU_CD IS NULL
+		CONNECT BY PRIOR A.MENU_CD = A.PAR_MENU_CD
+		ORDER SIBLINGS BY A.SORT_SEQ -->
+	</select>
+	
+	<!-- 3.권한별 메뉴 목록 -->
+	<select id="selectRoleMenuList" resultType="Map">
+		SELECT /* Role.selectRoleMenuList */
+			   LEVEL AS DEPTH,
+		       AA.*
+		  FROM
+		  (SELECT A.ROLE_NO,
+		          A.SYS_ID,
+		          A.MENU_CD,
+		          A.INQ_AUTH_YN,
+		          A.INS_AUTH_YN,
+		          A.XLS_AUTH_YN,
+		          A.PRT_AUTH_YN,
+		          A.ETC_BTN_1_AUTH_YN,
+		          A.ETC_BTN_2_AUTH_YN,
+		          A.ETC_BTN_3_AUTH_YN,
+		          B.PAR_MENU_CD,
+		          B.SORT_SEQ,
+		          C.MENU_NM,
+		          C.INQ_AUTH_YN AS INQ_AUTH_USE,
+		          C.INS_AUTH_YN AS INS_AUTH_USE,
+		          C.XLS_AUTH_YN AS XLS_AUTH_USE,
+		          C.PRT_AUTH_YN AS PRT_AUTH_USE,
+		          C.ETC_BTN_1_AUTH_YN AS ETC_BTN_1_AUTH_USE,
+		          C.ETC_BTN_2_AUTH_YN AS ETC_BTN_2_AUTH_USE,
+		          C.ETC_BTN_3_AUTH_YN AS ETC_BTN_3_AUTH_USE,
+		          D.COMM_CD_NM
+		     FROM TZF_ROLEMENU_L A, TZF_MENU_M B, TZF_MENU_M C, TZF_COMMCD_D D
+		    WHERE A.ROLE_NO = #{ROLE_NO}
+			<if test="SYS_ID != null and !SYS_ID.equals('all')">
+			  AND A.SYS_ID = #{SYS_ID}
+		      AND B.SYS_ID = #{SYS_ID}
+		      AND C.SYS_ID = #{SYS_ID}
+			</if>
+			  AND A.SYS_ID    = D.COMM_CD(+)
+		      AND A.MENU_CD   = B.MENU_CD
+		      AND A.MENU_CD   = C.MENU_CD
+		   ) AA
+	    START WITH AA.PAR_MENU_CD  IS NULL
+	  CONNECT BY PRIOR AA.MENU_CD = AA.PAR_MENU_CD
+	    ORDER SIBLINGS BY AA.SORT_SEQ 
+	</select>
+	
+	<!-- 4.사용자별 메뉴 목록 -->
+	<select id="selectUserMenuList" resultType="Map">
+		SELECT /* Role.selectUserMenuList */
+			   LEVEL AS DEPTH,
+		       AA.*
+		  FROM
+		  (SELECT A.USER_NO,
+		          A.SYS_ID,
+		          A.MENU_CD,
+		          A.INQ_AUTH_YN,
+		          A.INS_AUTH_YN,
+		          A.XLS_AUTH_YN,
+		          A.PRT_AUTH_YN,
+		          A.ETC_BTN_1_AUTH_YN,
+		          A.ETC_BTN_2_AUTH_YN,
+		          A.ETC_BTN_3_AUTH_YN,
+		          B.PAR_MENU_CD,
+		          B.SORT_SEQ,
+		          C.MENU_NM,
+		          C.INQ_AUTH_YN AS INQ_AUTH_USE,
+		          C.INS_AUTH_YN AS INS_AUTH_USE,
+		          C.XLS_AUTH_YN AS XLS_AUTH_USE,
+		          C.PRT_AUTH_YN AS PRT_AUTH_USE,
+		          C.ETC_BTN_1_AUTH_YN AS ETC_BTN_1_AUTH_USE,
+		          C.ETC_BTN_2_AUTH_YN AS ETC_BTN_2_AUTH_USE,
+		          C.ETC_BTN_3_AUTH_YN AS ETC_BTN_3_AUTH_USE,
+		          D.COMM_CD_NM
+		     FROM TZF_USERMENU_L A, TZF_MENU_M B, TZF_MENU_M C, TZF_COMMCD_D D
+		    WHERE A.USER_NO = #{USER_NO}
+			<if test="SYS_ID != null and !SYS_ID.equals('all')">
+			  AND A.SYS_ID = #{SYS_ID}
+		      AND B.SYS_ID = #{SYS_ID}
+		      AND C.SYS_ID = #{SYS_ID}
+			</if>
+			  AND A.SYS_ID    = D.COMM_CD(+)
+		      AND A.MENU_CD   = B.MENU_CD
+		      AND A.MENU_CD   = C.MENU_CD
+		   ) AA
+	    START WITH AA.PAR_MENU_CD  IS NULL
+	  CONNECT BY PRIOR AA.MENU_CD = AA.PAR_MENU_CD
+	    ORDER SIBLINGS BY AA.SORT_SEQ
+		<!-- SELECT /* Role.selectUserMenuList */
+			   LEVEL AS DEPTH,
+		       AA.*
+		  FROM
+		  (SELECT A.MENU_CD,
+		          A.INQ_AUTH_YN,
+		          A.INS_AUTH_YN,
+		          A.XLS_AUTH_YN,
+		          A.PRT_AUTH_YN,
+		          A.ETC_BTN_1_AUTH_YN,
+		          A.ETC_BTN_2_AUTH_YN,
+		          A.ETC_BTN_3_AUTH_YN,
+		          A.SYS_ID,
+		          B.LOGIN_ID,
+		          B.USER_NM,
+		          C.PAR_MENU_CD,
+		          C.SORT_SEQ,
+		          D.MENU_NM,
+		          D.INQ_AUTH_YN AS INQ_AUTH_USE,
+		          D.INS_AUTH_YN AS INS_AUTH_USE,
+		          D.XLS_AUTH_YN AS XLS_AUTH_USE,
+		          D.PRT_AUTH_YN AS PRT_AUTH_USE,
+		          D.ETC_BTN_1_AUTH_YN AS ETC_BTN_1_AUTH_USE,
+		          D.ETC_BTN_2_AUTH_YN AS ETC_BTN_2_AUTH_USE,
+		          D.ETC_BTN_3_AUTH_YN AS ETC_BTN_3_AUTH_USE,
+		          E.COMM_CD_NM
+		     FROM TZF_USERMENU_L A, TZF_USER_M B, TZF_MENU_M C, TZF_MENU_M D, TZF_COMMCD_D E
+		    WHERE A.USER_NO = #{USER_NO}
+		      AND A.USER_NO   = B.USER_NO
+		      AND B.CO_CD     = E.COMM_CD(+)
+		      AND A.MENU_CD   = C.MENU_CD
+		      AND A.MENU_CD   = D.MENU_CD
+			<if test="SYS_ID != null and !SYS_ID.equals('all')">
+			  AND C.SYS_ID = #{SYS_ID}
+			</if>
+       	    ) AA
+		START WITH AA.PAR_MENU_CD  IS NULL
+	  CONNECT BY PRIOR AA.MENU_CD = AA.PAR_MENU_CD
+		ORDER SIBLINGS BY AA.SORT_SEQ -->
+	</select>
+	
+	<!-- 5.권한에 속하지않는 메뉴 조회 -->
+	<select id="selectNonRoleUserList" resultType="Map">
+		SELECT /* Role.selectNonRoleUserList */
+			   A.USER_NO,
+			   A.USER_NM,
+			   A.PWD,
+			   A.PWD_ERR_CNT,
+			   A.PWD_CHG_DTM,
+			   A.TMP_PWD_YN,
+			   A.USER_DFN_NO,
+			   A.USE_YN,
+			   A.LOGIN_ID,
+			   A.CO_CD,
+			   A.LOCK_DTM
+		  FROM TZF_USER_M A
+		 WHERE 1=1
+		   AND USER_NO NOT IN (SELECT USER_NO FROM TZF_USERROLE_L WHERE ROLE_NO = #{ROLE_NO})
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(CO_CD)">
+		   AND A.CO_CD = #{CO_CD}
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(LOGIN_ID)">
+		   AND A.LOGIN_ID LIKE '%'||TRIM(#{LOGIN_ID})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_NM)">
+		   AND A.USER_NM LIKE '%'||TRIM(#{USER_NM})||'%'
+		</if>
+		 ORDER BY A.USER_NO, A.USER_NM
+	</select>
+	
+	<!-- 6.권한별 사용자 조회 -->
+	<select id="selectRoleUserList" resultType="Map">
+		SELECT /* Role.selectRoleUserList */
+			   A.USER_NO,
+		       A.ROLE_NO,
+		       B.USER_NM,
+		       B.PWD,
+		       B.PWD_ERR_CNT,
+		       B.PWD_CHG_DTM,
+		       B.TMP_PWD_YN,
+		       B.USER_DFN_NO,
+		       B.USE_YN,
+		       B.LOGIN_ID,
+		       B.CO_CD,
+		       B.LOCK_DTM
+		  FROM TZF_USERROLE_L A, TZF_USER_M B
+		 WHERE A.USER_NO = B.USER_NO
+		   AND A.ROLE_NO   = #{ROLE_NO}
+	</select>
+	
+	<!-- 7.권한그룹 저장 -->
+	<insert id="insertRole" parameterType="Map">
+		INSERT /* Role.insertRole */
+		INTO TZF_ROLE_M(
+		    ROLE_NO,
+		    ROLE_NM,
+		    USE_YN,
+		    ROLE_DESC,
+		    CO_CD,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+			#{ROLE_NO},
+		    #{ROLE_NM},
+		    #{USE_YN},
+		    #{ROLE_DESC},
+		    #{CO_CD},
+		    #{REG_USER_NO},
+		    SYSDATE,
+		    #{REG_IP}
+			)
+		
+	</insert>
+	
+	<!-- 7.권한 저장(배치) -->
+	<insert id="insertRoleBatch" parameterType="Map">
+		INSERT /* Role.insertRoleBatch */
+			ALL 
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_ROLE_M(
+		    ROLE_NO,
+		    ROLE_NM,
+		    USE_YN,
+		    ROLE_DESC,
+		    CO_CD,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{param.ROLE_NO},
+			    #{param.ROLE_NM},
+			    #{param.USE_YN},
+			    #{param.ROLE_DESC},
+			    #{param.CO_CD},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 8.권한별 메뉴 저장 -->
+	<insert id="insertRoleMenu" parameterType="Map">
+		INSERT /* Role.insertRoleMenu */
+		INTO TZF_ROLEMENU_L(
+		    ROLE_NO,
+		    SYS_ID,
+		    MENU_CD,
+		    INQ_AUTH_YN,
+		    INS_AUTH_YN,
+		    XLS_AUTH_YN,
+		    PRT_AUTH_YN,
+		    ETC_BTN_1_AUTH_YN,
+		    ETC_BTN_2_AUTH_YN,
+		    ETC_BTN_3_AUTH_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+			#{ROLE_NO},
+		    #{SYS_ID},
+		    #{MENU_CD},
+		    #{INQ_AUTH_YN},
+		    #{INS_AUTH_YN},
+		    #{XLS_AUTH_YN},
+		    #{PRT_AUTH_YN},
+		    #{ETC_BTN_1_AUTH_YN},
+		    #{ETC_BTN_2_AUTH_YN},
+		    #{ETC_BTN_3_AUTH_YN},
+		    #{REG_USER_NO},
+		    SYSDATE,
+		    #{REG_IP}
+			)
+	</insert>
+	
+	<!-- 8.권한별 메뉴 저장(배치) -->
+	<insert id="insertRoleMenuBatch" parameterType="Map">
+		INSERT /* Role.insertRoleMenuBatch */
+			ALL 
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_ROLEMENU_L(
+		    ROLE_NO,
+		    SYS_ID,
+		    MENU_CD,
+		    INQ_AUTH_YN,
+		    INS_AUTH_YN,
+		    XLS_AUTH_YN,
+		    PRT_AUTH_YN,
+		    ETC_BTN_1_AUTH_YN,
+		    ETC_BTN_2_AUTH_YN,
+		    ETC_BTN_3_AUTH_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{param.ROLE_NO},
+			    #{param.SYS_ID},
+			    #{param.MENU_CD},
+			    #{param.INQ_AUTH_YN},
+			    #{param.INS_AUTH_YN},
+			    #{param.XLS_AUTH_YN},
+			    #{param.PRT_AUTH_YN},
+			    #{param.ETC_BTN_1_AUTH_YN},
+			    #{param.ETC_BTN_2_AUTH_YN},
+			    #{param.ETC_BTN_3_AUTH_YN},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 9.사용자별 메뉴 저장 -->
+	<insert id="insertUserMenu" parameterType="Map">
+		INSERT /* Role.insertUserMenu */
+		INTO TZF_USERMENU_L(
+		    USER_NO,
+		    SYS_ID,
+		    MENU_CD,
+		    INQ_AUTH_YN,
+		    INS_AUTH_YN,
+		    XLS_AUTH_YN,
+		    PRT_AUTH_YN,
+		    ETC_BTN_1_AUTH_YN,
+		    ETC_BTN_2_AUTH_YN,
+		    ETC_BTN_3_AUTH_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+			#{USER_NO},
+		    #{SYS_ID},
+		    #{MENU_CD},
+		    #{INQ_AUTH_YN},
+		    #{INS_AUTH_YN},
+		    #{XLS_AUTH_YN},
+		    #{PRT_AUTH_YN},
+		    #{ETC_BTN_1_AUTH_YN},
+		    #{ETC_BTN_2_AUTH_YN},
+		    #{ETC_BTN_3_AUTH_YN},
+		    #{REG_USER_NO},
+		    SYSDATE,
+		    #{REG_IP}
+			)
+	</insert>
+	
+	<!-- 9.사용자별 메뉴 저장(배치) -->
+	<insert id="insertUserMenuBatch" parameterType="Map">
+		INSERT /* Role.insertUserMenuBatch */
+			ALL 
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_USERMENU_L(
+		    USER_NO,
+		    SYS_ID,
+		    MENU_CD,
+		    INQ_AUTH_YN,
+		    INS_AUTH_YN,
+		    XLS_AUTH_YN,
+		    PRT_AUTH_YN,
+		    ETC_BTN_1_AUTH_YN,
+		    ETC_BTN_2_AUTH_YN,
+		    ETC_BTN_3_AUTH_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{param.USER_NO},
+			    #{param.SYS_ID},
+			    #{param.MENU_CD},
+			    #{param.INQ_AUTH_YN},
+			    #{param.INS_AUTH_YN},
+			    #{param.XLS_AUTH_YN},
+			    #{param.PRT_AUTH_YN},
+			    #{param.ETC_BTN_1_AUTH_YN},
+			    #{param.ETC_BTN_2_AUTH_YN},
+			    #{param.ETC_BTN_3_AUTH_YN},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 10.권한 수정 -->
+	<update id="updateRole" parameterType="Map">
+		UPDATE /* Role.updateRole */
+			TZF_ROLE_M SET 
+		   	ROLE_NM   	= #{ROLE_NM},
+			USE_YN 		= #{USE_YN},
+			ROLE_DESC   = #{ROLE_DESC},
+			CO_CD      	= #{CO_CD},
+			MOD_USER_NO      = #{MOD_USER_NO},
+			MOD_DTM     = SYSDATE,
+			MOD_IP      = #{MOD_IP}
+		WHERE ROLE_NO   = #{ROLE_NO}
+	</update>
+	
+	<!-- 10.권한별 메뉴 수정 -->
+	<update id="updateRoleMenu" parameterType="Map">
+		UPDATE /* Role.updateRoleMenu */
+			TZF_ROLEMENU_L SET 
+		   	INQ_AUTH_YN 		= #{INQ_AUTH_YN},
+			INS_AUTH_YN 		= #{INS_AUTH_YN},
+			XLS_AUTH_YN 		= #{XLS_AUTH_YN},
+			PRT_AUTH_YN 		= #{PRT_AUTH_YN},
+			ETC_BTN_1_AUTH_YN 	= #{ETC_BTN_1_AUTH_YN},
+			ETC_BTN_2_AUTH_YN 	= #{ETC_BTN_2_AUTH_YN},
+			ETC_BTN_3_AUTH_YN 	= #{ETC_BTN_3_AUTH_YN},
+			MOD_USER_NO      		= #{MOD_USER_NO},
+			MOD_DTM     		= SYSDATE,
+			MOD_IP      		= #{MOD_IP}
+		WHERE ROLE_NO   		= #{ROLE_NO}
+		  AND SYS_ID    		= #{SYS_ID}
+		  AND MENU_CD   		= #{MENU_CD}
+	</update>
+	
+	<!-- 11.사용자별 메뉴 수정 -->
+	<update id="updateUserMenu" parameterType="Map">
+		UPDATE /* Role.updateUserMenu */
+			TZF_USERMENU_L SET 
+		   	INQ_AUTH_YN 		= #{INQ_AUTH_YN},
+			INS_AUTH_YN 		= #{INS_AUTH_YN},
+			XLS_AUTH_YN 		= #{XLS_AUTH_YN},
+			PRT_AUTH_YN 		= #{PRT_AUTH_YN},
+			ETC_BTN_1_AUTH_YN 	= #{ETC_BTN_1_AUTH_YN},
+			ETC_BTN_2_AUTH_YN 	= #{ETC_BTN_2_AUTH_YN},
+			ETC_BTN_3_AUTH_YN 	= #{ETC_BTN_3_AUTH_YN},
+			MOD_USER_NO      		= #{MOD_USER_NO},
+			MOD_DTM     		= SYSDATE,
+			MOD_IP      		= #{MOD_IP}
+		WHERE USER_NO   		= #{USER_NO}
+		  AND SYS_ID    		= #{SYS_ID}
+		  AND MENU_CD   		= #{MENU_CD}
+	</update>
+	
+	<!-- 12.권한 삭제 -->
+	<delete id="deleteRole" parameterType="Map">
+		DELETE /* Role.deleteRole */
+		  FROM TZF_ROLE_M 
+		 WHERE ROLE_NO = #{ROLE_NO}
+	</delete>
+	
+	<!-- 12.권한 삭제(배치) -->
+	<delete id="deleteRoleBatch" parameterType="Map">
+		DELETE /* Role.deleteRoleBatch */
+		  FROM TZF_ROLE_M 
+		 WHERE ROLE_NO IN
+		<foreach item="param" collection="list" open="(" separator="," close=")">
+			#{param.ROLE_NO}
+		</foreach>
+	</delete>
+	
+	<!-- 13.권한별 메뉴 삭제 -->
+	<delete id="deleteRoleMenu" parameterType="Map">
+		DELETE /* Role.deleteRole */
+		  FROM TZF_ROLEMENU_L 
+		 WHERE ROLE_NO	= #{ROLE_NO}
+		   AND SYS_ID   = #{SYS_ID}
+		   AND MENU_CD  = #{MENU_CD}
+	</delete>
+	
+	<!-- 14.사용자별 메뉴 삭제 -->
+	<delete id="deleteUserMenu" parameterType="Map">
+		DELETE /* Role.deleteUserMenu */
+		  FROM TZF_USERMENU_L 
+		 WHERE USER_NO	= #{USER_NO}
+		   AND SYS_ID   = #{SYS_ID}
+		   AND MENU_CD  = #{MENU_CD}
+	</delete>
+	
+	<!-- 15.권한별 사용자 삭제 -->
+	<delete id="deleteRoleUser" parameterType="Map">
+		DELETE /* Role.deleteRoleUser */
+		  FROM TZF_USERROLE_L 
+		 WHERE USER_NO = #{USER_NO}
+		   AND ROLE_NO = #{ROLE_NO}
+	</delete>
+	
+</mapper>

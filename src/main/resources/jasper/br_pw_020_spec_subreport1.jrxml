@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.14.0.final using JasperReports Library version 6.14.0-2ab0d8625be255bf609c78e1181801213e51db8f  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="pif_spec_subreport1" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="76c4f0a6-248f-4dc7-b96d-444254bcdddf">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="table">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_CH" mode="Opaque" backcolor="#EEEEEE">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<subDataset name="Table Dataset 1" uuid="b97a3ca0-a008-4952-bb44-3dbe46c74a0c">
+		<field name="v_rownum" class="java.lang.String"/>
+		<field name="v_spec_div_nm" class="java.lang.String"/>
+		<field name="v_method" class="java.lang.String"/>
+		<field name="v_equipment" class="java.lang.String"/>
+		<field name="v_specification" class="java.lang.String"/>
+		<field name="v_unit" class="java.lang.String"/>
+		<field name="v_remark" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="JasperCustomSubReportDatasource" class="net.sf.jasperreports.engine.JRDataSource"/>
+	<title>
+		<band height="79" splitType="Stretch">
+			<componentElement>
+				<reportElement key="table" style="table" x="0" y="0" width="511" height="42" uuid="a3908ab7-c355-49d2-8efb-ff43622a0dca"/>
+				<c:table xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="Table Dataset 1" uuid="206ecd55-7ccc-40a1-9de1-bc845c945859">
+						<dataSourceExpression><![CDATA[$P{JasperCustomSubReportDatasource}]]></dataSourceExpression>
+					</datasetRun>
+					<c:column width="74" uuid="68b6ecf4-cd8a-4874-84ec-be7f85b03018">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<c:columnHeader style="table_CH" height="19" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="74" height="19" uuid="12f07daa-e167-4283-8044-168256a40e09"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font isBold="true"/>
+								</textElement>
+								<text><![CDATA[Test item
+시험항목]]></text>
+							</staticText>
+						</c:columnHeader>
+						<c:detailCell style="table_TD" height="37" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="74" height="37" uuid="7e2a39b6-60fd-4514-a445-48aa285b97eb"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{v_spec_div_nm}]]></textFieldExpression>
+							</textField>
+						</c:detailCell>
+					</c:column>
+					<c:column width="86" uuid="4ac4ab0a-d7b6-4701-ba70-3809faa5a792">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+						<c:columnHeader style="table_CH" height="19" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="86" height="19" uuid="ad6413fa-3fe7-49f6-b67a-e042b221d6b1"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font isBold="true"/>
+								</textElement>
+								<text><![CDATA[Test procedure
+시험법]]></text>
+							</staticText>
+						</c:columnHeader>
+						<c:detailCell style="table_TD" height="37" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="86" height="37" uuid="9a975808-24d1-4de4-bdfc-9fced6ee2f6b"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{v_method}]]></textFieldExpression>
+							</textField>
+						</c:detailCell>
+					</c:column>
+					<c:column width="90" uuid="9b488c5b-e804-4975-8dd9-49fb7659fdb7">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column3"/>
+						<c:columnHeader style="table_CH" height="19" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="90" height="19" uuid="f2dafa58-ff49-450b-994b-ec0418560a83"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font isBold="true"/>
+								</textElement>
+								<text><![CDATA[Equipment
+시험기기]]></text>
+							</staticText>
+						</c:columnHeader>
+						<c:detailCell style="table_TD" height="37" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="90" height="37" uuid="df65c9bf-9864-4360-95db-ca1c99511577"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{v_equipment}]]></textFieldExpression>
+							</textField>
+						</c:detailCell>
+					</c:column>
+					<c:column width="106" uuid="042b26f1-0c71-4def-9f5c-70053388a76f">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column4"/>
+						<c:columnHeader style="table_CH" height="19" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="106" height="19" uuid="479e32b9-9db5-4285-bfc8-c3e5e0369324"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font isBold="true"/>
+								</textElement>
+								<text><![CDATA[Requirement
+시험규격]]></text>
+							</staticText>
+						</c:columnHeader>
+						<c:detailCell style="table_TD" height="37" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="106" height="37" uuid="b3f62802-d45c-4531-b9ce-a7c08230e318"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{v_specification}]]></textFieldExpression>
+							</textField>
+						</c:detailCell>
+					</c:column>
+					<c:column width="70" uuid="705b4c53-d6b7-410e-86eb-dd00425760fa">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column5"/>
+						<c:columnHeader style="table_CH" height="19" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="70" height="19" uuid="d96d02c8-4949-4bda-9efa-0a30d86312f9"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font isBold="true"/>
+								</textElement>
+								<text><![CDATA[Unit
+단위]]></text>
+							</staticText>
+						</c:columnHeader>
+						<c:detailCell style="table_TD" height="37" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="70" height="37" uuid="19d5d7cc-f38a-4716-8774-d5395027bd71"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{v_unit}]]></textFieldExpression>
+							</textField>
+						</c:detailCell>
+					</c:column>
+					<c:column width="79" uuid="185f0f80-9492-4a12-aaab-2f330464bd54">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column6"/>
+						<c:columnHeader style="table_CH" height="19" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="79" height="19" uuid="35fc4abd-f1b2-4779-b30f-e55533167f1d"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font isBold="true"/>
+								</textElement>
+								<text><![CDATA[Reference
+참고자료]]></text>
+							</staticText>
+						</c:columnHeader>
+						<c:detailCell style="table_TD" height="37">
+							<textField>
+								<reportElement x="0" y="0" width="79" height="37" uuid="0fa1acb3-3ac1-4e6d-b640-4ed4cb9d9a6a"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{v_remark}]]></textFieldExpression>
+							</textField>
+						</c:detailCell>
+					</c:column>
+				</c:table>
+			</componentElement>
+		</band>
+	</title>
+</jasperReport>

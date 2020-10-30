@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+                        <div th:fragment="role_title" class="role_title">
+					       <!-- <img src="/images/dhtmlx/fw_title.gif" alt="titleicon" /> -->
+					       
+						   <th:block th:if="${programInfo.get('TITLE')} != null">
+					           <span id="title" th:text="${programInfo.TITLE}"></span>
+						   </th:block> 
+
+						   <th:block th:if="${programInfo.get('MENU_DESC') != null && not #strings.isEmpty(programInfo.MENU_DESC)}">
+					           :: <span id="menu_desc" style="color:blue" th:text="${programInfo.MENU_DESC}"></span> 
+						   </th:block>
+					    </div>
+					    
+                        <div th:fragment="role_btn_area" class="role_btn_area">
+                           <button th:if="${btnInfo.get('INQ_AUTH_YN') != null && btnInfo.INQ_AUTH_YN.equals('1')}"       class="button-default pure-button" type="button" id="btnSearch" onclick="fn_search();">조회</button>
+                           <button th:if="${btnInfo.get('INS_AUTH_YN') != null && btnInfo.INS_AUTH_YN.equals('1')}"       class="button-default pure-button" type="button" id="btnSave"   onclick="fn_save();">저장</button>
+                           <button th:if="${btnInfo.get('XLS_AUTH_YN') != null && btnInfo.XLS_AUTH_YN.equals('1')}"       class="button-default pure-button" type="button" id="btnExcel"  onclick="fn_excel();">엑셀</button>
+                           <button th:if="${btnInfo.get('PRT_AUTH_YN') != null && btnInfo.PRT_AUTH_YN.equals('1')}"       class="button-default pure-button" type="button" id="btnPrint"  onclick="fn_print();">인쇄</button>
+                           <button th:if="${btnInfo.get('ETC_BTN_1_AUTH_YN') != null && btnInfo.ETC_BTN_1_AUTH_YN.equals('1')}" class="button-default pure-button" type="button" id="btnEtc1"   onclick="fn_etc1();">기타1</button>
+                           <button th:if="${btnInfo.get('ETC_BTN_2_AUTH_YN') != null && btnInfo.ETC_BTN_2_AUTH_YN.equals('1')}" class="button-default pure-button" type="button" id="btnEtc2"   onclick="fn_etc2();">기타2</button>
+                           <button th:if="${btnInfo.get('ETC_BTN_3_AUTH_YN') != null && btnInfo.ETC_BTN_3_AUTH_YN.equals('1')}" class="button-default pure-button" type="button" id="btnEtc3"   onclick="fn_etc3();">기타3</button>
+                        </div>
+</html>

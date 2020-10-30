@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript'>
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage,popup;
+var chkRowId=[];
+$(function(){
+	var groupId = '[(${reqVo.s_groupid})]';
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form'}
+// 			,{id:'toolbar', resizable: true}
+			,{id:'grid',height:'85%', resizable: true,header:"목록"}
+			,{id:'page', resizable: true}
+		]
+	});
+	var statusVal = [{value:'' , content:"선택"}];
+    switch('[(${reqVo.i_sSearchStatus})]'){
+	    case 'product' : 
+	    	var postParam = new Object();
+	    	 postParam.grpcd = "dsDocId:DOC_STATUS:Y:S";
+
+	    	 fn_s_ajaxGetDsForCombo({ 
+	    		 postParam : postParam
+	    	   , async:false
+	    	   , success : 
+	    	     function(responseData) { 
+	    		   	statusVal = responseData.dsDocId.options;
+	    		}
+	    	 });
+	    break;
+	    case '' : 
+	    	statusVal =[
+	    	{value:'' , content:"선택"}]
+	    break;
+	    case 'advertise' : 
+	    	statusVal =[
+	    	{value:'' , content:"선택"}
+			,{value:'N' , content:"검토중"}
+			,{value:'Y' , content:"검토완료"}]
+	    break;
+	}
+
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		//css: "formSearch--border_bottom",
+		rows:[
+			{cols:[
+				{ type:"input" , name:"i_sSearchStatusInput", id:"i_sSearchStatusInput", width: "500",label:"검색어" ,labelPosition: "left", labelWidth: "100", gravity: false, placeholder: "한글 제품명 OR 영문 제품명 OR 중문 제품명 OR 제품코드",required: false},
+				{ type:"select" , name:"i_sSearchStatus", id:"i_sSearchStatus",width: "300", gravity: false,label:"진행상황" ,labelPosition: "left", labelWidth: "100",value:'[(${reqVo.i_sSearchStatus})]'
+					,options:[
+						{value:'' , content:"선택"}
+						,{value:'product' , content:"진행현황"}
+						,{value:'advertise' , content:"문안"}
+					]},
+				{ type:"select" , name:"i_sSearchStatusVal", id:"i_sSearchStatusVal",width: "200", gravity: false,label:"" ,labelPosition: "left", labelWidth: "0",value:'[(${reqVo.i_sSearchStatusVal})]'
+						,options:statusVal}
+			]},
+			
+		]
+	});
+	frmSearchCell.attach(frmSearch);
+	frmSearch.events.on("Change",function(name, new_value){
+	    if(name=='i_sSearchStatus'){
+		    var arr=[{value:'' , content:"선택"}];
+		    switch(new_value){
+			    case 'product' : 
+			    	var postParam = new Object();
+			    	 postParam.grpcd = "dsDocId:DOC_STATUS:Y:S";
+
+			    	 fn_s_ajaxGetDsForCombo({ 
+			    		 postParam : postParam
+			    	   , async:false
+			    	   , success : 
+			    	     function(responseData) { 
+			    		   	console.log(responseData);
+			    			arr = responseData.dsDocId.options;
+			    		}
+			    	 });
+			    break;
+			    case 'advertise' : 
+			    	arr =[
+			    	{value:'' , content:"선택"}
+					,{value:'N' , content:"검토중"}
+					,{value:'Y' , content:"검토완료"}]
+			    break;
+			    case '' : 
+			    	arr =[
+			    	{value:'' , content:"선택"}]
+			    break;
+		    }
+		    frmSearch.getItem('i_sSearchStatusVal').config.options=arr;
+		    frmSearch.getItem('i_sSearchStatusVal').paint();
+		    frmSearch.getItem('i_sSearchStatusVal').clear();
+	    }
+	});
+	
+	var gridCols=[];
+	if(groupId.indexOf('ADMIN')>-1 || groupId.indexOf('RA')>-1){
+		gridCols.push({ width: 10, id: "check", header: [{text: "선택", align:"center"}],htmlEnable: true, align:"center"
+		    	, template: function (text, row, col) {
+		    		if(fn_isNull(row)) return "";
+	        		var chkYn = chkRowId.includes(row.id)?'checked':'';
+		        	return "<input class=\"custom_checkbox\" name=\"chk_"+row.id+"\" id=\"chk_"+row.id+"\" onclick=\"return false;\" type=\"checkbox\" "+chkYn+"></input>";
+				}
+			});
+	}
+	gridCols.push({ width: 80, id: "v_record_id"      , header: [{ text: "문서코드"}],hidden:true });
+	gridCols.push({ width: 120, id: "v_product_cd"	, header: [{ text: "제품코드" ,align:"center"}], align:"center" , autoWidth: false, mark: fn_dhxLinkCss});
+	gridCols.push({ width: 160, id: "v_brand_nm"      , header: [{ text: "브랜드" ,align:"center" }], align:"center" , autoWidth: false});
+	gridCols.push({ width: 300, id: "v_product_nm_ko"      , header: [{ text: "한글 제품명" ,align:"center" }], align:"left", hidden:true});
+	gridCols.push({ width: 300, id: "v_product_nm_fast"      , header: [{ text: "한글 제품명" ,align:"center" }], align:"left", autoWidth: false });
+	gridCols.push({ width: 300, id: "v_product_nm_en"      , header: [{ text: "영문 제품명" ,align:"center" }], align:"left", autoWidth: false });
+	gridCols.push({ width: 100, id: "v_bm_nm"      , header: [{ text: "제품 담당자",align:"center"  }], align:"center" , autoWidth: false});
+	gridCols.push({ width: 160, id: "v_receip_status_nm"      , header: [{ text: "진행현황" ,align:"center" }], align:"center" , autoWidth: false});
+	gridCols.push({ width: 100, id: "v_ck_advertise_yn_nm"      , header: [{ text: "문안" ,align:"center" }], align:"center" });
+	gridCols.push({ width: 100, id: "v_reviwers_nm"      , header: [{ text: "RA 담당자" ,align:"center" }], align:"center" });
+	gridCols.push({ width: 100, id: "v_reg_dtm"      , header: [{ text: "등록일",align:"center"  }], align:"center" , autoWidth: false});
+	
+	var gridCell = layoutMain.getCell('grid');    
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns: gridCols
+    	,headerRowHeight: 46
+    	,autoWidth: true
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	gridCell.attach(grdMain);
+
+	grdMain.events.on("CellClick", fn_view2);
+	grdMain.events.on("CellDblClick", fn_view);
+	
+	popup = new dhx.Popup();
+    grdMain.events.on("CellMouseOver", function(row,column,e){
+		if ('v_reviwers_nm' == column.id){
+			fn_review(row,e);
+		} else {
+			popup.hide();
+		}
+    });
+
+
+// 	 var gridMainToolbar = new dhx.Toolbar(null,{
+// 		data:[
+// 			{type: "spacer"},
+// 		 	{type:"button",value:"등록",id:'btnAdd'} //,icon:"dxi-plus"
+// 	 	]
+// 	 });
+// 	 layoutMain.getCell('toolbar').attach(gridMainToolbar);
+    
+//     gridMainToolbar.events.on("Click", function(id){
+//     	if(id=='btnAdd'){
+//     		window.location.href='/br/pr/010/br_pr_010_reg.do?i_sActionFlag=R';
+//     	}
+//     });
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/br/pr/010/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    });
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	frmSearch.getItem('i_sSearchStatusInput').setValue(param.i_sSearchStatusInput);
+    	frmSearch.getItem('i_sSearchStatus').setValue(param.i_sSearchStatus);
+    	frmSearch.getItem('i_sSearchStatusVal').setValue(param.i_sSearchStatusVal);
+    }
+
+});
+function fn_chkClick(id,gubun){		
+	if(chkRowId.includes(id)){
+		chkRowId.pop(id);
+		$('#chk_'+id).prop('checked',false);
+	}else{
+		chkRowId.push(id);
+		$('#chk_'+id).prop('checked',true);
+	}
+}
+function fn_view(row,col,e) {
+	if(col.id =='check') return;
+	var data = grdMain.data.getItem(row.id);
+	var recordId = data.v_record_id;
+	if(fn_isNull(recordId))return;
+	var url = '/br/pr/010/br_pr_010_view.do?i_sRecordId='+recordId;
+	if(row.v_receip_status_nm == 'BM 허가 요청') url+='&i_sProductCd='+data.v_product_cd;
+	window.location.href=url;
+}
+function fn_view2(row,col,e) {
+	if (col.id == 'v_product_cd') fn_view(row,col,e)
+	else{fn_chkClick(row.id,'cell')}
+}
+function fn_etc3(){
+	fn_pop({url:'/cm/pop/cm_user_list_pop.do?i_sCmFunction=setUserPopUpData&i_sInput=',title:'제품담당자',width:'700',height:'500'});
+	//fn_pop({url:'/br/pr/010/br_pr_010_modify_pop.do?i_sProductCd='+product_id+'&i_sRecordId='+record_id ,title:'제품정보 수정',width:'1000',height:'400'});
+}
+
+function setUserPopUpData(data){
+	fn_popClose();
+	var frm = $('<form method="post"></form>');
+	frm.append('<input type="hidden" name="i_sUserId" value="'+data.v_user_no+'"></input>');
+	chkRowId.forEach(function(obj){
+		var dcGrid = dcGrdMain.getItem(obj);
+		frm.append('<input type="hidden" name="i_arrRecordId" value="'+dcGrid.v_record_id+'"></input>');
+	});
+	var postParam = frm.serialize();
+	fn_s_saveMessage("제품담당자 변경","제품 담당자("+data.v_user_nm+")를 변경하시겠습니까?","/br/pr/010/updateBrPr010BmId.do",postParam
+		,function(){
+			//location.href="/br/pw/020/br_pw_020_t2_document_view.do";
+			fn_etc1();
+		}
+		,function(){
+		}
+	);			
+}
+//기타2 : 신규 페이지 이동
+function fn_etc2(){
+	window.location.href='/br/pr/010/br_pr_010_reg.do?i_sActionFlag=R';	
+}
+
+function fn_excel() {
+	fn_excel_download("/br/pr/010/br_pr_010_list_excel.do", mainPage.postParam);
+}
+function fn_search() {
+    mainPage.search();
+}
+
+$(document).on('keyup','#i_sSearchStatusInput',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+function fn_review(row,e) {
+	popup.hide();
+	fn_s_ajaxSaveForm({
+		 url       : "/br/pw/020/getNationReviewList.do"
+		,postParam : {i_sRecordId : row.v_record_id , i_sProductCd : row.v_product_cd}
+		,success   : function(res){
+			if(res.result.data) {
+				arrHtml = [];
+				arrHtml.push('<table class="sty_02" style="width: 300px;">');
+				arrHtml.push('	<colgroup>');
+				arrHtml.push('		<col width="150px">');
+				arrHtml.push('		<col width="150px">');
+				arrHtml.push('	</colgroup>');
+				arrHtml.push('	<tbody>');
+				arrHtml.push('	<tr>');
+				arrHtml.push('		<th>국가</th>');
+				arrHtml.push('		<th>RA 담당자</th>');
+				arrHtml.push('	</tr>');
+
+				res.result.data.forEach(function(item) {
+						arrHtml.push('	<tr>');
+						arrHtml.push('		<td class="ta_c">'+item.v_nation_nm+'</td>');
+						arrHtml.push('		<td class="ta_c">'+item.v_reviwer_nm+'</td>');
+						arrHtml.push('	</tr>');
+				});
+
+				arrHtml.push('</table>');
+
+				popup.attachHTML(arrHtml.join(""));
+				popup.show(e.target,{
+				//	centering: true,
+					mode: "left"
+				//	indent: 10
+				});
+			}
+		}
+	});
+}
+
+</script>
+</html>

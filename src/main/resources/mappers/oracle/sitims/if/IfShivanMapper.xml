@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_BrPr020Mapper.xml
+    Description   : 문안검토목록 IF
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.11  ishift       1.0        최초 생성
+-->
+<mapper namespace="IfShivanMapper">
+	<insert id="insertIFSI016" parameterType = "CmMap">
+		<selectKey keyProperty="i_sSeqNo" resultType="java.lang.String" order="BEFORE">
+			SELECT	NVL(MAX(SEQNO), 0) + 1 FROM	IFSI016
+			WHERE IFID = 'IFSI016' AND ERDAT = #{i_sErDat} AND ERSEQ = '1'	
+		</selectKey>
+		INSERT /* IfShivanMapper.insertIFSI016 */
+		INTO IFSI016
+		(
+			IFID
+			, ERDAT
+			, ERSEQ
+			, SEQNO
+			, MATNR
+			, ZINSP
+		)VALUES(
+			'IFSI016'
+			,#{i_sErDat}
+			,'1'
+			,#{i_sSeqNo}
+			,#{i_sProductCd}
+			,'X'
+		)
+	</insert>
+	<insert id="insertIFSYNC" parameterType = "CmMap">
+		INSERT /* IfShivanMapper.insertIFSYNC */
+		INTO IFSYNC(
+			IFID
+			, ERDAT
+			, ERSEQ
+			, ERZET
+			, SUBCNT
+			, CHKCL
+			, CHKSM
+			, PFLAG
+			, PMAKE
+		)VALUES(
+			'IFSI016'
+			,#{i_sErDat}
+			,'1'
+			,TO_CHAR(SYSDATE,'HH24MISS')
+			,'1'
+			,NULL
+			,NULL
+			,0
+			,'S'
+		)
+	</insert>
+</mapper>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!-- 
+        defaultExecutorType 디폴트 실행자(executor) 설정. 
+            SIMPLE 실행자는 특별히 하는 것이 없다. 
+            REUSE 실행자는 PreparedStatement 를 재사용한다. 
+            BATCH실행자는 구문을 재사용하고 수정을 배치처리한다.
+     -->
+    <settings>
+        <setting name="cacheEnabled" value="true" />               <!-- 캐시 사용 설정. default: true -->
+        <setting name="lazyLoadingEnabled" value="true" />         <!-- lazy loading 설정. default: true -->
+        <setting name="multipleResultSetsEnabled" value="false" /> <!-- 하나의 statement에서 다수 ResultSet 허락여부. default: true -->
+        <setting name="defaultExecutorType" value="REUSE" />      <!-- 기본 executor지정. default: SIMPLE, 이 설정으로 batch 처리가 가능하다. -->
+        <setting name="jdbcTypeForNull" value="VARCHAR"/>          <!-- null 값에 대한 JDBC 타입을 지정 -->
+        <setting name="callSettersOnNulls" value="true"/>          <!-- Map사용할 때 리턴값이 null이어도 컬럼 누락되지 않도록. default: false  -->
+        <setting name="defaultStatementTimeout" value="600" />
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+    </settings>
+
+    <typeAliases>
+        <typeAlias type="com.shinsegae_inc.core.mybatis.UpperKeyMap" alias="upperKeyMap" />
+        <typeAlias type="com.shinsegae_inc.sitims.common.CmMap" alias="CmMap"/>
+    </typeAliases>
+
+    <typeHandlers>
+        <typeHandler handler="org.apache.ibatis.type.BlobTypeHandler" javaType="java.lang.Object" jdbcType="BLOB"/>
+        <typeHandler handler="org.apache.ibatis.type.ClobTypeHandler" javaType="java.lang.Object" jdbcType="CLOB"/>
+        <typeHandler handler="com.shinsegae_inc.core.typeHandler.PostgresqlTypeHandler" javaType="java.lang.Object" jdbcType="NULL"/>
+        <typeHandler handler="com.shinsegae_inc.core.typeHandler.PostgresqlTypeHandler" javaType="java.lang.Object" jdbcType="INTEGER"/>
+    </typeHandlers>
+    
+    <plugins>
+        <plugin interceptor="com.shinsegae_inc.core.mybatis.MybatisExecutorInterceptor"/>
+        <plugin interceptor="com.shinsegae_inc.core.mybatis.MybatisStatementInterceptor"/>
+        <plugin interceptor="com.shinsegae_inc.core.mybatis.MybatisResultSetInterceptor">
+            <property name="maxRecordCnt" value="30000"/>
+        </plugin>
+    </plugins>
+    
+</configuration>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.14.0.final using JasperReports Library version 6.14.0-2ab0d8625be255bf609c78e1181801213e51db8f  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="pif_claim_support_subreport2" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="88b8d644-5752-479c-bcbd-5f425e9a3efe">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="table">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TH" mode="Opaque" backcolor="#EEEEEE">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="TableHeader" mode="Opaque" backcolor="#EEEEEE"/>
+	<subDataset name="TableData" uuid="b24016d8-85b6-4b3f-bb01-69168143ab09">
+		<field name="v_claim_txt" class="java.lang.String"/>
+		<field name="v_claim_support" class="java.lang.String"/>
+		<field name="v_claim_reportno" class="java.lang.String"/>
+	</subDataset>
+	<parameter name="JasperCustomSubReportDatasource" class="net.sf.jasperreports.engine.JRDataSource"/>
+	<title>
+		<band height="79" splitType="Stretch">
+			<componentElement>
+				<reportElement key="table" style="table" x="0" y="0" width="511" height="79" uuid="0e61d478-c09f-405e-8046-acc946ab003c"/>
+				<c:table xmlns:c="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="TableData" uuid="7b79a896-1902-4717-91f6-ef9ddacd7838">
+						<dataSourceExpression><![CDATA[$P{JasperCustomSubReportDatasource}]]></dataSourceExpression>
+					</datasetRun>
+					<c:column width="290" uuid="f9ff47bf-5535-4ad2-8709-afa5955a1b03">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<c:columnHeader style="TableHeader" height="30" rowSpan="1">
+							<box leftPadding="0">
+								<pen lineColor="#000000"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+							</box>
+							<staticText>
+								<reportElement x="0" y="0" width="290" height="30" uuid="455105af-dd30-43bb-a2ea-9579bf6718f3"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="11" isBold="true"/>
+								</textElement>
+								<text><![CDATA[Claims of product]]></text>
+							</staticText>
+						</c:columnHeader>
+						<c:detailCell style="table_TD" height="46" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="290" height="46" uuid="8bc5eca9-ef1f-4366-a678-8d0cb2ef7a5b"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle"/>
+								<textFieldExpression><![CDATA[$F{v_claim_txt}]]></textFieldExpression>
+							</textField>
+						</c:detailCell>
+					</c:column>
+					<c:column width="221" uuid="1ea8df91-0e2c-46e0-9b43-1818e90518db">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+						<c:columnHeader style="TableHeader" height="30" rowSpan="1">
+							<box leftPadding="0">
+								<pen lineColor="#000000"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+							</box>
+							<staticText>
+								<reportElement x="0" y="0" width="221" height="30" uuid="b0c5e453-1e30-46e8-a7c7-bc466eae3547"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font size="11" isBold="true"/>
+								</textElement>
+								<text><![CDATA[Clinical Report No.]]></text>
+							</staticText>
+						</c:columnHeader>
+						<c:detailCell style="table_TD" height="46" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="221" height="46" uuid="33b739b7-c8bd-474e-90e6-d148ef9f5329"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle"/>
+								<textFieldExpression><![CDATA[$F{v_claim_reportno}]]></textFieldExpression>
+							</textField>
+						</c:detailCell>
+					</c:column>
+				</c:table>
+			</componentElement>
+		</band>
+	</title>
+</jasperReport>

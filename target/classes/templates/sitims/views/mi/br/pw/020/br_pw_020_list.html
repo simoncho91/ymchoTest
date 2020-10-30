@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript'>
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage,popup;
+$(function(){
+
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form'}
+			,{id:'grid',height:'85%', resizable: true,header:"목록"}
+			,{id:'page', resizable: true}
+		]
+	});
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		css: "formSearch--border_bottom",
+		rows:[
+			{cols:[
+				{ type:"input" , name:"i_sSearchStatusInput", id:"i_sSearchStatusInput", width: "500",label:"검색어" ,labelPosition: "left", labelWidth: "100", gravity: false, placeholder: "한글 제품명 OR 영문 제품명 OR 중문 제품명 OR 제품코드",required: false},
+				{ type:"select" , name:"i_sOverseas", id:"i_sOverseas",width: "250", gravity: false, label:"글로벌검토" ,labelPosition: "left", labelWidth: "100",value:'[(${reqVo.i_sSearchStatusVal})]'
+					,options:[
+				    	{value:'' , content:"선택"}
+						,{value:'0' , content:"검토중"}
+						,{value:'1' , content:"검토완료"}
+						,{value:'2' , content:"반려"}
+						]
+				},
+					{ type:"select" , name:"i_sFunc", id:"i_sFunc",width: "200", gravity: false,label:"기능성여부" ,labelPosition: "left", labelWidth: "100"
+						,options:[
+					    	{value:'' , content:"선택"}
+							,{value:'N' , content:"N"}
+							,{value:'Y' , content:"Y"}
+							]
+				}
+			]}
+		]
+	
+	});
+	frmSearchCell.attach(frmSearch);
+	var gridCell = layoutMain.getCell('grid');    
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns:[
+			//{ width: 100, id: "n_num"	,align:"right"      , header: [{ text: "일련번호",align:"center" }], autoWidth: false }
+			 { width: 0, id: "v_record_id" ,align:"left"     , header: [{ text: "문서코드" }],hidden:true }
+			, { width: 0, id: "v_product_nm_ko"      , header: [{ text: "한글 제품명" ,align:"center" }], align:"left" ,hidden:true}
+			, { width: 0, id: "v_final_rst"      , header: [{ text: "검토코드" ,align:"center" }], align:"left" ,hidden:true}
+			, { width: 180, id: "v_product_cd"	,align:"center"      , header: [{ text: "제품코드" ,align:"center"}], mark: fn_dhxLinkCss}
+			, { width: 230, id: "v_product_nm_en" ,align:"left"      , header: [{ text: "영문 제품명",align:"center" }], autoWidth: false}
+			, { width: 230, id: "v_product_nm_fast"      , header: [{ text: "한글 제품명" ,align:"center" }], align:"left", autoWidth: false }
+			, { width: 230, id: "v_product_nm_cn" ,align:"left"     , header: [{ text: "중문제품명",align:"center" }] , autoWidth: false}
+			, { width: 120, id: "v_china_ra_agent_nm" ,align:"center"     , header: [{ text: "중국RA",align:"center" }] }
+			, { width: 120, id: "v_final_rst_nm" ,align:"center"      , header: [{ text: "글로벌 검토현황",align:"center" }] }
+			, { width: 120, id: "v_special_nm" ,align:"center"      , header: [{ text: "중국 화장품 분류",align:"center" }] }
+		]
+    	,headerRowHeight: 46
+    	,autoWidth: true
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	gridCell.attach(grdMain);
+
+	grdMain.events.on("CellClick", fn_view2);
+	grdMain.events.on("CellDblClick", fn_view);
+
+	popup = new dhx.Popup();
+
+    grdMain.events.on("CellMouseOver", function(row,column,e){
+		if ('v_final_rst_nm' == column.id && 'Y' != row.v_fast_track_yn){
+			fn_review(row,e);
+		} else {
+			popup.hide();
+		}
+    });
+
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/br/pr/010/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    		, postParam : {i_sExpCountryYn : 'Y'}
+    });
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	frmSearch.getItem('i_sSearchStatusInput').setValue(param.i_sSearchStatusInput);
+    	frmSearch.getItem('i_sOverseas').setValue(param.i_sOverseas);
+    	frmSearch.getItem('i_sFunc').setValue(param.i_sFunc);
+    }
+
+});
+function fn_view(row,col,e) {
+	var data = grdMain.data.getItem(row.id);
+	location.href='/br/pw/020/br_pw_020_t1_view.do?i_sRecordId='+data.v_record_id+'&i_sProductCd='+data.v_product_cd;
+}
+function fn_view2(row,col,e) {
+	if (col.id == 'v_product_cd')
+		fn_view(row,col,e);
+}
+function fn_search() {
+    mainPage.search(1);
+}
+
+function fn_excel() {
+	var param = mainPage.postParam;
+	param.i_sExcelFileNm="수출검토";
+	fn_excel_download("/br/pr/010/br_pr_010_list_excel.do", param);
+}
+
+function fn_review(row,e) {
+	if (!('RS060' == row.v_final_rst || 'RS063' == row.v_final_rst || 'RS065' == row.v_final_rst || 'RS090' == row.v_final_rst)) {
+		return ;
+	}
+
+	popup.hide();
+	fn_s_ajaxSaveForm({
+		 url       : "/br/pw/020/getNationReviewList.do"
+		,postParam : {i_sRecordId : row.v_record_id , i_sProductCd : row.v_product_cd}
+		,success   : function(res){
+			if(res.result.data) {
+				arrHtml = [];
+				arrHtml.push('<table class="sty_02" style="width: 300px;">');
+				arrHtml.push('	<colgroup>');
+				arrHtml.push('		<col width="100px">');
+				arrHtml.push('		<col width="140px">');
+				arrHtml.push('		<col width="130px">');
+				arrHtml.push('		<col width="130px">');
+				arrHtml.push('	</colgroup>');
+				arrHtml.push('	<tbody>');
+				arrHtml.push('	<tr>');
+				arrHtml.push('		<th>국가</th>');
+				arrHtml.push('		<th>검토상태</th>');
+				arrHtml.push('		<th>검토요청일</th>');
+				arrHtml.push('		<th>검토일</th>');
+				arrHtml.push('	</tr>');
+
+				res.result.data.forEach(function(item) {
+					if ('KO' != item.v_nation_cd) {
+						arrHtml.push('	<tr>');
+						arrHtml.push('		<td class="ta_c">'+item.v_nation_nm+'</td>');
+						arrHtml.push('		<td class="ta_c">'+item.v_review_status_nm+'</td>');
+						arrHtml.push('		<td class="ta_c">'+fn_getFormatDate(item.v_request_dtm,'-')+'</td>');
+						arrHtml.push('		<td class="ta_c">'+fn_getFormatDate(item.v_review_dtm,'-')+'</td>');
+						arrHtml.push('	</tr>');
+					}
+				});
+
+				arrHtml.push('</table>');
+
+				popup.attachHTML(arrHtml.join(""));
+				popup.show(e.target,{
+				//	centering: true,
+					mode: "left"
+				//	indent: 10
+				});
+			}
+		}
+	});
+}
+
+$(document).on('keyup','#i_sSearchStatusInput',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+</script>
+</html>

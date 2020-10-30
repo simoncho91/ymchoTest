@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : AmAm030Mapper.xml
+    Description   : 제품권한(부서)
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.08.05  kykwak       1.0        최초 생성
+-->
+<mapper namespace="AmAm030Mapper">
+	<!-- 페이징을 위한 include -->
+	<sql id="AmAm030ListInclude">	
+	
+		FROM 
+			TSI_BRAND_AUTH AS A LEFT JOIN TSI_DEPT_I AS B
+			ON A.V_DEPT_CD = B.V_DEPT_CD
+			WHERE B.V_USE_YN = 'Y' 
+		 <if test="i_sBrand != null and i_sBrand != ''">
+			AND	A.V_BRAND_CD = #{i_sBrand} 
+		</if>
+		    AND A.V_DEPT_CD IN (
+		    SELECT v_dept_cd FROM TSI_DEPT_I i
+		<choose>
+			<when test="i_sDept != null and i_sDept != ''">
+				START WITH i.V_DEPT_CD = #{i_sDept}
+			</when>
+			<otherwise>
+				START WITH i.V_DEPT_CD = 'C000000001'
+			</otherwise>
+		</choose>
+			  CONNECT BY PRIOR i.V_DEPT_CD = i.V_UDEPT_CD
+			  )
+		  <if test="i_sUserDept != null and i_sUserDept != '' ">
+			  AND A.V_DEPT_CD = #{i_sUserDept}
+		  </if>
+	</sql>
+	<!-- 제품권한(부서)-->
+	<select id="selectAmAm030List" resultType="CmMap" parameterType="CmMap">
+	  SELECT * FROM( /* AmAm030Mapper.selectAmAm030List */
+	        SELECT 
+	       	ROW_NUMBER() OVER(ORDER BY 
+	       	<choose> 
+				<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+					${i_sSortCol} ${i_sSortDir}
+				</when>	 
+				<otherwise>
+					A.V_REG_DTM 
+				</otherwise>	
+			</choose>
+	       	) AS N_NUM
+	       	, A.*
+	       	FROM(
+	       		SELECT
+					  FN_SUB_CODENM('BRAND_CODE',A.V_BRAND_CD) AS V_BRAND_NM 
+					, B.V_DEPT_NM 
+					, FN_GET_USERNM(A.V_REG_USER_ID) AS V_REG_USER_ID
+					, TO_CHAR(TO_DATE(A.V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REG_DTM
+					, A.V_REG_DTM AS V_REG_DTM_EXCEL
+					, FN_GET_USERNM(A.V_UPDATE_USER_ID) AS V_UPDATE_USER_ID
+					, TO_CHAR(TO_DATE(A.V_UPDATE_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_UPDATE_DTM
+					, A.V_UPDATE_DTM AS V_UPDATE_DTM_EXCEL
+					, A.V_BRAND_CD
+					, A.V_DEPT_CD
+					, B.V_UDEPT_CD
+					<include refid="AmAm030ListInclude"/>
+			) A
+		) TEMP
+		 WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+		 <if test="i_sDeptCd2 != null and i_sDeptCd2 != ''">
+			AND	TEMP.V_DEPT_CD = #{i_sDeptCd2} 
+		</if>
+	</select>
+	<!-- 페이징을 위한 리스트 총 개수 -->
+	<select id="getAmAm030ListCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT /* AmAm030Mapper.getAmAm030ListCount */
+			COUNT(*) AS CNT 
+			<include refid="AmAm030ListInclude"/>
+	</select>
+	<!-- 제품권한(부서) 신규 등록  -->
+	<insert id="regForProdDept" parameterType="CmMap">
+		INSERT /* AmAm030Mapper.regForProdDept */
+			INTO 
+				TSI_BRAND_AUTH 
+                	 (V_DEPT_CD
+                     , V_BRAND_CD
+                     , V_REG_USER_ID
+                     , V_REG_DTM  
+                     , V_UPDATE_USER_ID
+                     , V_UPDATE_DTM
+                    )
+             VALUES ( #{i_sDeptCd}
+                     , #{i_sBrandCd}
+                     , #{i_sRegUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     , #{i_sUpdateUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     )
+	</insert>
+	<!-- 제품권한(부서) 삭제 -->
+	<delete id="delForProdDept" parameterType="CmMap">
+		DELETE /* AmAm030Mapper.delForProdDept */
+			FROM TSI_BRAND_AUTH 
+				WHERE
+				 	V_BRAND_CD = #{i_sBrandCd}
+	       		AND V_DEPT_CD = #{i_sDeptCd}
+	</delete>
+	<!-- 제품권한(부서) 등록, 삭제을 위한 유효성 검사 -->
+	 <select id="selectCountForProdDept" parameterType="CmMap" resultType="java.lang.Integer">
+			SELECT /* AmAm030Mapper.selectCountForProdDept */
+				COUNT(*) 
+			FROM TSI_BRAND_AUTH
+			WHERE 
+				V_BRAND_CD = #{i_sBrandCd}
+			AND V_DEPT_CD = #{i_sDeptCd}
+	</select>
+	<!-- 제품권한(부서) comboBox 생성 -->
+	<select id="getDeptForComboBox" resultType="CmMap">
+		    SELECT /* AmAm030Mapper.getDeptForComboBox */
+            	A.V_DEPT_CD AS v_id
+             , SUBSTR(SYS_CONNECT_BY_PATH (A.V_DEPT_NM, '-'), 2) AS v_value
+         	FROM (
+           		SELECT V_DEPT_CD, V_UDEPT_CD, V_DEPT_NM, N_SEQ_NO
+           	  	FROM TSI_DEPT_I
+          	  	WHERE V_USE_YN = 'Y'
+           	) A
+	        START WITH V_UDEPT_CD is null
+            CONNECT BY PRIOR A.V_DEPT_CD = V_UDEPT_CD
+	        ORDER SIBLINGS BY N_SEQ_NO
+	</select>
+</mapper>

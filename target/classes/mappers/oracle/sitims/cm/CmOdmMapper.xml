@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!--Converted at: Fri Jun 19 14:00:35 KST 2020-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="CmOdmMapper">
+	
+	<sql id="includeAttachFile">
+		SELECT
+			V_ATTACH_ID
+			, V_RECORD_ID
+			, V_UPLOAD_ID
+			, V_REC_TYPE
+			, V_ATTACH_NM
+			, V_ATTACH_PATH
+			, V_ATTACH_EXT
+			, N_ATTACH_SIZE
+			, N_DOWNLD_CNT
+			, V_IF_YN
+			, V_DEL_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM
+		FROM TSI_ATTACH
+		WHERE 1=1
+		<if test="i_sUploadCd != null and i_sUploadCd != ''">
+			AND V_UPLOAD_ID = #{i_sUploadCd}
+		</if>
+		<if test="i_sRecordId != null and i_sRecordId != ''">
+			AND V_RECORD_ID = #{i_sRecordId}
+		</if>
+		<if test="i_sRecordIdLike != null and i_sRecordIdLike != ''">
+			AND V_RECORD_ID Like '%'|| #{i_sRecordIdLike} || '%'
+		</if>
+		<if test="i_sAttachId != null and i_sAttachId != ''">
+			AND V_ATTACH_ID = #{i_sAttachId}
+		</if>
+				
+		<if test="i_sBuffer1 != null and i_sBuffer1 != ''">
+			AND V_BUFFER1 = #{i_sBuffer1}
+		</if>
+		<if test="i_sBuffer2 != null and i_sBuffer2 != ''">
+			AND V_BUFFER2 = #{i_sBuffer2}
+		</if>
+		<if test="i_sBuffer3 != null and i_sBuffer3 != ''">
+			AND V_BUFFER3 = #{i_sBuffer3}
+		</if>
+		<if test="i_sBuffer4 != null and i_sBuffer4 != ''">
+			AND V_BUFFER4 = #{i_sBuffer4}
+		</if>
+		<if test="i_sBuffer5 != null and i_sBuffer5 != ''">
+			AND V_BUFFER5 = #{i_sBuffer5}
+		</if>
+	</sql>
+	<!-- Odm Vendor -->
+	<select id="selectCompanyList" parameterType="CmMap" resultType="CmMap">
+		SELECT V_VENDOR_ID      
+			   , V_VENDOR_NM
+			   , V_VENDOR_NM_EN
+			   , V_BIZ_NO
+			   , V_PHONE_NO
+			   , V_FAX
+			   , V_ZIP
+			   , V_ADDR1
+			   , V_ADDR2
+			   , V_REPR_USER_ID
+			   , V_REPR_USER_NM_EN
+			   , (SELECT V_ATTACH_PATH || V_ATTACH_ID || V_ATTACH_EXT FROM TSI_ATTACH WHERE V_RECORD_ID = V_VENDOR_ID||'_CP01') AS V_SIGN
+			   , (SELECT V_ATTACH_PATH || V_ATTACH_ID || V_ATTACH_EXT FROM TSI_ATTACH WHERE V_RECORD_ID = V_VENDOR_ID||'_CP02') AS V_LOGO
+		FROM TODM_VD_I
+	</select>
+	
+	<select id="selectAttachListCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT /* CmOdmMapper.selectAttachListCount */
+		       COUNT(*) CNT
+		FROM (
+			<include refid="includeAttachFile"/>
+		)
+	</select>
+	<insert id = "insertAttachFile" parameterType="CmMap">
+		INSERT /* CmOdmMapperMapper.insertAttachFile */
+		INTO TSI_ATTACH(
+			V_ATTACH_ID
+			, V_RECORD_ID
+			, V_UPLOAD_ID
+			, V_REC_TYPE
+			, V_ATTACH_NM
+			, V_ATTACH_PATH
+			, V_ATTACH_EXT
+			, N_ATTACH_SIZE
+			, N_DOWNLD_CNT
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_DEL_YN
+			, V_BUFFER1
+			, V_BUFFER2
+			, V_BUFFER3
+			, V_BUFFER4
+			, V_BUFFER5
+		)VALUES(
+			#{i_sAttachId}
+			,#{i_sAttachPk1}
+			,#{i_sAttachPk2}
+			,NULL
+			,#{i_sAttachLnm}
+			,#{i_sAttachPath}
+			,#{i_sAttachType}
+			,#{i_sAttachSize}
+			,0
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, 'N'
+			, #{i_sBuffer1}
+			, #{i_sBuffer2}
+			, #{i_sBuffer3}
+			, #{i_sBuffer4}
+			, #{i_sBuffer5}
+		)
+	</insert>
+	<delete id="deleteAttachFile" parameterType="CmMap">
+        DELETE /* CmOdmMapper.deleteAttachFile */
+          FROM  TSI_ATTACH
+         WHERE  1=1
+		<if test="i_sUploadCd != null and i_sUploadCd != ''">
+			AND V_UPLOAD_ID = #{i_sUploadCd}
+		</if>
+		<if test="i_sRecordId != null and i_sRecordId != ''">
+			AND V_RECORD_ID = #{i_sRecordId}
+		</if>
+		<if test="i_sAttachId != null and i_sAttachId != ''">
+			AND V_ATTACH_ID = #{i_sAttachId}
+		</if>		
+		<if test="i_sBuffer1 != null and i_sBuffer1 != ''">
+			AND V_BUFFER1 = #{i_sBuffer1}
+		</if>
+		<if test="i_sBuffer2 != null and i_sBuffer2 != ''">
+			AND V_BUFFER2 = #{i_sBuffer2}
+		</if>
+		<if test="i_sBuffer3 != null and i_sBuffer3 != ''">
+			AND V_BUFFER3 = #{i_sBuffer3}
+		</if>
+		<if test="i_sBuffer4 != null and i_sBuffer4 != ''">
+			AND V_BUFFER4 = #{i_sBuffer4}
+		</if>
+		<if test="i_sBuffer5 != null and i_sBuffer5 != ''">
+			AND V_BUFFER5 = #{i_sBuffer5}
+		</if>
+    </delete>	
+    
+	<insert id="insertMailLog" parameterType="CmMap">
+	INSERT /* CmOdmMapper.insertMailLog */ 
+	INTO TODM_MAILLOG_L(
+		V_MAIL_LOG_ID
+		, V_TITLE
+		, V_CONTENT
+		, V_RECORD_ID
+		, V_PRODUCT_CD
+		, V_NATION_CD
+		, V_DOC_CD
+		, V_REV_USER_ID
+		, V_STATUS_YN
+		, V_REG_USER_ID
+		, V_REG_DTM
+	)VALUES( 
+		#{i_sMailLogId}
+		, #{i_sTitle}
+		, #{i_sContents}
+		, #{i_sRecordId}
+		, #{i_sProductCd}
+		, #{i_sNationCd}
+		, #{i_sDocCd}
+		, #{i_sRevUserId}
+		, 'N'	
+		, #{pRegUserId}
+		, TO_CHAR(SYSDATE, 'yyyymmddhh24miss')
+	)
+	</insert>
+</mapper>

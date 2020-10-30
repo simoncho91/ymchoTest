@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : AmUm010Mapper.xml
+    Description   : 부서 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.06.30  kykwak       1.0        최초 생성
+-->
+<mapper namespace="AmUm010Mapper">
+		<!-- Si 부서목록 가져오기 -->
+    <select id="getSiDeptList" parameterType="CmMap" resultType="upperKeyMap">
+         SELECT   /* AmUm010Mapper.getSiDeptList */
+                 A.N_TREE_LEVEL LVL
+               , A.V_DEPT_CD ID
+               , A.V_DEPT_NM TEXT
+               , A.V_USE_YN USE_YN
+               , A.N_SEQ_NO SEQNO
+               , (SELECT B.V_DEPT_NM  from  TSI_DEPT_I B WHERE B.V_DEPT_CD = A.V_UDEPT_CD) DEPT_TOP
+               , V_UDEPT_CD DEPT_TOP_ID
+               , SUBSTR(SYS_CONNECT_BY_PATH (A.V_DEPT_NM, '-'), 2) AS CONNECT_TEXT
+         FROM   TSI_DEPT_I A
+			    START WITH V_DEPT_CD    =   'C000000001'
+			    CONNECT BY PRIOR V_DEPT_CD   =   V_UDEPT_CD
+			    ORDER SIBLINGS BY A.N_SEQ_NO ASC    
+    </select>
+    <!-- 부서 이름  유효성  -->
+    <select id="getSiDeptCountForRegist" parameterType="CmMap" resultType="Integer">
+    	SELECT  /* AmUm010Mapper.getSiDeptCountForRegist */
+    		COUNT(V_DEPT_CD) AS RECORDCOUNT
+		  FROM TSI_DEPT_I
+		 WHERE V_UDEPT_CD = #{i_sDeptTopId}
+		   AND TRIM(UPPER(V_DEPT_NM))  = TRIM(UPPER(#{i_sDeptText}))
+		   <if test="deptEqNmForUpdate == 1">
+		     	AND V_DEPT_CD = #{i_sDeptId}
+		   </if>
+    </select>
+        <!-- Si 부서 등록 및  PK채번-->
+    <insert id="SiDeptReg" parameterType="CmMap">
+  		INSERT /* AmUm010Mapper.SiDeptReg */
+  			INTO TSI_DEPT_I 
+  				(V_DEPT_CD, V_UDEPT_CD, V_DEPT_NM, V_USE_YN, N_SEQ_NO, N_TREE_LEVEL,
+  				 V_REG_USER_ID, V_REG_DTM, V_UPDATE_USER_ID, V_UPDATE_DTM, V_IF_YN)
+  			VALUES
+  				(#{NEXT_ID}, #{i_sDeptTopId}, #{i_sDeptText}, #{i_sUseYn}, #{i_sSeqNo}, (SELECT N_TREE_LEVEL+1 from TSI_DEPT_I WHERE V_DEPT_CD = #{i_sDeptTopId}),
+  				 #{i_sRegUserId},TO_CHAR(SYSDATE,'yyyymmddhh24miss'), #{i_sUpdateUserId}, TO_CHAR(SYSDATE,'yyyymmddhh24miss'), 'N')
+    </insert>
+    <!-- 부서등록을 위한  PK채번  -->
+    <select id="SiDeptRegSelectKey" resultType="String">
+    	 SELECT /* AmUm010Mapper.SiDeptRegSelectKey */
+            MAX(V_DEPT_CD)+1 AS NEXT_ID    
+         FROM TSI_DEPT_I
+          WHERE V_DEPT_CD != 'C000000001'
+    </select>
+    <!-- Si 부서 수정 -->
+    <update id="SiDeptModify" parameterType="CmMap">
+	  		UPDATE  /* AmUm010Mapper.SiDeptModify */
+	  			TSI_DEPT_I
+	  			SET 
+	  			 	 V_DEPT_NM= #{i_sDeptText} 
+	  				<if test="i_sDeptTopId != null and i_sDeptTopId != ''">
+	  				, N_SEQ_NO= #{i_sSeqNo} 
+	  			 	, V_UDEPT_CD= #{i_sDeptTopId}
+	  				, V_USE_YN= #{i_sUseYn} 
+	  				, N_TREE_LEVEL=(SELECT N_TREE_LEVEL+1 from TSI_DEPT_I WHERE V_DEPT_CD = #{i_sDeptTopId}) 
+	  				</if>  
+	  				, V_UPDATE_USER_ID=#{i_sUpdateUserId}
+	  				, V_UPDATE_DTM= TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+	  				, V_IF_YN = 'N'
+	  				WHERE V_DEPT_CD= #{i_sDeptId}
+    </update>
+    
+    <!-- Si 부서 삭제(하위부서 체크) -->
+    <select id="SiDeptDeleteChk" parameterType="CmMap" resultType="java.lang.Integer">
+    
+    	SELECT /* AmUm010Mapper.SiDeptDeleteChk */
+    		COUNT(*) 
+    		FROM TSI_DEPT_I
+    			 WHERE V_UDEPT_CD = #{i_sDeptId}
+    
+    </select>
+    
+    <!-- Si 부서 삭제 -->
+    <delete id="SiDeptDelete" parameterType="CmMap">
+    
+    	DELETE /* AmUm010Mapper.SiDeptDelete */
+    	FROM TSI_DEPT_I 
+    	WHERE  V_DEPT_CD = #{i_sDeptId}
+    
+    </delete>
+
+</mapper>

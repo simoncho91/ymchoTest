@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : SiCm040Mapper.xml
+    Description   : MSDS 설정
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.13  kykwak       1.0        최초 생성
+-->
+<mapper namespace="SiCm040Mapper">
+
+	<!-- MSDS 트리 가져오기 -->
+	<select id="getMsdsClassList" parameterType="CmMap" resultType="upperKeyMap">
+		<if test='i_sSubMsds =="Y"'>
+			SELECT A.* FROM ( /* SiCm040Mapper.getMsdsSubList */
+		</if>
+		     SELECT  /* SiCm040Mapper.getMsdsClassList */
+		     		LEVEL AS LVL
+		     	   , V_CLASS_CD   ID
+		           , V_CLASS_NM   TEXT 
+		           , V_UCLASS_CD	TOPID
+		     FROM TSI_MSDS_CL_L
+			    START WITH V_CLASS_CD  = 'S000001'
+			    CONNECT BY PRIOR V_CLASS_CD = V_UCLASS_CD
+			    ORDER SIBLINGS BY N_SEQ_NO ASC
+		<if test='i_sSubMsds =="Y"'>
+		) A
+			WHERE A.LVL <![CDATA[<]]> 3
+		</if>
+	</select>
+	
+	<!-- MSDS DESC 가져오기 -->
+	<select id="getMsdsInfo" parameterType="CmMap" resultType="CmMap">
+			SELECT /* SiCm040Mapper.getMsdsInfo */
+				 V_DESCRIPTION V_DESC
+	           , DECODE(V_UCLASS_CD,'0000000','',V_UCLASS_CD) UclassCd 
+			   , V_TYPE
+	           , V_USE_YN FlagUse
+	           , N_SEQ_NO SEQNO
+	           , (SELECT V_CLASS_NM FROM TSI_MSDS_CL_L WHERE V_CLASS_CD = #{i_sMsdsTopId}) TopClassNm
+			FROM TSI_MSDS_CL_L
+			WHERE V_CLASS_CD = #{i_sMsdsId}
+	</select>
+	
+	<!-- MSDS PK ID 채번  -->
+	<select id="getMsdsId" parameterType="CmMap" resultType="java.lang.String">
+		SELECT /* SiCm040Mapper.getMsdsId */
+		  SUBSTR(MAX(V_CLASS_CD), 0, 1) || TRIM(TO_CHAR(SUBSTR(MAX(V_CLASS_CD), 2, 6) + 1, '000000')) AS V_MENUID 
+		FROM TSI_MSDS_CL_L
+	</select>
+	
+	<!-- 등록할 MSDS 유효성  -->
+	<select id="getMsdsCountForRegist" parameterType="CmMap" resultType="Integer">
+		SELECT /* SiCm040Mapper.getMsdsCountForRegist */
+			COUNT(V_CLASS_CD) AS RECORDCOUNT
+		  FROM TSI_MSDS_CL_L
+		 WHERE V_UCLASS_CD = #{i_sMsdsTopId}
+		   AND trim(V_CLASS_NM)  = #{i_sMenuNm}
+	</select>
+	
+	<!-- MSDS 등록  -->
+	<insert id="SiMsdsReg" parameterType="CmMap">
+			INSERT /* SiCm040Mapper.SiMsdsReg */
+				INTO 
+				TSI_MSDS_CL_L 
+                	(V_CLASS_CD
+                     , V_CLASS_NM
+                     , V_UCLASS_CD
+                     , N_SEQ_NO
+                     , V_USE_YN
+                     , V_TYPE
+                     , V_DESCRIPTION
+                     , V_REG_USER_ID
+                     , V_REG_DTM
+                     , V_UPDATE_USER_ID
+                     , V_UPDATE_DTM
+                     , V_IF_YN
+                    )
+             VALUES (  #{i_sMsdsId}
+                     , #{i_sMenuNm}
+                     , #{i_sMsdsTopId}
+                     , #{i_sSeqNo}
+                     , #{i_sFlagUse}
+                     , #{i_sType}
+                     , #{i_tDescription}
+                     , #{i_sRegUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     , #{i_sUpdateUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     , 'N'
+                    ) 
+	</insert>
+	
+	<!-- MSDS 수정-->
+	<update id="SiMsdsModify" parameterType="CmMap">
+		UPDATE /* SiCm040Mapper.SiMsdsModify */
+			TSI_MSDS_CL_L
+			SET
+				V_CLASS_NM = #{i_sMenuNm},
+				N_SEQ_NO = #{i_sSeqNo},
+				V_USE_YN = #{i_sFlagUse},
+				V_TYPE = #{i_sType},
+				V_DESCRIPTION = #{i_tDescription}, 
+				V_UPDATE_USER_ID = #{i_sUpdateUserId}, 
+				V_UPDATE_DTM = TO_CHAR(SYSDATE,'yyyymmddhh24miss'),
+				V_IF_YN = 'N'
+			WHERE V_CLASS_CD = #{i_sMsdsId}
+	
+	</update>
+	
+	 <!-- MSDS 삭제 (하위 MSDS 체크) -->
+    <select id="SiMsdsDeleteChk" parameterType="CmMap" resultType="java.lang.Integer">
+    
+    	SELECT /* SiCm040Mapper.SiMsdsDeleteChk */
+    		COUNT(*) 
+    		FROM TSI_MSDS_CL_L
+    			 WHERE V_UCLASS_CD = #{i_sMsdsId}
+    
+    </select>
+    
+    <!-- MSDS 삭제  -->
+    <delete id="SiMsdsDelete" parameterType="CmMap">
+    
+    	DELETE /* SiCm040Mapper.SiMsdsDelete */
+    	FROM TSI_MSDS_CL_L 
+    	WHERE  V_CLASS_CD = #{i_sMsdsId}
+    
+    </delete>
+    
+</mapper>

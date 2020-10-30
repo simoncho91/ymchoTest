@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : BrEr010Mapper.xml
+    Description   : 문안검토
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.21  shahn       1.0        최초 생성
+-->
+<mapper namespace="BrEr040Mapper">	
+	<select id="getFilteringCd" parameterType="CmMap" resultType="java.lang.String">
+		/*자바로 시퀀스 사용시*/
+		SELECT
+			NVL(MAX(V_FILTER_ID), 0) AS V_MAX_KEY
+		FROM 
+			TSI_PF_FR_L
+	</select>
+
+	<insert id="insertFilteringTextClobTable" parameterType="CmMap">
+		/* 의뢰요청 데이터 저장 */
+		<selectKey keyProperty="i_sFilteringCd" resultType="java.lang.String" order="BEFORE">
+		SELECT 'FT' || LPAD(NVL(MAX(SUBSTRING(V_FILTER_ID, 3)), 0) + 1, 15, '0') 
+		FROM TSI_PF_FR_L
+		</selectKey>
+		INSERT INTO	TSI_PF_FR_L
+		(	V_FILTER_ID
+			, V_FILTER_TX
+		) 
+		VALUES
+		(
+			#{i_sFilteringCd}
+			, #{i_sReqText}
+		)
+	</insert>
+	
+	<select id="getFilteringTextCountInClobTable" parameterType="CmMap" resultType="CmMap">
+		/* 의뢰요청시 금지어 필터링 단어 매칭 개수 */
+		SELECT
+			FN_SUP_PROOF_FILTERING_CNT(V_FILTER_TX) AS N_COUNT
+		FROM
+			TSI_PF_FR_L
+		WHERE
+			V_FILTER_ID = #{i_sFilteringCd}
+	</select>
+	
+	<insert id="insertFilteringTextWord" parameterType="CmMap">
+		INSERT INTO TSI_PF_FR_WD_L
+		(
+			V_FILTER_ID
+			, V_TYPE
+			, N_SEQ_NO
+		) 
+		
+		WITH KR_FILT_WORD AS (
+			 SELECT
+					#{i_sFilteringCd} AS V_FILTER_ID
+					, V_TYPE_CD 
+					, N_SEQ_NO
+				FROM
+				(
+				SELECT
+					INSTR(UPPER(V_REQTEXT), TRIM(UPPER(V_WORD))) AS N_FILTERING_CNT
+					, A.*
+				  FROM 
+				  (
+					SELECT
+						TRIM(UPPER(V_WORD)) V_WORD
+						, V_TYPE_CD
+						, N_SEQ_NO
+						, ( SELECT 
+								FN_KR_FILTERING_EXCEPT_WORD2(V_FILTER_TX, 'encode')
+							  FROM
+							  	TSI_PF_FR_L
+							 WHERE V_FILTER_ID = #{i_sFilteringCd}
+						) AS V_REQTEXT
+					FROM
+						TSI_PF_BAN_L FT
+					WHERE
+						V_DEL_YN = 'N'
+					) A
+				) 
+				WHERE
+					N_FILTERING_CNT &gt; 0
+				GROUP BY
+					V_TYPE_CD, N_SEQ_NO, V_WORD
+		)
+		
+		SELECT
+			V_FILTER_ID
+			, V_TYPE_CD
+			, N_SEQ_NO
+		  FROM
+			KR_FILT_WORD
+	</insert>
+	
+	<select id="getFilteringTextInClobTable" parameterType="CmMap" resultType="java.lang.String">
+		SELECT
+			FN_KR_FILTERING_EXCEPT_WORD2(V_SENTENCE, 'decode') AS V_SENTENCE
+		  FROM ( 
+			SELECT
+				FN_SUP_PROOF_FILTERING(V_FILTER_TX) AS V_SENTENCE
+			FROM
+				TSI_PF_FR_L
+			WHERE
+				V_FILTER_ID = #{i_sFilteringCd}
+			)
+	</select>
+	
+	<select id="getKrFilteringWordList" parameterType="CmMap" resultType="CmMap">
+		SELECT
+			 M.*
+			, FN_SUB_CODENM('PROOF_BAN', W.V_TYPE) AS V_TYPENM
+			, SC.BUFFER1 AS V_COLOR
+		  FROM
+			TSI_PF_FR_WD_L W
+		  LEFT OUTER JOIN
+		  	TSI_PF_BAN_L M
+		  	ON ( W.V_TYPE = M.V_TYPE_CD
+		  		AND W.N_SEQ_NO = M.N_SEQ_NO
+		  	)
+		  LEFT OUTER JOIN
+			TZF_COMMCD_D SC
+			ON ( SC.GRP_CD = 'PROOF_BAN'
+				AND SC.COMM_CD = W.V_TYPE
+			) 
+		WHERE
+			V_FILTER_ID = #{i_sFilteringCd}
+	</select>
+</mapper>

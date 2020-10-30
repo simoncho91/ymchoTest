@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript' src='/sitims/js/util/cm_function.js'></script> 
+<script type='text/javascript'>
+
+//layout
+var layoutMain;
+var searchForm;
+var mainGrid;
+var subForm;
+
+//toolbar
+var gridSubToolbar;
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+
+var dcGrdMain;
+var checkboxConfig;
+
+//paging
+var mainPage;
+var	i_iNowPageNo= 1;
+var	i_iPageSize= 50;
+
+$(function(){
+/****************************************************************************************************
+  * 초기화 
+  ****************************************************************************************************/    
+	
+	  layoutMain = new dhx.Layout("layoutObj", {
+		     css: "dhx_layout-cell--border_top",
+		     rows: [
+		    	  {id: "searchForm", gravity: false, height: "100px", css: "dhx_layout-cell--border_bottom"}
+	               ,{rows: [
+                           {cols:[
+	                        	 {id: "mainGrid", width: "600px",css: "layout_padding_right"}
+	                        	 ,{rows:[
+	                        		  {id: "toolbarSub", gravity:false}
+	                        		 ,{id: "subForm"}
+	                        	 ],width: "100px",resizable: true}
+        	 				],header:"목록", height: "90%"}
+	                      ]
+	                 }
+	               ,{id:'page'}
+		     	 ]
+		 });
+		 
+	  //국가 체크박스 생성 : checkboxConfig
+	  fn_initDS2();
+	  // Form-검색조건
+	  searchForm = new dhx.Form(null, {
+		  rows: [
+    	  		{cols:checkboxConfig}
+    	  		,{cols:[
+	 				{type: "select", id: "i_sBrand", name: "i_sBrand",  label: "브랜드", labelPosition: "left", labelWidth: "100", width: "330", gravity: false, options: [{}] }
+		 			,{type: "input", id: "i_sCharger", name: "i_sCharger", label: "담당자", labelPosition: "left", labelWidth: "100", width: "330", gravity: false}
+		 			,{type: "input", name: "i_sNationList", hidden:true}
+	 			]}
+	 		]
+	  });
+	  layoutMain.getCell("searchForm").attach(searchForm);
+	  
+	  // sub-툴바    
+	  gridSubToolbar = new dhx.Toolbar(null, {
+	      css: "dhx_widget--bordered dhx_widget--bg_gray",
+	      data: [
+	           {id: "btnAdd",icon:"dxi dxi-plus",value: "신규"}
+	          ,{type: "separator"}
+	          ,{id: "btnModify",icon: "dxi dxi-check",value: "저장"}
+	          ,{type: "separator"}
+	          ,{id: "btnDel",icon: "dxi dxi-delete",value: "삭제"	}
+	      ]
+	  });    
+	  layoutMain.getCell("toolbarSub").attach(gridSubToolbar);
+	  
+	  // Grid-메인    
+	  dcGrdMain = new dhx.DataCollection();
+	  mainGrid = new dhx.Grid(null, {
+	      columns: [
+	         // { width: 80,  id: "n_num",               header: [{ text: "NO.",align:"center"}], align:"right" },
+	          { width: 180,  id: "v_nation_nm",             header: [{ text: "국가",align:"center"}], align:"left" },
+	          { width: 180, id: "v_brand_nm",            header: [{ text: "브랜드",align:"center" }], align:"left" },
+	          { width: 180, id: "v_user_nm",            header: [{ text: "담당자",align:"center" }], align:"center" },
+	          { width: 180, id: "v_reg_user_id",           header: [{ text: "등록자",align:"center" }], align:"center" },
+	          { width: 180,  id: "v_reg_dtm",           header: [{ text: "등록일",align:"center" }], align:"center" },
+	          { width: 180, id: "v_update_user_id",       header: [{ text: "수정자",align:"center" }], align:"center" },
+	          { width: 180,  id: "v_update_dtm",            header: [{ text: "수정일",align:"center" }], align:"center" }
+	      ],
+	      headerRowHeight: 46,
+	      autoWidth: true,
+	      resizable: true,
+	      selection: "row",
+	      fitToContainer: true,
+	      data: dcGrdMain
+	  });
+	  layoutMain.getCell("mainGrid").attach(mainGrid);
+	  
+	  // Form-서브  
+	  subForm = new dhx.Form(null, {
+	      rows: [
+	    	    {type: "select", id: "v_nation_cd", name: "v_nation_cd",  label: "국가", labelPosition: "left", labelWidth: "60", width: "300", gravity: false, options: [{}] , required: true }
+ 				,{type: "select", id: "v_brand_cd", name: "v_brand_cd",  label: "브랜드", labelPosition: "left", labelWidth: "60", width: "300", gravity: false, options: [{}] , required: true }
+	 			,{type: "input", id: "v_user_nm", name: "v_user_nm", label: "담당자", labelPosition: "left", required: true, 
+	 				labelWidth: "60", width: "300", gravity: false, placeholder: "더블클릭 or 담당자이름 입력", icon: "dxi dxi-magnify"}
+	 			,{type: "input", id: "v_user_id", name: "v_user_id", label: "담당자id", hidden:true}
+	 		]
+	  });
+	  layoutMain.getCell("subForm").attach(subForm);
+	  
+	  
+/****************************************************************************************************
+ * 이벤트 생성 
+ ****************************************************************************************************/
+ 		
+ 		gridSubToolbar.events.on("Click", function(id, e){
+	    	if(id=='btnAdd'){
+	    		fn_add();
+	    	}
+	    	else if(id=='btnModify'){
+	    		fn_save();
+	    	}
+	    	else if(id=='btnDel'){
+	    		fn_del();
+	    	}else if(id =='btnMail'){
+	    		fn_senMail();
+	    	}
+	    });
+ 			 
+		 mainGrid.events.on("CellClick", function(row,column,e){
+		  saveMode = "U";
+		     fn_s_gridToForm(mainGrid, subForm);
+		     setDisabled();
+		     
+		 }); 
+
+	    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : mainGrid
+    		, url : "/am/um/030/am_um_030_list_ajax.do"
+    		, frmSearch: searchForm
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+	    	, moveCallBack : fn_setFrmSearch
+    });
+	 
+  	//검색 Form 담당자 엔터이벤트
+    $(document).on('keyup','#i_sCharger',function(e){
+    	if(e.keyCode == 13){
+    		fn_search();
+    	}
+    });
+    //등록Form 담당자 이벤트
+    $(document).on('dblclick','#v_user_nm',function(){	 
+    	fn_pop({url:'/cm/pop/cm_user_list_pop.do?i_sCmFunction=setUserPopUpData&i_sInput='+encodeURIComponent($('#v_user_nm').val()),title:'담당자',width:'700',height:'500'});
+    });	 
+    $(document).on('keypress','#v_user_nm',function(e){
+    	 if(e.keyCode=='13'){
+    		 fn_pop({url:'/cm/pop/cm_user_list_pop.do?i_sCmFunction=setUserPopUpData&i_sInput='+encodeURIComponent($('#v_user_nm').val()),title:'담당자',width:'700',height:'500'});
+    	 }
+    });	     
+    
+    fn_initDS();
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	searchForm.getItem('i_sCharger').setValue(param.i_sCharger);
+    	searchForm.setValue({ "i_sBrand": param.i_sBrand});
+    	searchForm.setValue({ "i_sNationList": param.i_sNationList});
+    	searchForm.setValue({ "AE": param.AE, "CN": param.CN, "EU": param.EU,"KO": param.KO, "US": param.US});
+
+    }
+
+});
+/****************************************************************************************************
+ * 초기화 function 종료 
+ ****************************************************************************************************/
+ function fn_setFrmSearch(){
+		var data = searchForm.getValue();
+		var chkNation = [];
+		var dataKeys =Object.keys(data);
+		for(var i=0 ; i<dataKeys.length;i++){
+			if(data[dataKeys[i]] == true){
+				chkNation.push(dataKeys[i]);
+			}	
+		}
+		searchForm.setValue({
+			"i_sNationList":chkNation
+		});	
+		
+	}
+	
+//리스트 조회
+function fn_search() {
+	fn_setFrmSearch();
+    mainPage.search(1);
+    mainGrid.selection.setCell(mainGrid.data.getId(rowIndex), false);
+    setDisabled();
+    saveMode = "U";
+    fn_s_gridToForm(mainGrid, subForm);
+
+}
+function fn_excel(){
+	fn_excel_download("/am/um/030/am_um_030_list_excel.do", mainPage.postParam);
+}
+
+//SearchForm BrandData초기화  :: SubForm BrandData, NationData 초기화
+function fn_initDS() {
+
+ var postParam = new Object();
+ postParam.grpcd = "dsBrandId:BRAND_CODE:Y:S";
+ postParam.GRP_CD = "ODM_EXPORT";
+ postParam.BUFFER3 = "Y";
+ postParam.sqlid = "dsNationId:CommonDao.getCodeDhtmlxForComboBox:S";
+
+ fn_s_ajaxGetDsForCombo({ 
+	 postParam : postParam
+   , async:false
+   , success : 
+     function(responseData) { 
+		fn_s_selectboxPaint(searchForm, ["i_sBrand"], responseData.dsBrandId);
+		fn_s_selectboxPaint(subForm, ["v_brand_cd"], responseData.dsBrandId);
+		fn_s_selectboxPaint(subForm, ["v_nation_cd"], responseData.dsNationId);
+
+	}
+ });
+}
+
+//Search NationData 초기화
+function fn_initDS2() {
+	 var postParam = new Object();
+	 postParam.i_sMstCode = "ODM_EXPORT";
+	 postParam.i_sBuffer3 = "Y";
+	
+	 fn_ajax({
+		 url : "/am/um/030/CmCodeListForRaNation.do"
+	   , postParam : postParam
+	  , async:false
+	   , success : 
+	     function(responseData) { 
+		   
+		   var dataArray = new Array();
+           	  dataArray.push({type: "text", label : "국가", labelPosition: "left", labelWidth:"100", width:"117", gravity:false, css : "mt_-07"});
+	          for(var i=0;i<responseData.result.length;i++){
+	        	  var dataInfo = new Object();
+	        	  dataInfo.type = "checkbox";
+	  	          dataInfo.label = responseData.result[i].COMM_CD_NM;
+	  	          dataInfo.name = responseData.result[i].COMM_CD;
+	  	          dataInfo.labelWidth = "110"; 
+	  	          dataInfo.width = "100";
+	  	       	  dataInfo.labelPosition = "left";
+	  	       	  dataInfo.gravity = false;
+	          	  dataArray.push(dataInfo);
+	        	  
+	          }
+	          checkboxConfig = dataArray;
+		}
+	 });
+}
+
+//신규 init function
+function fn_add(){
+ saveMode = "I";
+ mainGrid.selection.setCell(mainGrid.data.getId(-1), false);
+ $("#v_brand_cd").removeAttr("disabled");
+ $("#v_nation_cd").removeAttr("disabled");
+ subForm.getItem("v_nation_cd").enable();
+ subForm.getItem("v_brand_cd").enable();
+ subForm.clear();
+}
+
+//신규등록  function
+function fn_save() {
+ var postParam = fn_getPostParam(subForm);
+
+ if (saveMode == 'I') {
+ 	rowIndex = 0;
+	  if (!fn_s_validateForm(subForm)) {
+		  return;
+	  }	
+	  var data = subForm.getValue();
+		if(fn_isNull(data.v_user_id)){
+			fn_s_alertMsg("담당자검색 후 이용해주세요.");
+			return;
+		}
+		dhx.confirm({
+			header : "알림",
+			text : "등록 하시겠습니까?",
+			buttons : ["예","아니오"],
+			buttonsAlignment: "center"
+		}).then( function (result) {
+			if(result){
+			 	$.ajax({
+					  url  : "/am/um/030/am_um_030_reg.do"
+					, type : "POST"
+			        , data : postParam
+			        , dataType : "json"
+			        , success : function(xhr){
+							
+							fn_s_alertMsg(xhr.message);
+	   		        
+			        	fn_saveSuccess();
+					}, error : function(){
+						fn_s_alertMsg("저장 실패");
+					}
+			     }); 
+				
+			}
+			else{
+				return;
+			}
+		});
+ } else {
+	// 수정 function
+     rowIndex = mainGrid.data.getIndex(mainGrid.selection.getCell().row.id);
+ 	var data = subForm.getValue();
+     if (!fn_s_validateForm(subForm)) {
+    	 return;
+     }
+	if(fn_isNull(data.v_user_id)){
+		fn_s_alertMsg("담당자검색 후 이용해주세요.");
+		return;
+	}
+		dhx.confirm({
+			header : "알림",
+			text : "수정 하시겠습니까?",
+			buttons : ["예","아니오"],
+			buttonsAlignment: "center"
+		}).then( function (result) {
+			if(result){
+				
+				$.ajax({
+					  url  : "/am/um/030/am_um_030_modify.do"
+					, type : "POST"
+			        , data : postParam
+			        , dataType : "json"
+			        , success : function(xhr){
+							
+							fn_s_alertMsg(xhr.message);
+	   		        	
+			        	fn_saveSuccess();
+					}, error : function(){
+						fn_s_alertMsg("저장 실패");
+					}
+			     }); 
+			}
+			else{
+				return;
+			}
+		});
+ }
+
+}
+//삭제
+function fn_del(){
+	if(!fn_s_validateForm(subForm)){
+		return;
+	}
+	var data = subForm.getValue();
+	if(fn_isNull(data.v_user_id)){
+		fn_s_alertMsg("담당자검색 후 이용해주세요.");
+		return;
+	}
+	dhx.confirm({
+		header : "알림",
+		text : "삭제하시겠습니까?",
+		buttons : ["예","아니오"],
+		buttonsAlignment: "center"
+	}).then( function (result) {
+		if(result){
+			var postParam = fn_getPostParam(subForm);
+			
+		 	$.ajax({
+				  url  : "/am/um/030/am_um_030_del.do"
+				, type : "POST"
+		        , data : postParam
+		        , dataType : "json"
+		        , success : function(xhr){
+		        	
+		        		fn_s_alertMsg(xhr.message);
+   		        	
+		        	fn_saveSuccess();
+				}, error : function(){
+					fn_s_alertMsg("저장 실패");
+				}
+		     }); 
+		}
+		else{
+			return;
+		}
+	});
+}
+
+function fn_saveSuccess() {
+
+ mainPage.search();
+ fn_add();
+}
+
+function setUserPopUpData(data){
+	
+	subForm.getItem('v_user_id').setValue(data.v_user_no);
+	subForm.getItem('v_user_nm').setValue(data.v_user_nm);
+	fn_popClose();	
+}
+function setDisabled(){
+	$("#v_brand_cd").attr("disabled","disabled");
+	$("#v_nation_cd").attr("disabled","disabled");
+    subForm.getItem("v_nation_cd").disable();
+    subForm.getItem("v_brand_cd").disable();
+}
+</script>
+</html>

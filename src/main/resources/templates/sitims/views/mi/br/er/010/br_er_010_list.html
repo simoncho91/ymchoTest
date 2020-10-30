@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript'>
+
+
+var layoutMain, searchForm, toolbar, dcGrdMain, grdMain, mainPage;
+
+//초기화작업
+$(function(){
+	//전체 레이아웃 초기화
+	layoutMain = new dhx.Layout("layoutObj", {
+		css	 : "dhx_layout-cell--border_top",
+		rows : [
+			 {id : "searchForm"}
+			,{id : "toolbar",		gravity	:	false}
+			,{id : "grid",			height	:	"83%",header:"목록"}
+			,{id : "page", resizable: true}
+		] 
+	});
+	
+	//검색조건폼
+	searchForm	=	new dhx.Form(null,{
+		css: "formSearch--border_bottom",
+		cols : [
+			{type: "datepicker", id:"i_sStDate", name:"i_sStDate", label: "등록일", labelInline: true, labelWidth: "100", dateFormat: "%Y-%m-%d", width: "250px", gravity:false, editable: true,
+	  			  mark: fn_dhxDispToday},
+			{type: "input",width:"15", gravity: false, hidden:true},
+			{type: "datepicker", id:"i_sEnDate", name:"i_sEnDate", label: "", labelInline: true, labelWidth: "0", dateFormat: "%Y-%m-%d", width: "150px", gravity:false, editable: true,
+	  			  mark: fn_dhxDispToday},
+			{type : "select", name:"i_sStatus",  id:"i_sStatus",  label:"상태",  labelPosition : "left", labelWidth:"90", width:"250", gravity: false,
+				options:[{}]
+			},
+			{type : "select", name:"i_sBrandCd", id:"i_sBrandCd", label:"브랜드", labelPosition : "left", labelWidth:"100", width:"270", gravity: false,
+				options:[{}]
+			},
+			{type:"input"	, name:"i_sSearchKeyword"	,label:"검색어",	id:"i_sSearchKeyword", gravity: false, 	labelPosition : "left", labelWidth: "100", width:"370", icon: "dxi dxi-magnify",	placeholder: "제목 OR 등록자"}
+		]
+	});
+	
+	layoutMain.getCell('searchForm').attach(searchForm);
+	
+	//툴바
+	toolbar	=	new dhx.Toolbar(null, {
+		css : "dhx_widget--bordered dhx_widget--bg_gray",
+		data : [
+			{type : "button", 	id : "excel", 		icon : "dxi-file-excel", 	value : "excel"},
+		]
+	});
+	
+	//메인폼
+	dcGrdMain	=	new dhx.DataCollection();
+	grdMain	=	new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns : [
+			{width : 100, id : "v_ad_req_id", 	header : [{text : "문서번호",	align : "center"}],	align : "center"},
+			{width : 100, id : "v_title", 		header : [{text : "제목", 	align : "center"}],	align : "left", mark: fn_dhxLinkCss},
+			{width : 100, id : "BRAND_NM", 		header : [{text : "브랜드명",	align : "center"}], align : "center"},
+			{width : 100, id : "v_product_cd", 	header : [{text : "제품코드",	align : "center"}],	align : "center"},
+			{width : 100, id : "VENDOR_ID", 	header : [{text : "제품연구원",	align : "center"}],	align : "center"},
+			{width : 100, id : "v_reg_user_nm",	header : [{text : "등록자",	align : "center"}],	align : "center"},
+			{width : 100, id : "v_reg_dtm",		header : [{text : "등록일",	align : "center"}], align : "center"},
+			{width : 100, id : "v_ra_nm",		header : [{text : "담당 RA",	align : "center"}], align : "center"},
+			{width : 100, id : "STATUS",		header : [{text : "상태",		align : "center"}], align : "center"},
+			{width : 100, id : "v_ad_req_status_cd",header : [{text : "상태",		align : "center"}], align : "center", hidden:true}
+		],
+		headerRowHeight : 46,
+		resizable : true,
+		selection : "row",
+		fitToContainer : true,
+		data : dcGrdMain
+	});
+	
+	layoutMain.getCell("grid").attach(grdMain);
+	
+	//페이징리스트처리
+	mainPage = new CmDhtmlx6Paging({
+		 layout			: layoutMain
+		,name  			: 'mainPage'
+		,gridData	 	: dcGrdMain
+		,grid			: grdMain
+		,url			: "/br/er/010/br_er_010_list_ajax.do"
+		,frmSearch  	: searchForm
+		,gridPageCell	: layoutMain.getCell('page')
+		,denySortCol 	: ['n_num']
+	});
+	//이벤트 함수
+	fn_addButtonEvents();
+	//셀렉트박스 옵션 셋팅 함수
+	fn_getSearchOptions();
+});
+
+
+function fn_search(){
+	mainPage.search(1);
+}
+
+//셀렉트박스 옵션 셋팅
+function fn_getSearchOptions(){
+	fn_ajax({
+		  url		 : "/br/pr/020/br_pr_020_get_options_ajax.do"
+		, postParam  : ""
+		, success 	 : function(data){
+			var optionStatus	=	data.data[0];
+			var optionBrandNm	=	data.data[1];
+			var tempStatus 		=   [{value : "", content : "전체"}];
+			var tempBrandNm		=	[{value : "", content : "전체"}];
+			
+			//selectbox - 상태값 셋팅
+			for(var i=1; i<optionStatus.length; i++){
+				tempStatus.push({value : optionStatus[i].COMM_CD, content : optionStatus[i].COMM_CD_NM});
+			}
+			searchForm.getItem("i_sStatus").config.options = tempStatus;
+
+			//selectbox - 브랜드명 셋팅
+			for(var i=0; i<optionBrandNm.length; i++){
+				tempBrandNm.push({value : optionBrandNm[i].COMM_CD, content : optionBrandNm[i].COMM_CD_NM});
+			}
+			searchForm.getItem("i_sBrandCd").config.options = tempBrandNm;
+			
+			//searcForm initialize
+			searchForm.paint();
+			searchForm.clear();
+			
+			searchForm.getItem('i_sStatus').setValue("AD_REQ_STATUS02");
+			
+			mainPage.initPaging(pageCallback);
+		}
+	});
+}
+
+function fn_view(row,col,e) {
+	var data = grdMain.data.getItem(row.id); 
+	var status	=	row.v_ad_req_status_cd;
+	
+	if(status == 'AD_REQ_STATUS01' || status == 'AD_REQ_STATUS02' || status == 'AD_REQ_STATUS03'){
+		window.location.href='/br/er/010/br_er_010_view.do?i_sAdReqId='+data.v_ad_req_id;
+	}else{
+		window.location.href='/br/er/010/br_er_010_ori_view.do?i_sAdReqId='+data.v_ad_req_id;
+	}
+}
+function fn_view2(row,col,e) {
+	if (col.id == 'v_title')
+		fn_view(row,col,e);
+}
+
+//이벤트 전용 함수
+function fn_addButtonEvents(){
+	//버튼 툴바 이벤트(엑셀)
+    toolbar.events.on("Click", function(id){
+    	if(id=='excel'){
+    		grdMain.export.xlsx({ name : '문안검토목록', url: "/dhtmlx/commExcelDownload.do" });
+    	}
+    });
+	
+	//상세 이동 이벤트
+	grdMain.events.on("CellClick", fn_view2);
+	grdMain.events.on("CellDblClick", fn_view);
+
+    //일자 초기화 이벤트
+    searchForm.events.on("ButtonClick",function(){
+    	searchForm.getItem("i_sStDate").clear();
+    	searchForm.getItem("i_sEnDate").clear();
+    });
+    
+    $(document).on('keyup','#i_sSearchKeyword',function(e){
+    	if(e.keyCode == 13){
+    		fn_search();
+    	}
+    });
+}
+
+//엑셀 다운로드
+function fn_excel() {
+	fn_excel_download("/br/er/010/br_er_010_list_excel.do", mainPage.postParam);
+}
+
+//목록으로 돌아올시 페이지 상태 유지 콜백
+function pageCallback(param){
+	searchForm.getItem('i_sStDate').setValue(param.i_sStDate);
+	searchForm.getItem('i_sEnDate').setValue(param.i_sEnDate);
+	searchForm.getItem('i_sStatus').setValue(param.i_sStatus);
+	searchForm.getItem('i_sBrandCd').setValue(param.i_sBrandCd);   
+	searchForm.getItem('i_sSearchKeyword').setValue(param.i_sSearchKeyword);   
+}
+</script>
+</html>

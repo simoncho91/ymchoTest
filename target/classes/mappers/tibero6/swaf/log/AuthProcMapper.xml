@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : ActionLogMapper.xml
+    Description   : Action Log 기록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  김태형       1.0        최초 생성
+-->
+<mapper namespace="AuthProc">
+	
+	<!--  1. 조회  -->
+    <!--  1.1. 마스터 조회  -->
+    <select id="selectList"  parameterType="hashMap" resultType="hashMap">
+      <![CDATA[
+        SELECT /* AuthProc.selectList */
+               A.AUTH_PROC_NO
+             , A.PROC_MENU_CD
+             , B.MENU_NM AS PROC_MENU_NM
+             , A.PROC_USER_NO
+             , TO_CHAR(A.PROC_DTM, 'YYYY-MM-DD HH24:MI:SS') AS PROC_DTM
+             , A.CLNT_IP
+             , A.SVR_IP
+             , A.PROC_RSN_CNTS
+          FROM TZF_AUTHPROC_L A	, TZF_MENU_M B
+          WHERE A.PROC_MENU_CD = B.MENU_CD
+        ]]>
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(PROC_USER_NO)">
+           AND A.PROC_USER_NO = #{PROC_USER_NO}
+        </if>
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(PROC_MENU_CD)">
+           AND A.PROC_MENU_CD = #{PROC_MENU_CD}
+        </if>
+        <if test="START_DT != null and !START_DT.equals('') and END_DT != null and !END_DT.equals('')">
+		   AND TO_CHAR(A.PROC_DTM, 'YYYYMMDD') BETWEEN #{START_DT} AND #{END_DT}
+		</if>   
+          ORDER BY A.AUTH_PROC_NO DESC
+    </select>
+    
+    <!--  1.2. 상세조회  -->
+    <select id="selectDetail"  parameterType="hashMap" resultType="hashMap">
+      <![CDATA[
+        SELECT /* AuthProc.selectDetail */
+               A.PROC_SEQ
+             , A.TGT_USER_NO
+             , A.MENU_CD
+             , B.MENU_NM
+             , A.PROC_CLS_CD
+             , (SELECT COMM_CD_NM FROM TZF_COMMCD_D B WHERE B.GRP_CD = 'SY010' AND B.COMM_CD = A.PROC_CLS_CD ) AS ACTION_NM
+             , A.ROLE_NO
+          FROM TZF_AUTHPROC_D A , TZF_MENU_M B
+         WHERE A.MENU_CD = B.MENU_CD
+         	AND A.AUTH_PROC_NO = #{AUTH_PROC_NO} 
+          ORDER BY A.PROC_SEQ DESC
+        ]]>
+    </select>
+    
+    <!--  2. 등록  -->
+    <!--  2.1. 마스터 등록  -->
+    <insert id="insert"  parameterType="com.shinsegae_inc.core.vo.AuthProcVO">
+        <selectKey keyProperty="authProcNo" resultType="int" order="BEFORE">
+            SELECT  NVL(MAX(AUTH_PROC_NO), 0) + 1 AS authProcNo
+              FROM TZF_AUTHPROC_L
+        </selectKey>
+        
+        INSERT /* AuthProc.insert */
+          INTO TZF_AUTHPROC_L
+             (
+                AUTH_PROC_NO
+              , PROC_USER_NO
+              , PROC_SYS_ID
+              , PROC_MENU_CD
+              , PROC_DTM
+              
+              , CLNT_IP
+              , SVR_IP
+              , PROC_RSN_CNTS
+              , REG_USER_NO
+              , REG_DTM
+              , REG_IP
+             )  
+	    VALUES
+	         (
+	            #{authProcNo} 
+	          , #{procUserNo} 
+	          , #{procSysId} 
+	          , #{procMenuCd} 
+	          , SYSDATE
+	          
+	          , #{clntIp}
+	          , #{svrIp}
+	          , #{procRsnCnts} 
+	          , #{regUserNo}
+	          , SYSDATE 
+	          , #{regIp}  
+	         )
+    </insert>
+    
+    <!--  2.2. 상세 등록  -->
+    <insert id="insertDetail"  parameterType="com.shinsegae_inc.core.vo.AuthProcDetailVO">
+        INSERT /* AuthProc.insertDetail */
+          INTO TZF_AUTHPROC_D
+             (
+                AUTH_PROC_NO
+              , PROC_SEQ
+              , TGT_USER_NO
+              , ROLE_NO
+              , SYS_ID
+              
+              , MENU_CD
+              , PROC_CLS_CD
+              , REG_USER_NO
+              , REG_DTM
+              , REG_IP
+             )  
+	    VALUES
+	         (
+	            #{authProcNo} 
+	          , #{procSeq} 
+	          , #{tgtUserNo} 
+	          , NVL(#{roleNo}, 'N/A') 
+	          , #{sysId}
+	           
+	          , #{menuCd} 
+	          , #{procClsCd} 
+	          , #{regUserNo}
+	          , SYSDATE
+	          , #{regIp}
+	         )
+    </insert>
+	
+	
+</mapper>

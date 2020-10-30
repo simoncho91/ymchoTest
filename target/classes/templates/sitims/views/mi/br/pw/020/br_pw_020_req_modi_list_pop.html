@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<html th:replace="~{layout/dhtmlxPopLayout :: layout(~{::script})}">
+
+<script th:inline="javascript">
+
+
+var layoutMain,grdMain,frmSearch,chkRowId;
+
+$(function(){
+	layoutMain = new dhx.Layout('layoutObj',{
+	     css: "dhx_layout-cell--border_top",
+			rows:[
+				{id:'grid',height:'90%'}				
+			]		
+	});
+	
+    var b = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null,{
+		columns:[
+			{ width: 120, id: "v_product_cd" , header: [{ text: "제품코드" ,align:'center'}],align:'center'}
+			,{ width: 100, id: "v_nation_nm" , header: [{ text: "국가명" ,align:'center'}] ,align:'center'}
+			,{ width: 100, id: "v_req_item_nm" , header: [{ text: "요청 항목" ,align:'center'}] ,align:'center'}
+			,{ width: 500, id: "v_comment" , header: [{ text: "검토 의견" ,align:'center'}] ,align:'left'}
+			,{ width: 200, id: "v_reviwer_nm" , header: [{ text: "검토자" ,align:'center'}] ,align:'center'}
+		]
+		,headerRowHeight: 46
+    	,autoWidth: true
+	    ,resizable: true
+	    ,selection: "row"
+        ,multiselection : false 
+		,data:dcGrdMain
+	});
+	b.attach(grdMain);
+
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/br/pw/020/getReqModiList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['radio']
+       		, noPaging : true
+       		, postParam : {
+       			i_sRecordId: '[(${reqVo.i_sRecordId})]'
+           		, i_sProductCd: '[(${reqVo.i_sProductCd})]'
+         		, i_sFlag: '[(${reqVo.i_sFlag})]'
+			}
+    });
+    mainPage.initPaging();
+});
+
+function fn_search() {	 
+    mainPage.search(1);
+}
+
+</script>
+</html>

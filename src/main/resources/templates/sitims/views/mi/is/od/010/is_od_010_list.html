@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type="text/javascript" src="/sitims/js/util/cm_function.js"></script>
+<script type='text/javascript'>
+
+// 레이아웃 변수 설정
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage,nationCode;
+var	i_iNowPageNo	= 1;
+var	i_iPageSize		= 50;
+
+// 레이아웃 초기화   
+$(function(){
+	//NationData 셋팅
+    fn_initDS();
+	 
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form',height:'200px', }
+			,{id:'toolbar'}
+			,{id:'toolbarSub'}
+			,{id:'grid', height:'76%', resizable: true, header: "목록"}
+			,{id:'page'}
+		]
+	});
+
+// 폼 설정 - 검색조건
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		css: "formSearch--border_bottom",
+		      rows: [
+		     	{cols: 
+		     		[
+		     		  {type: "select", id:"i_sVendor", name:"vVendorId", label : "ODM사", labelPosition: "left", labelWidth:"100", width:"300", gravity:false,
+		     			  options:[{}]
+		     		  },
+		     		  {type: "input", id:"i_sMaker", name:"vMaker", icon: "dxi dxi-magnify", label : "제조사", labelPosition: "left", labelWidth:"100", width:"300", gravity:false},
+		     	      {type: "text", label : "향코드 여부", labelPosition: "left", labelWidth:"125", width:"120", gravity:false},  
+		     	      radioConfig,
+		     	      {type: "text", label : "알러젠 포함여부", labelPosition: "left", labelWidth:"145", width:"140", gravity:false},  
+		     	      radioConfig2
+	     	      ]
+		     	},
+		     	{cols: fn_checkbox('LIM')}
+				,{cols : fn_checkbox('BAN')}
+				, {type: "input", name: "LIM_LIST", hidden:true}
+				, {type: "input", name: "BAN_LIST", hidden:true}
+		        ,{cols: [
+		            	{type:"input" , name:"i_sSearchNm", id:"i_sSearchNm", icon: "dxi dxi-magnify", label:"검색조건", labelPosition: "left", labelInline:true, labelWidth: "100", width: "500", gravity: false, required: false, placeholder: "CAS NO or 성분명(영어) or 원료코드 or 성분코드"}
+		            ]
+		        }
+		    ]
+		});
+	 
+	frmSearchCell.attach(frmSearch);
+
+	// 메인 폼
+	var gridCell = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns:[
+			{ width: 100, id: "v_odmmat_cd", name: "v_odmmat_cd", align:"center"      , header: [{ text: "원료코드",align:"center" }],autoWidth: false, mark: fn_dhxLinkCss}
+			, { width: 200, id: "v_mat_nm", name: "vMatNm", align:"left"      , header: [{ text: "원료명",align:"center"}]}
+			, { width: 130, id: "v_maker", name: "vMaker", align:"left"      , header: [{ text: "제조사",align:"center"}],autoWidth: false}
+			, { width: 130, id: "v_ban", name: "vBan", align:"center"      , header: [{ text: "사용 금지",align:"center"}],
+				htmlEnable: true,
+				autoWidth: false,
+				template: function(text, row, col)
+				{
+					if(text == null || text == '') return null;
+					var banCnt = text.split(',').length;
+					return banCnt > 1 ? banCnt+"개국 사용금지" : text;
+				}	
+			}
+			, { width: 130, id: "v_limit", name: "vLimit", align:"center"      , header: [{ text: "배합 제한",align:"center"}],
+				htmlEnable: true,
+				autoWidth: false,
+				template: function(text, row, col)
+				{
+					if(text == null || text == '') return null;
+					var banCnt = text.split(',').length;
+					return banCnt > 1 ? banCnt+"개국 배합제한" : text;
+				}
+			}
+			, { width: 80, id: "v_use_yn", name: "vUseYn", align:"center"      , header: [{ text: "상태",align:"center"}],autoWidth: false}
+			, { width: 100, id: "v_flag_flavor", name: "vFlagFlavor", align:"center"      , header: [{ text: "향코드 여부",align:"center"}],autoWidth: false}
+			, { width: 120, id: "v_allergen_yn", name: "vAllergenYn", align:"center"      , header: [{ text: "알러젠 포함여부",align:"center"}],autoWidth: false}
+			, { width: 100, id: "n_v_reg_dtm", name: "vRegDtm", align:"center"      , header: [{ text: "등록일",align:"center"}],autoWidth: false}
+			, { hidden:true, id: "v_odmdb_id", name: "v_odmdb_id", align:"center"      , header: [{ text: "ODM 고유 코드",align:"center"}]}
+		]
+    	,autoWidth: true
+    	,headerRowHeight: 40
+	    ,resizable: true
+	    ,selection: "row"
+	    ,data: dcGrdMain
+	});
+	gridCell.attach(grdMain);
+	
+	//상세 이동 이벤트
+	grdMain.events.on("CellClick", fn_view2);
+	grdMain.events.on("CellDblClick", fn_view);
+
+   	// 페이징 처리
+    mainPage = new CmDhtmlx6Paging({
+    		layout: layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/is/od/010/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    		, moveCallback : fn_setFrmSearch
+    });
+    
+	mainPage.initPaging(pageCallback);
+	function pageCallback(param){
+		frmSearch.getItem('i_sVendor').setValue(param.i_sVendor);
+    	frmSearch.getItem('i_sMaker').setValue(param.i_sMaker);
+    	frmSearch.getItem('i_sSearchNm').setValue(param.i_sSearchNm);
+    	frmSearch.getItem('i_sFlagFlavor').setValue(param.vFlagFlavor);
+    	frmSearch.getItem('i_sAllergenYn').setValue(param.vAllergenYn);
+    	frmSearch.setValue({ "LIM_LIST": param.LIM_LIST, "BAN_LIST": param.BAN_LIST});
+	}
+});
+
+// 라디오그룹 Config
+var radioConfig = {
+		  type: "radioGroup",
+		  id: "i_sFlagFlavor",
+		  name: "vFlagFlavor",
+		  disabled: false,
+		  required: false,
+		  gravity: false,
+		  hidden: false,
+		  options: {
+		    padding: "0 0 0 20px",   
+		    align: "center",
+		    cols: [
+		      {
+		        type: "radioButton",
+		        gravity: false,
+		        label: "All",
+		        labelPosition: "right",
+		        value: "All",
+		        checked: "All"
+		      },
+		      {
+		        type: "radioButton",
+		        gravity: false,
+		        label: "Y",
+		        labelPosition: "right",
+		        value: "Y",
+		      },
+		      {
+		        type: "radioButton",
+		        gravity: false,
+		        label: "N",
+		        labelPosition: "right",
+		        value: "N",
+		      }
+		    ]
+		  }			
+		};
+		
+// 라디오그룹 Config2
+var radioConfig2 = {
+		  type: "radioGroup",
+		  id: "i_sAllergenYn",
+		  name: "vAllergenYn",
+		  disabled: false,
+		  required: false,
+		  gravity: false,
+		  hidden: false,
+		  options: {
+		    padding: "0 0 0 20px",
+		    align: "center",
+		    cols: [
+		      {
+		        type: "radioButton",
+		        gravity: false,
+		        label: "All",
+		        labelPosition: "right",
+		        value: "All",
+		        checked: "All"
+		      },
+		      {
+		        type: "radioButton",
+		        gravity: false,
+		        label: "Y",
+		        labelPosition: "right",
+		        value: "Y",
+		      },
+		      {
+		        type: "radioButton",
+		        gravity: false,
+		        label: "N",
+		        labelPosition: "right",
+		        value: "N",
+		      }
+		    ]
+		  }			
+		};
+		
+// NationData 초기화
+function fn_initDS() {
+	//Search NationData 초기화
+	if (fn_isNull(nationCode)) {
+		var postParam = new Object();
+		postParam.i_sMstCode = "ODM_EXPORT";
+		fn_ajax({
+			url : "/am/um/030/CmCodeListForRaNation.do"
+			, postParam : postParam
+			, async:false
+			, success : function(responseData) {
+				nationCode	= responseData.result;
+			}
+		});
+	}
+	
+	//SelectBox 초기화
+	fn_ajax({
+		  url		 : "/is/od/010/is_od_010_get_options_ajax.do"
+		, postParam  : ""
+		, success 	 : function(data){
+			var optionOdm	=	data.data;
+			var tempOdm		=   [{value : "", content : "선택"}];
+
+			//selectbox - 상태값 셋팅
+			for(var i=0; i<optionOdm.length; i++){
+				tempOdm.push({value : optionOdm[i].v_vendor_id, content : optionOdm[i].v_vendor_nm});
+			}
+			
+			frmSearch.getItem("i_sVendor").config.options = tempOdm;
+		}
+	});
+}
+
+// 검색 함수
+function fn_setFrmSearch() {
+	var labelRequired;
+	frmSearch.forEach(function(item, index, array) {
+		
+		console.log(item.config);
+		
+		if(item.config.required && fn_isNull(item.config.value)){
+			labelRequired=item.config.label;
+			return; 
+		}		
+	});
+	
+	if(!fn_isNull(labelRequired)){
+		alert(labelRequired + "을 입력 후 검색바랍니다.");
+		return;
+	}
+	
+	var data = frmSearch.getValue();
+	var arrLim = [];
+	var arrBan = [];
+	var dataKeys =Object.keys(data);
+
+	for(var i=0 ; i<dataKeys.length;i++){
+		if(data[dataKeys[i]] == true){
+			if (-1 < dataKeys[i].indexOf('Lim'))
+				arrLim.push(dataKeys[i].replace("i_sLim", ""));
+			else
+				arrBan.push(dataKeys[i].replace("i_sBan", ""));
+		}
+	}
+	
+	frmSearch.setValue({ "LIM_LIST": arrLim, "BAN_LIST": arrBan});
+}
+
+function fn_view(row,col,e) {
+	var data = grdMain.data.getItem(row.id);    	
+	
+	location.href='/is/od/010/is_od_010_view.do?i_sOdmdb_id='+data.v_odmdb_id;
+}
+function fn_view2(row,col,e) {
+	if (col.id == 'v_odmmat_cd')
+		fn_view(row,col,e);
+}
+function fn_search() {
+	fn_setFrmSearch();
+	mainPage.search(1);
+}
+		
+// 체크박스 초기화 함수
+function fn_checkbox(flag) {
+	var dataArray = new Array();
+	if ('LIM' == flag) {
+		dataArray.push({type: "text", label : "배합제한", labelPosition: "left", labelWidth:"100", width:"117", gravity:false, css: "mt_-07"});
+		for(var i=0;i<nationCode.length;i++){
+			dataArray.push({
+				type : "checkbox"
+					, label : nationCode[i].COMM_CD_NM
+					, name : 'i_sLim' + nationCode[i].COMM_CD
+					, labelWidth : "110"
+					, width : "110"
+					, labelPosition : "left"
+					, gravity : false
+			});
+		}
+	} else if('BAN' == flag) {
+		dataArray.push({type: "text", label : "사용금지", labelPosition: "left", labelWidth:"100", width:"117", gravity:false, css: "mt_-07"});
+		for(var i=0;i<nationCode.length;i++){
+			dataArray.push({
+				type : "checkbox"
+					, label : nationCode[i].COMM_CD_NM
+					, name : 'i_sBan' + nationCode[i].COMM_CD
+					, labelWidth : "110"
+					, width : "110"
+					, labelPosition : "left"
+					, gravity : false
+			});
+		}
+	}
+
+	return dataArray;
+}
+
+// 조회 엔터버튼 이벤트
+$(document).on('keyup','#i_sSearchNm',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+// 검색 이벤트
+$(document).on('click','#i_sSearch',function(e){
+		fn_search();
+});
+
+// 엑셀 다운로드
+function fn_excel() {
+	fn_excel_download("/is/od/010/is_od_010_list_excel.do", mainPage.postParam);
+}
+
+</script>
+</html>

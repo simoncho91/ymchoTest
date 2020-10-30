@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html th:fragment="layout(script)" xmlns:th="http://www.thymeleaf.org">
+
+<title id="title" th:if="${programInfo.get('TITLE') != null}" th:text="${programInfo.get('TITLE') +' ['+@environment.getActiveProfiles()[0] + ']'}"></title>
+
+<script th:replace="${script}"></script>
+
+<body style="overflow:auto">
+    <div id="wrapper">
+        <div id="centerWrap">
+            <div id="appAreaWrap">
+                <div id="appRoleArea">
+                    <div class="title_area_wrap">
+                        <div th:replace="fragments/roleFragment :: role_title"></div>
+                        <div th:replace="fragments/roleFragment :: role_btn_area"></div>
+                    </div>
+                </div>
+                <div id="appArea">
+                    <div id="layoutObj"></div>
+                </div>
+            </div>
+        </div>
+     </div>
+</body>
+</html>

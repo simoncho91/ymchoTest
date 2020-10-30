@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="pif_claim_support" language="groovy" pageWidth="595" pageHeight="842" columnWidth="511" leftMargin="42" rightMargin="42" topMargin="42" bottomMargin="28">
+	<property name="ireport.zoom" value="1.6105100000000012"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="JasperCustomSubReportDatasource" class="net.sf.jasperreports.engine.data.JRBeanCollectionDataSource"/>
+	<parameter name="JasperCustomSubReportDatasource2" class="net.sf.jasperreports.engine.data.JRBeanCollectionDataSource"/>
+	<parameter name="JasperCustomSubReportLocation" class="net.sf.jasperreports.engine.JasperReport"/>
+	<parameter name="JasperCustomSubReportLocation2" class="net.sf.jasperreports.engine.JasperReport"/>
+	<field name="v_sap_cd" class="java.lang.String"/>
+	<field name="now_date" class="java.lang.String"/>
+	<field name="v_product_nm_en" class="java.lang.String"/>
+	<field name="v_product_cd" class="java.lang.String"/>
+	<field name="v_report_no" class="java.lang.String"/>
+	<field name="v_addr1" class="java.lang.String"/>
+	<field name="v_addr2" class="java.lang.String"/>
+	<field name="v_addr3" class="java.lang.String"/>
+	<field name="v_logo" class="java.lang.String"/>
+	<field name="v_phone_num" class="java.lang.String"/>
+	<field name="v_fax_num" class="java.lang.String"/>
+	<field name="v_manager_nm_en" class="java.lang.String"/>
+	<field name="v_sign" class="java.lang.String"/>
+	<field name="v_partno" class="java.lang.String"/>
+	<field name="v_sign_flag" class="java.lang.String"/>
+	<field name="v_cpnm" class="java.lang.String"/>
+	<pageHeader>
+		<band height="97" splitType="Stretch">
+			<image scaleImage="FillFrame">
+				<reportElement  x="0" y="0" width="204" height="87"/>
+				<imageExpression><![CDATA[$F{v_logo}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement  x="324" y="42" width="187" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_cpnm}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="324" y="28" width="187" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_addr3}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="324" y="14" width="187" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_addr2}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="324" y="70" width="186" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_fax_num}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="324" y="0" width="187" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_addr1}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="324" y="56" width="186" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[$F{v_phone_num}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="140" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="63" width="100" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PRODUCT NAME  :]]></text>
+			</staticText>
+			<textField>
+				<reportElement  x="58" y="103" width="359" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{v_partno}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="103" width="107" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PART NO :]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="100" y="83" width="412" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{v_product_cd}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="83" width="100" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PRODUCT CODE  :]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="100" y="63" width="412" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{v_product_nm_en}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="11" width="511" height="30"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="20" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Claim Support]]></text>
+			</staticText>
+			<image>
+				<reportElement x="0" y="41" width="511" height="11"/>
+				<imageExpression><![CDATA["jasper/images/line2.png"]]></imageExpression>
+			</image>
+			<image>
+				<reportElement x="0" y="0" width="511" height="11"/>
+				<imageExpression><![CDATA["jasper/images/line2.png"]]></imageExpression>
+			</image>
+		</band>
+		<band height="50">
+			<subreport>
+				<reportElement x="0" y="2" width="511" height="48"/>
+				<subreportParameter name="JasperCustomSubReportDatasource">
+					<subreportParameterExpression><![CDATA[$P{JasperCustomSubReportDatasource}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource ($P{JasperCustomSubReportDatasource}.getData())]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{JasperCustomSubReportLocation}]]></subreportExpression>
+			</subreport>
+		</band>
+		<band height="85">
+			<subreport>
+				<reportElement x="0" y="0" width="511" height="48"/>
+				<subreportParameter name="JasperCustomSubReportDatasource">
+					<subreportParameterExpression><![CDATA[$P{JasperCustomSubReportDatasource2}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource ($P{JasperCustomSubReportDatasource2}.getData())]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{JasperCustomSubReportLocation2}]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<lastPageFooter>
+		<band height="191">
+			<image>
+				<reportElement positionType="FixRelativeToBottom" x="266" y="0" width="232" height="167"/>
+				<imageExpression><![CDATA[$F{v_sign_flag}.equals("N")? "jasper/images/no_sign2.jpg":"jasper/images/blankImg.png"]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="281" y="79" width="115" height="20" forecolor="#323232"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{v_sign_flag}.equals("N")? "":""+$F{now_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="280" y="104" width="58" height="19" forecolor="#323232"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="11"/>
+					<paragraph lineSpacing="1_1_2"/>
+				</textElement>
+				<text><![CDATA[Signature : ]]></text>
+			</staticText>
+			<image>
+				<reportElement x="335" y="119" width="95" height="9"/>
+				<imageExpression><![CDATA["jasper/images/line2.png"]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="339" y="104" width="100" height="19"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[$F{v_manager_nm_en}]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement positionType="FixRelativeToBottom" x="416" y="70" width="120" height="60"/>
+				<imageExpression><![CDATA[$F{v_sign_flag}.equals("N")? "jasper/images/blankImg.png":""+$F{v_sign}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="315" y="45" width="115" height="20" forecolor="#323232"/>
+				<textElement textAlignment="Justified" verticalAlignment="Middle">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{v_sign_flag}.equals("N")? " "+$F{now_date}:""]]></textFieldExpression>
+			</textField>
+		</band>
+	</lastPageFooter>
+</jasperReport>

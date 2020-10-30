@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_SiCm020Mapper.xml
+    Description   :  제품유형
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.11  jjw       1.0        최초 생성
+-->
+<mapper namespace="If_SiCm020Mapper">
+	<insert id="insertCategoryInfo" parameterType="CmMap">
+<!-- 		<selectKey keyProperty="i_sClasscd" resultType="java.lang.String" order="BEFORE"> -->
+<!-- 			SELECT	'S' || LPAD(NVL(SUBSTR(MAX(V_CLASS_CD), 5), 0) + 1, 6, '0') -->
+<!-- 			  FROM	TSI_PD_CL_L -->
+<!-- 			 WHERE	V_CLASS_CD LIKE 'S' || '%' -->
+<!-- 		</selectKey> -->
+		INSERT INTO /* SiCm020Mapper.insertCategoryInfo */ 
+		TSI_PD_CL_L (
+			V_CLASS_CD
+			, V_UCLASS_CD
+			, V_CLASS_NM
+			, N_SEQ_NO
+			, V_USE_YN
+			, N_LIFE
+			, N_PAO
+			, V_PAO_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM
+			, V_DEL_YN
+		) VALUES (
+			#{i_sClasscd}
+			, #{i_sUClasscd}
+			, #{i_sTitle}
+			, #{i_iSeqNo}
+			, #{i_sFlagUse}
+			, #{i_iLife}
+			, #{i_iPao}
+			, #{i_sFlagPao}
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, 'N'
+		)
+	</insert>
+	
+	<update id="updateCategoryInfo" parameterType="CmMap">
+		UPDATE /* If_SiCm020Mapper.updateCategoryInfo */	
+		TSI_PD_CL_L SET  
+			V_CLASS_NM         = #{i_sTitle}
+			, N_SEQ_NO             = #{i_iSeqNo}
+			, V_USE_YN             = #{i_sFlagUse}
+			, N_LIFE               = #{i_iLife}
+			, N_PAO                = #{i_iPao}
+			, V_PAO_YN             = #{i_sFlagPao}
+			, V_UPDATE_USER_ID     = #{i_sUserId}
+			, V_UPDATE_DTM         = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		 WHERE	V_CLASS_CD = #{i_sClasscd}
+	</update>
+	
+	<update id="deleteSiCm020" parameterType="CmMap">
+		UPDATE /* If_SiCm020Mapper.updateCategoryInfo */	
+		TSI_PD_CL_L SET  
+			V_DEL_YN     = 'Y'
+			, V_UPDATE_USER_ID     = #{pUpdateUserId}
+			, V_UPDATE_DTM         = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		 WHERE	V_CLASS_CD = #{i_sClasscd}
+	</update>
+</mapper>

@@ -1,0 +1,486 @@
+<!--
+설명       : 홈화면 프로그램
+
+-------------- ---------- -----------------------------------------------------------
+2019.02.19     이웅재     최초작성
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+  <!-- css -->
+  <link rel="stylesheet" type="text/css" href="/sitims/CSS/common.css">
+  <!--[if lt IE 9]>
+  <script type="text/javascript" src="/sitims/js/lib/html5.js"></script>
+  <![endif]-->
+
+<script th:src="@{/js/includeDhtmlx6.js?20200402}"></script>
+<script>
+
+//layout
+var layoutMain;
+
+
+$(function(){	
+	$.ajax({
+		url:"/tiims/getNoticeInfo.do"
+		,type:"POST"
+		,dataType : "json"
+		,success : function(data){
+			var data = data.result.data;
+			var html = "";
+			//$('#tbNotice').html('');
+			data.forEach(function(obj,i){
+				html +="<tr class=\"trNoticeTag\">"
+	              +"<td class=\"ta_l\"><a href=\"javascript:;\" name=\"td_4_title\" urlId=\""+obj.v_record_id+"\">"+obj.v_title+"</a></td>"
+	              +"<td class=\"ta_c\" name=\"td_4_user\">"+obj.v_reg_user_nm+"</td>"
+	              +"<td class=\"ta_r\" name=\"td_4_dtm\">"+obj.v_reg_dtm+"</td>"+"</tr>";
+			});
+			$('#tbNotice').append(html);
+			$('#tbNotice').find('.trNoticeTag a').on('click',function(e){
+				var id = $(this).attr('urlId');
+				//location.href="/nb/nb/030/nb_nb_030_view.do?i_sRecordId="+id;
+				var url = "/nb/nb/030/nb_nb_030_view.do?openMenuCd=MINBNB030&i_sRecordId="+id;
+
+				parent.mdiObj.create_tab('MINBNB030','공지사항',url,undefined,function(){
+					if(parent.mdiObj.tabbar.tabs("MINBNB030") != null){
+						parent.mdiObj.tabbar.tabs("MINBNB030").attachURL(url);
+					}
+				});
+			});
+			
+		},error:function(){
+			
+		}
+	});
+	$.ajax({
+		url:"/tiims/dashboard.do"
+		,type:"POST"
+		,dataType : "json"
+		,success : function(data){
+			var data = data.result.data;
+			if(fn_isNull(data)){
+				$('em[name=RS000_CNT]').text(0);
+				$('em[name=RS010_CNT]').text(0);
+				$('em[name=RS030_CNT]').text(0);
+				$('em[name=RS040_CNT]').text(0);
+				
+				$('em[name=KO_NS020_CNT]').text(0);
+				$('em[name=KO_NS010_CNT]').text(0);
+				$('em[name=KO_NS030_CNT]').text(0);
+				$('em[name=EXT_NS020_CNT]').text(0);
+				$('em[name=EXT_NS010_CNT]').text(0);
+				$('em[name=EXT_NS030_CNT]').text(0);
+
+				$('em[name=AD_REQ_STATUS01_CNT]').text(0);
+				$('em[name=AD_REQ_STATUS02_CNT]').text(0);
+				$('em[name=AD_REQ_STATUS03_CNT]').text(0);
+				$('em[name=AD_REQ_STATUS04_CNT]').text(0);
+				
+				$('em[name=AD_REQ_STATUS05_CNT]').text(0);
+				$('em[name=AD_REQ_STATUS06_CNT]').text(0);
+				$('em[name=AD_REQ_STATUS07_CNT]').text(0);
+				$('em[name=AD_REQ_STATUS08_CNT]').text(0);
+				$('em[name=AD_REQ_STATUS09_CNT]').text(0);				
+			}else{
+				$('em[name=RS000_CNT]').text(data.RS000_CNT);
+				$('em[name=RS010_CNT]').text(data.RS010_CNT);
+				$('em[name=RS030_CNT]').text(data.RS030_CNT);
+				$('em[name=RS040_CNT]').text(data.RS040_CNT);
+				
+				$('em[name=KO_NS020_CNT]').text(data.KO_NS020_CNT);
+				$('em[name=KO_NS010_CNT]').text(data.KO_NS010_CNT);
+				$('em[name=KO_NS030_CNT]').text(data.KO_NS030_CNT);
+				$('em[name=EXT_NS020_CNT]').text(data.EXT_NS020_CNT);
+				$('em[name=EXT_NS010_CNT]').text(data.EXT_NS010_CNT);
+				$('em[name=EXT_NS030_CNT]').text(data.EXT_NS030_CNT);
+
+				$('em[name=AD_REQ_STATUS01_CNT]').text(data.AD_REQ_STATUS01_CNT);
+				$('em[name=AD_REQ_STATUS02_CNT]').text(data.AD_REQ_STATUS02_CNT);
+				$('em[name=AD_REQ_STATUS03_CNT]').text(data.AD_REQ_STATUS03_CNT);
+				$('em[name=AD_REQ_STATUS04_CNT]').text(data.AD_REQ_STATUS04_CNT);
+				
+				$('em[name=AD_REQ_STATUS05_CNT]').text(data.AD_REQ_STATUS05_CNT);
+				$('em[name=AD_REQ_STATUS06_CNT]').text(data.AD_REQ_STATUS06_CNT);
+				$('em[name=AD_REQ_STATUS07_CNT]').text(data.AD_REQ_STATUS07_CNT);
+				$('em[name=AD_REQ_STATUS08_CNT]').text(data.AD_REQ_STATUS08_CNT);
+				$('em[name=AD_REQ_STATUS09_CNT]').text(data.AD_REQ_STATUS09_CNT);
+				
+			}
+			
+		},error:function(){
+			
+		}
+	});
+	$('.btn_more').on('click',function(e){		
+		//location.href="/nb/nb/030/init.do?openMenuCd=MINBNB030";
+		var url = "/nb/nb/030/init.do?openMenuCd=MINBNB030";
+				
+		parent.mdiObj.create_tab('MINBNB030','공지사항',url,undefined,function(){
+			if(parent.mdiObj.tabbar.tabs("MINBNB030") != null){
+				parent.mdiObj.tabbar.tabs("MINBNB030").attachURL(url);						
+			}
+		});
+	});
+	$('.btn_add_fav').click(function(){
+		location.href="/tiims/bookMarkHome.do";
+	});
+	$('a[name=aBrPr010]').on('click',function(e){		
+		var status = 'product'
+// 			var val = $(this).find('span').text()=='작성중'?'N':($(this).find('span').text()=='등록완료'?'Y':'');
+			var val = '';
+			switch($(this).find('span').text()){
+			case '작성중':
+				val = 'RS000';
+				break;
+			case '등록완료':
+				val = 'RS010';
+				break;
+			case '서류 작성중':
+				val = 'RS030';
+				break;
+			case '서류 심사 요청중':
+				val = 'RS040';
+				break;
+			default : val = '';
+			break;
+			}
+			//var val = $(this).find('span').text()=='작성중'?'0':($(this).find('span').text()=='등록완료'?'1':'');
+		//param = "&i_sSearchStatus=product&i_sSearchStatusVal"; //ex)작성중
+		//location.href="/br/pr/010/init.do?openMenuCd=MIBRPR010&i_sSearchStatus="+status+"&i_sSearchStatusVal="+val;
+		var url ="/br/pr/010/init.do?openMenuCd=MIBRPR010&i_sSearchStatus="+status+"&i_sSearchStatusVal="+val;
+				
+		parent.mdiObj.create_tab('MIBRPR010','제품등록',url,undefined,function(){
+			if(parent.mdiObj.tabbar.tabs("MIBRPR010") != null){
+				parent.mdiObj.tabbar.tabs("MIBRPR010").attachURL(url);						
+			}
+		});
+	});
+
+	$('a[name=aBrPw010]').on('click',function(e){		
+		var status = 'domestic'
+		var val = '';
+		switch($(this).find('span').text()){
+		case '검토중':
+			val = '0';
+			break;
+		case '검토완료':
+			val = '1';
+			break;
+		case '반려':
+			val = '2';
+			break;
+		default : val = '';
+		break;
+		}
+		//location.href="/br/pw/010/init.do?openMenuCd=MIBRPW010&i_sSearchStatus="+status+"&i_sSearchStatusVal="+val;
+		var url ="/br/pw/010/init.do?openMenuCd=MIBRPW010&i_sSearchStatus="+status+"&i_sSearchStatusVal="+val;
+				
+		parent.mdiObj.create_tab('MIBRPW010','국내검토',url,undefined,function(){
+			if(parent.mdiObj.tabbar.tabs("MIBRPW010") != null){
+				parent.mdiObj.tabbar.tabs("MIBRPW010").attachURL(url);						
+			}
+		});
+	});
+
+	$('a[name=aBrPw020]').on('click',function(e){		
+		var status = 'overseas'
+		var val = '';
+		switch($(this).find('span').text()){
+		case '검토중':
+			val = '0';
+			break;
+		case '검토완료':
+			val = '1';
+			break;
+		case '반려':
+			val = '2';
+			break;
+		default : val = '';
+		break;
+		}
+		//location.href="/br/pw/020/init.do?openMenuCd=MIBRPW020&i_sSearchStatus="+status+"&i_sSearchStatusVal="+val;
+		var url ="/br/pw/020/init.do?openMenuCd=MIBRPW020&i_sSearchStatus="+status+"&i_sSearchStatusVal="+val;		
+		parent.mdiObj.create_tab('MIBRPW020','수출검토',url,undefined,function(){
+			if(parent.mdiObj.tabbar.tabs("MIBRPW020") != null){
+				parent.mdiObj.tabbar.tabs("MIBRPW020").attachURL(url);						
+			}
+		});
+	});
+	
+	$('a[name=aBrPr020]').on('click',function(e){			
+		var val = '';
+		switch($(this).find('span').text()){
+		case '작성중':
+			val = 'AD_REQ_STATUS01';
+			break;
+		case '검토요청완료':
+			val = 'AD_REQ_STATUS02';
+			break;
+		case '반려':
+			val = 'AD_REQ_STATUS03';
+			break;
+		case '검토완료':
+			val = 'AD_REQ_STATUS04';
+			break;
+		default : val = '';
+		break;
+		}
+		var url = "/br/pr/020/init.do?openMenuCd=MIBRPR020";
+		//location.href=url+"&i_sStatus="+val;
+		url =url+"&i_sStatus="+val;
+				
+		parent.mdiObj.create_tab('MIBRPR020','문안검토목록(BM)',url,undefined,function(){
+			if(parent.mdiObj.tabbar.tabs("MIBRPR020") != null){
+				parent.mdiObj.tabbar.tabs("MIBRPR020").attachURL(url);						
+			}
+		});
+	});
+
+	$('a[name=aBrPr020_Origin]').on('click',function(e){			
+		var val = '';
+		switch($(this).find('span').text()){
+		case '작성중':
+			val = 'AD_REQ_STATUS05';
+			break;
+		case '작성완료':
+			val = 'AD_REQ_STATUS08';
+			break;
+		case '검토중':
+			val = 'AD_REQ_STATUS06';
+			break;
+		case '발송완료':
+			val = 'AD_REQ_STATUS09';
+			break;
+		default : val = '';
+		break;
+		}
+		var url = "/br/pr/020/init.do?openMenuCd=MIBRPR020";
+		//location.href=url+"&i_sStatus="+val;
+		url =url+"&i_sStatus="+val;
+				
+		parent.mdiObj.create_tab('MIBRPR020','문안검토목록(BM)',url,undefined,function(){
+			if(parent.mdiObj.tabbar.tabs("MIBRPR020") != null){
+				parent.mdiObj.tabbar.tabs("MIBRPR020").attachURL(url);						
+			}
+		});	
+	});
+
+	$.getJSON('/tiims/userBookMark.do', function(data) {
+		var data = data.bookMarkList;
+		var newLi = "";
+		data.forEach(function(obj,i){
+	      newLi +="<li>"
+		        +"<a href='#' onclick=\"favlistClick('"+obj.v_menu_id+"','"+obj.MENU_NM+"','"+obj.URL+"');\">"
+		        +"<span class='thumb'><img src="+obj.IMG_URL+" alt=''></span>"
+		        +"<p>"+obj.MENU_NM+"</p>"
+		        +"</a>"
+		        +"</li>";
+		});
+    $('ul.favlist.clearfix').append(newLi);
+	});
+
+});
+function favlistClick(menu_id,menu_nm,url){
+	parent.mdiObj.create_tab(menu_id, menu_nm, url+"?openMenuCd="+menu_id, undefined, function(){
+		if(parent.mdiObj.tabbar.tabs(menu_id) != null){
+			parent.mdiObj.tabbar.tabs(menu_id).attachURL(url+"?openMenuCd="+menu_id);						
+		}
+	});	
+}
+</script> 
+<body style="overflow:auto"> 
+    <div class="container">
+      <h2 class="sec_tit"><i class="icon_menu"></i>Dash Board</h2>
+      <!-- sec_board -->
+      <section class="sec_board">
+        <div class="inner_board clearfix">
+          <div class="box_board">
+            <dl>
+              <dt>
+                <a href="javascript:;" name="aBrPr010" >제품등록</a>
+              </dt>
+              <dd>
+                <ul>
+                  <li>
+                    <a href="javascript:;" name="aBrPr010">
+                      <span class="txt ico_s01">작성중</span>
+                      <em name="RS000_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPr010">
+                      <span class="txt ico_s02">등록완료</span>
+                      <em name="RS010_CNT"></em>
+                    </a>
+                  </li>
+                   <li>
+                    <a href="javascript:;" name="aBrPr010">
+                      <span class="txt ico_s01">서류 작성중</span>
+                      <em name="RS030_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPr010">
+                      <span class="txt ico_s02">서류 심사 요청중</span>
+                      <em name="RS040_CNT"></em>
+                    </a>
+                  </li>
+                </ul>
+              </dd>
+            </dl>
+          </div>
+          <div class="box_board">
+            <dl>
+              <dt>
+                <a href="javascript:;" name="aBrPw010">국내검토</a>
+              </dt>
+              <dd>
+                <ul>
+                  <li>
+                    <a href="javascript:;" name="aBrPw010">
+                      <span class="txt ico_s01">검토중</span>
+                      <em name="KO_NS010_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPw010">
+                      <span class="txt ico_s02">검토완료</span>
+                      <em name="KO_NS020_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPw010">
+                      <span class="txt ico_s03">반려</span>
+                      <em name="KO_NS030_CNT"></em>
+                    </a>
+                  </li>
+                </ul>
+              </dd>
+            </dl>
+          </div>
+          <div class="box_board">
+            <dl>
+              <dt>
+                <a href="javascript:;" name="aBrPw020">해외검토</a>
+              </dt>
+              <dd>
+                <ul>
+                  <li>
+                    <a href="javascript:;" name="aBrPw020">
+                      <span class="txt ico_s01">검토중</span>
+                      <em name="EXT_NS010_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPw020">
+                      <span class="txt ico_s02">검토완료</span>
+                      <em name="EXT_NS020_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPw020">
+                      <span class="txt ico_s03">반려</span>
+                      <em name="EXT_NS030_CNT"></em>
+                    </a>
+                  </li>
+                </ul>
+              </dd>
+            </dl>
+          </div>
+          <div class="box_board">
+            <dl>
+              <dt>
+                <a href="javascript:;" name="aBrPr020">문안검토</a>
+              </dt>
+              <dd>
+                <ul>
+                  <li>
+                    <a href="javascript:;" name="aBrPr020">
+                      <span class="txt ico_s01">작성중</span>
+                      <em name="AD_REQ_STATUS01_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPr020">
+                      <span class="txt ico_s01">검토요청완료</span>
+                      <em name="AD_REQ_STATUS02_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPr020">
+<!--                       <span class="txt ico_s04">검토중</span> -->
+                      <span class="txt ico_s04">반려</span>
+                      <em name="AD_REQ_STATUS03_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPr020">
+                      <span class="txt ico_s02">검토완료</span>
+                      <em name="AD_REQ_STATUS04_CNT"></em>
+                    </a>
+                  </li>
+                </ul>
+              </dd>
+            </dl>
+          </div>
+          <div class="box_board">
+            <dl>
+              <dt>
+                <a href="javascript:;" name="aBrPr020_Origin">원화검토</a>
+              </dt>
+              <dd>
+                <ul>
+                  <li>
+                    <a href="javascript:;" name="aBrPr020_Origin">
+                      <span class="txt ico_s01">작성중</span>
+                      <em name="AD_REQ_STATUS05_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPr020_Origin">
+                      <span class="txt ico_s04">검토중</span>
+                      <em name="AD_REQ_STATUS06_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPr020_Origin">
+                      <span class="txt ico_s02">작성완료</span>
+                      <em name="AD_REQ_STATUS08_CNT"></em>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="javascript:;" name="aBrPr020_Origin">
+                      <span class="txt ico_s02">발송완료</span>
+                      <em name="AD_REQ_STATUS09_CNT"></em>
+                    </a>
+                  </li>
+                </ul>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </section><!-- //sec_board -->
+      <h2 class="sec_tit"><i class="icon_noti"></i>Notice</h2>
+      <!-- sec_notice -->
+      <section class="sec_notice">
+        <table class="sty_01">
+          <colgroup>
+            <col style="width:64%;" ;>
+            <col style="width:16%" ;>
+            <col style="width:20%" ;>
+          </colgroup>
+          <tbody id="tbNotice">
+          </tbody>
+        </table>
+        <a href="javascript:;" class="btn_more">More</a>
+      </section><!-- //sec_notice -->
+      <h2 class="sec_tit"><i class="icon_star"></i>Favorites<a href="#" class="btn_add_fav" title="My Favorites 추가"><i class="icon_add_fav"></i></a></h2>
+      <!-- sec_main_fav -->
+      <section class="sec_main_fav">
+        <ul class="favlist clearfix"></ul>
+        <!-- <a href="#" class="btn_add_fav">My Favorites 추가</a> -->
+      </section><!-- //sec_main_fav -->
+    </div><!-- //container -->
+
+</body>
+</html>

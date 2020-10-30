@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : CommonCodeMapper.xml
+    Description   : CommonCode 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  손홍신       1.0        최초 생성  
+-->
+<mapper namespace="CommonCode">
+
+	
+	<!--  0. 화면에서 호출되는 공통 코드 조회(cf. 콤보 박스 용)   -->
+    <select id="selectComnCodes"  parameterType="hashMap" resultType="hashMap">
+		 SELECT /* CommonCode.selectComnCodes */
+		 	   COMM_CD AS CD
+		 	 , COMM_CD_NM AS NM
+		 	 , COMM_CD || ':' || COMM_CD_NM  AS CDNM
+          FROM TZF_COMMCD_D 
+         WHERE GRP_CD   = #{GRP_CD}
+           AND USE_YN       = 'Y'
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(COMM_CD_NM)">
+           AND ( COMM_CD_NM like '%'||#{COMM_CD_NM}||'%' or COMM_CD like '%'||#{COMM_CD_NM}||'%' )
+        </if>
+         ORDER BY SORT_SEQ 
+    </select>
+    
+	<!-- 1. 코드 분류 조회 -->	
+	<select id="selectCodeGrpList" resultType="Map">
+		SELECT /* CommonCode.selectCodeGrpList */
+			   GRP_CD, 
+		       GRP_CD_NM,
+		       GRP_CD_DESC,
+		       USE_YN
+		  FROM TZF_GRPCD_M
+		 WHERE 1=1
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(GRP_CD)">
+		   AND GRP_CD LIKE '%'||TRIM(#{GRP_CD})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(GRP_CD_NM)">
+		   AND GRP_CD_NM LIKE '%'||TRIM(#{GRP_CD_NM})||'%'
+		</if>
+     	ORDER BY GRP_CD DESC
+	</select>
+	
+	<!-- 2. 코드 조회 -->
+	<select id="selectCodeList" resultType="Map">
+		SELECT /* CommonCode.selectCodeList */
+			   A.GRP_CD,
+		       A.COMM_CD,
+		       A.COMM_CD_NM,
+		       A.USE_YN,
+		       A.SORT_SEQ,
+		       A.COMM_CD_DESC,
+		       A.BUFFER1,
+		       A.BUFFER2,
+		       A.BUFFER3
+		  FROM TZF_COMMCD_D A
+		 WHERE A.GRP_CD = #{GRP_CD}
+		 <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(COMM_CD_NM)">
+		   AND A.COMM_CD_NM LIKE '%'||TRIM(#{COMM_CD_NM})||'%'
+		</if>
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USE_YN)">
+           AND A.USE_YN = #{USE_YN}
+        </if>
+		 ORDER BY SORT_SEQ
+	</select>
+	
+	<!-- 3. 코드 분류 저장(배치) -->
+	<!-- 단건  -->
+	<insert id="insertCodeGrp" parameterType="Map">
+		INSERT /* CommonCode.insertCodeGrp */
+		  INTO TZF_GRPCD_M (
+		    GRP_CD,
+		    GRP_CD_NM,
+		    GRP_CD_DESC,
+		    USE_YN,
+		    REG_USER_NO,
+		    REG_DTM
+		  ) 
+		  VALUES
+		  (
+				#{GRP_CD},
+			    #{GRP_CD_NM},
+			    #{GRP_CD_DESC},
+			    #{USE_YN},
+			    #{session.USER_NO},
+			    SYSDATE
+		  )
+	</insert>
+	
+	<!--   다건  -->
+	<insert id="insertCodeGrpBatch" parameterType="Map">
+		INSERT /* CommonCode.insertCodeGrpBatch */
+		   ALL 
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_GRPCD_M(
+		    GRP_CD,
+		    GRP_CD_NM,
+		    GRP_CD_DESC,
+		    USE_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{param.GRP_CD},
+			    #{param.GRP_CD_NM},
+			    #{param.GRP_CD_DESC},
+			    #{param.USE_YN},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 4. 코드 저장(배치) -->
+	<!--  단건  -->
+	<insert id="insertCode" parameterType="Map">
+		INSERT /* CommonCode.insertCode */
+		INTO TZF_COMMCD_D(
+		    GRP_CD,
+		    COMM_CD,
+		    COMM_CD_NM,
+		    USE_YN,
+		    SORT_SEQ,
+		    COMM_CD_DESC,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP,
+		    BUFFER1,
+		    BUFFER2,
+		    BUFFER3
+		  ) VALUES
+			(
+				#{GRP_CD},
+			    #{COMM_CD},
+			    #{COMM_CD_NM},
+			    #{USE_YN},
+			    #{SORT_SEQ},
+			    #{COMM_CD_DESC},
+			    #{session.USER_NO},
+			    SYSDATE,
+			    #{REG_IP},
+			    #{BUFFER1},
+			    #{BUFFER2},
+			    #{BUFFER3}
+			)
+	</insert>
+	
+	<!--  다건  -->
+	<insert id="insertCodeBatch" parameterType="Map">
+		INSERT /* CommonCode.insertCodeBatch */
+		   ALL 
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_COMMCD_D(
+		    GRP_CD,
+		    COMM_CD,
+		    COMM_CD_NM,
+		    USE_YN,
+		    SORT_SEQ,
+		    COMM_CD_DESC,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		    BUFFER1,
+		    BUFFER2,
+		    BUFFER3
+		  ) VALUES
+			(
+				#{param.GRP_CD},
+			    #{param.COMM_CD},
+			    #{param.COMM_CD_NM},
+			    #{param.USE_YN},
+			    #{param.SORT_SEQ},
+			    #{param.COMM_CD_DESC},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			    #{param.BUFFER1},
+			    #{param.BUFFER2},
+			    #{param.BUFFER3}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 5. 코드 분류 수정 -->
+	<update id="updateCodeGrp" parameterType="Map">
+		UPDATE /* CommonCode.updateCodeGrp */
+			TZF_GRPCD_M SET 
+		   	GRP_CD_NM   = #{GRP_CD_NM},
+			GRP_CD_DESC = #{GRP_CD_DESC},
+			USE_YN      = #{USE_YN},
+			MOD_USER_NO      = #{session.USER_NO},
+			MOD_DTM     = SYSDATE,
+			MOD_IP      = #{MOD_IP}
+			,IF_YN		= 'N'
+		WHERE GRP_CD   = #{GRP_CD}
+	</update>
+	
+	<!-- 6. 코드 분류 수정(배치) -->
+	<update id="updateCodeGrpBatch" parameterType="Map">
+	/* CommonCode.updateCodeGrpBatch */
+		<foreach item="param" collection="list" open="" separator=";" close="">
+			UPDATE TZF_GRPCD_M SET 
+			   	GRP_CD_NM   = #{param.GRP_CD_NM},
+				GRP_CD_DESC = #{param.GRP_CD_DESC},
+				USE_YN      = #{param.USE_YN},
+				MOD_USER_NO      = #{param.MOD_USER_NO},
+				MOD_DTM     = SYSDATE,
+				MOD_IP      = #{param.MOD_IP}
+				,IF_YN		= 'N'
+			 WHERE GRP_CD   = #{param.GRP_CD}
+		</foreach>
+	</update>
+	
+	<!-- 7. 코드 수정 -->
+	<update id="updateCode" parameterType="Map">
+		UPDATE /* CommonCode.updateCode */
+			TZF_COMMCD_D SET 
+			COMM_CD_NM 	= #{COMM_CD_NM},
+			USE_YN      = #{USE_YN},
+			SORT_SEQ    = #{SORT_SEQ},
+			COMM_CD_DESC= #{COMM_CD_DESC},
+			MOD_USER_NO      = #{session.USER_NO},
+			MOD_DTM     = SYSDATE,
+			MOD_IP      = #{MOD_IP},
+			BUFFER1     = #{BUFFER1},
+			BUFFER2     = #{BUFFER2},
+			BUFFER3     = #{BUFFER3}
+		WHERE GRP_CD 	= #{GRP_CD}
+		  AND COMM_CD   = #{COMM_CD}
+	</update>
+	
+	<!-- 7. 코드 수정(배치) -->
+	<update id="updateCodeBatch" parameterType="Map">
+	/* CommonCode.updateCodeBatch */
+		<foreach item="param" collection="list" open="" separator=";" close="">
+			UPDATE TZF_COMMCD_D SET 
+			   	GRP_CD_NM   = #{param.GRP_CD_NM},
+				GRP_CD_DESC = #{param.GRP_CD_DESC},
+				USE_YN      = #{param.USE_YN},
+				MOD_USER_NO      = #{param.MOD_USER_NO},
+				MOD_DTM     = SYSDATE,
+				MOD_IP      = #{param.MOD_IP},
+				BUFFER1     = #{param.BUFFER1},
+				BUFFER2     = #{param.BUFFER2},
+				BUFFER3     = #{param.BUFFER3}
+			 WHERE COMM_CD   = #{param.COMM_CD}
+		</foreach>
+	</update>
+	
+	<!-- 5. 코드 분류 수정 -->
+	<update id="updateCodeGrpIfYn" parameterType="Map">
+		UPDATE /* CommonCode.updateCodeGrpIfYn */
+			TZF_GRPCD_M SET 
+			IF_YN		= 'N'
+		WHERE GRP_CD   = #{GRP_CD}
+	</update>
+	<!-- 8. 코드 분류 삭제 -->
+	<delete id="deleteCodeGrp" parameterType="Map">
+		DELETE /* CommonCode.deleteCodeGrp */
+		  FROM TZF_GRPCD_M
+		 WHERE GRP_CD = #{GRP_CD}
+	</delete>
+	
+	<!-- 9. 코드 분류 삭제(배치) -->
+	<delete id="deleteCodeGrpBatch" parameterType="Map">
+		DELETE /* CommonCode.deleteCodeGrpBatch */
+		  FROM TZF_GRPCD_M
+		 WHERE GRP_CD IN
+		<foreach item="param" collection="list" open="(" separator="," close=")">
+			#{param.GRP_CD}
+		</foreach>
+	</delete>
+	
+	<!-- 10. 코드 삭제 -->
+	<delete id="deleteCode" parameterType="Map">
+		DELETE /* CommonCode.deleteCode */
+		  FROM TZF_COMMCD_D
+		 WHERE GRP_CD  = #{GRP_CD}
+           AND COMM_CD = #{COMM_CD}
+	</delete>
+	
+	<!-- 11. 코드 삭제(배치) -->
+	<delete id="deleteCodeBatch" parameterType="Map">
+		DELETE /* CommonCode.deleteCodeBatch */
+		  FROM TZF_COMMCD_D
+		 WHERE COMM_CD IN
+		<foreach item="param" collection="list" open="(" separator="," close=")">
+			#{param.COMM_CD}
+		</foreach>
+	</delete>
+</mapper>

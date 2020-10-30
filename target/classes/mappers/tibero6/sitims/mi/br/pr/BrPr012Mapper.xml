@@ -1,0 +1,519 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : BrPr010Mapper.xml
+    Description   : 제품 등록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.24  jjw       1.0        최초 생성
+-->
+<mapper namespace="BrPr012Mapper">
+	<select id="selectPartnoList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr012Mapper.selectPartnoList */
+			V_PRODUCT_CD,N_PART_NO
+		FROM TODM_PDCP_D PROD
+	 	WHERE 1=1 
+	 	AND V_PRODUCT_CD = #{i_sProductCd}
+	   	AND	N_VER_SEQ = #{i_iVerSeq}
+		GROUP BY V_PRODUCT_CD, N_PART_NO
+	</select>
+	
+    
+    <select id="selectCompanyInfo" parameterType="CmMap" resultType="CmMap">
+    	SELECT /* BrPr012Mapper.selectCompanyInfo */  
+    		V_VENDOR_ID
+				, V_VENDOR_NM
+				, V_VENDOR_NM_EN
+				, V_BIZ_NO
+				, V_PHONE_NO
+				, V_PHONE_NO V_PHONE_NO_DEC_AES
+				, V_FAX
+				, V_ZIP
+				, V_ADDR1
+				, V_ADDR2
+				, V_ADDR1 V_ADDR1_DEC_AES
+				, V_ADDR2 V_ADDR2_DEC_AES
+    			, V_REPR_USER_NM_EN
+    			, '' V_SIGN
+                , '' V_LOGO
+                , (SELECT V_ATTACH_ID FROM TSI_ATTACH WHERE V_RECORD_ID = MST.V_VENDOR_ID || '_' || 'SIGN' AND V_UPLOAD_ID = 'SIGN') AS V_SIGN_ATTACHID
+                , (SELECT V_ATTACH_ID FROM TSI_ATTACH WHERE V_RECORD_ID = MST.V_VENDOR_ID || '_' || 'LOGO' AND V_UPLOAD_ID = 'LOGO') AS V_LOGO_ATTACHID
+    	FROM TODM_VD_I MST
+    	WHERE V_VENDOR_ID = #{i_sCompanyCd}
+    </select>
+    
+    
+	<select id="selectAllergenIngrtList" parameterType="CmMap" resultType="CmMap">
+		SELECT  /* BrPr012Mapper.selectAllergenIngrtList */
+			A.*
+			, SUB.V_ODM_CASNO
+		FROM
+			(SELECT 
+				A.V_PRODUCT_CD
+				, A.N_VER_SEQ
+				, A.V_CON_IN_PER
+				, A.SORT_BY
+				, A.N_PART_NO
+				, A.V_CON_CD
+				, A.V_CON_NM_EN
+				--, A.V_CON_NM_CN
+				, A.V_CON_NM_JP
+				, A.V_CON_NM_KO
+				, MAX(A.V_COMP_CAS_NO) AS V_COMP_CAS_NO
+				, MAX(A.V_ALLERGEN_FUNC) AS V_ALLERGEN_FUNC
+				, A.V_ALLERGEN_YN AS V_ALLERGEN_YN_REG
+			FROM
+				(SELECT
+						V_PRODUCT_CD 
+						, N_VER_SEQ 
+						, TO_CHAR(SUM(N_RAW_PER * N_COMP_IN_PER * 0.01) OVER(PARTITION BY N_PART_NO, V_CON_CD), 'FM9990.00000000000000') AS V_CON_IN_PER
+						, SUM(N_RAW_PER * N_COMP_IN_PER * 0.01) OVER(PARTITION BY N_PART_NO, V_CON_CD) AS SORT_BY
+						, N_PART_NO
+						, V_CON_CD
+						, V_ALLERGEN_FUNC
+						, V_COMP_CAS_NO
+						, V_ALLERGEN_YN
+						, V_CON_NM_EN
+						--, V_CON_NM_CN
+						, V_CON_NM_JP
+						, V_CON_NM_KO
+					FROM
+						US_TIMS_MGR.TODM_PDCP_D
+					WHERE V_PRODUCT_CD = #{i_sMatrcd}
+					AND N_PART_NO = #{i_sPartNo}
+					AND N_VER_SEQ = #{i_iVsn}
+					AND V_ALLERGEN_YN ='Y'
+				) A
+				GROUP BY A.V_PRODUCT_CD, A.N_VER_SEQ, A.V_CON_IN_PER, A.N_PART_NO, A.SORT_BY, A.V_CON_CD, A.V_CON_NM_EN, A.V_CON_NM_KO
+				--, A.V_CON_NM_CN
+				, A.V_CON_NM_JP, A.V_ALLERGEN_YN
+			) A
+		  LEFT OUTER JOIN (
+			SELECT	
+				V_CON_CD
+				, N_PART_NO
+				, WM_CONCAT(V_COMP_CAS_NO) AS V_ODM_CASNO
+			FROM (
+				SELECT	V_CON_CD
+					, N_PART_NO
+					, V_COMP_CAS_NO
+				FROM TODM_PDCP_D
+				WHERE V_PRODUCT_CD = #{i_sMatrcd}
+				AND N_PART_NO = #{i_sPartNo}
+				AND N_VER_SEQ = #{i_iVsn}
+				AND V_ALLERGEN_YN = 'Y'
+				GROUP BY V_CON_CD, V_COMP_CAS_NO, N_PART_NO
+			)
+			GROUP BY V_CON_CD, N_PART_NO
+		) SUB ON SUB.V_CON_CD = A.V_CON_CD AND SUB.N_PART_NO = A.N_PART_NO		  
+		ORDER BY A.SORT_BY DESC, A.V_CON_CD ASC
+	</select>
+    
+    <select id="selectOdmConSingleListWithoutAllergen" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr012Mapper.selectOdmConSingleListWithoutAllergen */	
+			A.*
+		        , NVL(A.V_CARRYOVER_YN, '') AS V_COMP_MIXRE
+<!-- 		        , DECODE(NVL(AL.V_CON_CD, ''), '', 'N', 'Y') AS V_ALLERGEN_YN -->
+		        , A.V_REG_ALLERGENYN V_ALLERGEN_YN
+		        , SUB.V_ODM_CASNO
+		 FROM (
+			    SELECT	A.V_PRODUCT_CD
+			      		, A.N_VER_SEQ
+			      		, A.V_CON_IN_PER
+			      		, A.SORT_BY
+			      		, A.N_PART_NO
+			      		, A.V_CON_CD
+			      		, MAX(A.V_COMP_ORIGIN_FC) V_COMP_ORIGIN_FC
+			      		, MAX(A.V_ALLERGEN_FUNC) V_ALLERGEN_FUNC
+			      		, MAX(A.V_CARRYOVER_YN) V_CARRYOVER_YN
+			      		, MAX(A.V_ACTIVE_YN) V_ACTIVE_YN
+			      		, MAX(A.V_CON_NM_EN) V_CON_NM_EN
+			      		, MAX(A.V_INACTIVE_ALL) V_INACTIVE_ALL
+			      		, A.V_ALLERGEN_YN AS V_REG_ALLERGENYN
+			      FROM	(
+			      			SELECT	V_PRODUCT_CD
+			      					, N_VER_SEQ
+			      					, TO_CHAR(SUM(N_RAW_PER * N_COMP_IN_PER * 0.01) OVER(PARTITION BY N_PART_NO, V_CON_CD), 'FM9990.00000000000000') AS V_CON_IN_PER
+			      					, SUM(N_RAW_PER * N_COMP_IN_PER * 0.01) OVER(PARTITION BY N_PART_NO, V_CON_CD) AS SORT_BY
+			      					, N_PART_NO
+			      					, V_CON_CD
+			      					, V_CON_NM_EN
+			      					, V_COMP_ORIGIN_FC
+			      					, V_ALLERGEN_FUNC
+			      					, V_CARRYOVER_YN
+			      					, V_ACTIVE_YN
+			      					, V_INACTIVE_ALL
+			      					, V_ALLERGEN_YN
+			      					, V_ZGLOBAL
+			      					, V_ZGLLIM
+			      			  FROM	TODM_PDCP_D
+			      			  WHERE	1=1
+						        AND	V_PRODUCT_CD = TRIM(#{i_sMatrcd})
+						        AND	N_PART_NO = #{i_sPartNo}
+						        AND	N_VER_SEQ = #{i_iVsn}
+						        AND (V_ALLERGEN_YN IS NULL OR V_ALLERGEN_YN = 'N')
+			      ) A
+			    GROUP BY A.V_PRODUCT_CD, A.N_VER_SEQ, A.V_CON_IN_PER, A.N_PART_NO, A.SORT_BY, A.V_CON_CD, A.V_ALLERGEN_YN
+						, V_ZGLOBAL, V_ZGLLIM
+			  ) A
+<!-- 			  LEFT OUTER JOIN US_TIMS_MGR.TODM_RTCON_AL_D AL -->
+<!-- 			  ON ( -->
+<!-- 			  		A.V_CON_CD = AL.V_CON_CD -->
+<!-- 			  ) -->
+			  LEFT OUTER JOIN (
+					SELECT	V_CON_CD
+							, N_PART_NO
+							, WM_CONCAT(V_COMP_CAS_NO) AS V_ODM_CASNO
+					FROM (
+							SELECT	V_CON_CD
+									, N_PART_NO
+									, V_COMP_CAS_NO
+							FROM TODM_PDCP_D
+							WHERE 1=1
+							  AND V_PRODUCT_CD = TRIM(#{i_sMatrcd})
+							  AND N_PART_NO = #{i_sPartNo}
+							  AND N_VER_SEQ = #{i_iVsn}
+							  AND (V_ALLERGEN_YN IS NULL OR V_ALLERGEN_YN = 'N')
+							GROUP BY V_CON_CD, V_COMP_CAS_NO, N_PART_NO
+					)
+					GROUP BY V_CON_CD, N_PART_NO
+			  ) SUB
+			  ON(
+					SUB.V_CON_CD = A.V_CON_CD
+					AND SUB.N_PART_NO = A.N_PART_NO
+			  )
+		ORDER BY A.SORT_BY DESC, A.V_CON_CD ASC
+	</select>
+    <select id="selectOdmConSingleListAllergen" parameterType="CmMap" resultType="CmMap">
+		<include refid="with_allergen"/>
+		
+		SELECT /* BrPr012Mapper.selectOdmConSingleListAllergen */
+	         MST.N_PART_NO
+	        ,N_RCONT
+	        ,TO_CHAR(N_RCONT, 'FM9990.00000000000000') AS V_RCONT <!-- 실제함량  -->
+	        ,N_REAL_RCONT
+	   	    ,TO_CHAR(N_REAL_RCONT, 'FM9990.00000000000000') AS V_CON_IN_PER <!-- 알러젠 제외 실제함량  V_REAL_RCONT-->
+	        ,MST.V_CON_CD
+	        ,V_RAW_CD
+	        ,N_SEQ
+	        ,V_ALLERGEN_FUNC
+	        ,V_COMP_ORIGIN_FC
+	        ,V_ZGLLIM 
+	        ,V_ZGLOBAL 
+	        ,V_ALLERGEN_REG_YN
+	        ,DECODE(V_ALLERGEN_REG_YN, NULL, 'N', 'Y') AS V_ALLERGEN_YN
+	        ,V_CON_NM_EN
+	        ,V_CON_NM_CN
+	        ,V_CON_NM_KO
+		    ,V_ODM_CASNO	                  
+            , V_ZGLLIM 
+            , V_ZGLOBAL 
+		FROM
+		(
+		    SELECT
+		         MST.N_PART_NO
+		       , SUM(V_RCONT) AS N_RCONT
+		       , SUM(V_REAL_CONT) AS N_REAL_RCONT
+		       , MST.V_CON_CD
+		       , MAX(V_RAW_CD) AS V_RAW_CD
+		       , ROW_NUMBER() OVER(PARTITION BY MST.V_CON_CD, MST.N_PART_NO ORDER BY MST.V_CON_CD, MST.N_PART_NO) AS N_SEQ
+		       , V_ALLERGEN_FUNC
+		       , V_COMP_ORIGIN_FC
+		       , MAX(V_ZGLLIM) AS V_ZGLLIM
+		       , MAX(V_ZGLOBAL) AS V_ZGLOBAL
+		       , V_ALLERGEN_REG_YN
+		       , V_CON_NM_EN
+		       , V_CON_NM_CN
+		       , V_CON_NM_KO 
+		    FROM
+		    (
+		        SELECT  
+	                  MST.N_PART_NO
+	                , MST.V_ODMDB_ID
+	                , V_RCONT
+	                , (V_RCONT - NVL(N_SUM_RCONT,0)) AS V_REAL_CONT
+	                , N_COMP_IN_PER
+	                , V_RAW_CD
+	                , V_CON_CD
+	                , V_COMP_CAS_NO
+	                , CASE WHEN N_CONCD_CNT &gt; 1 THEN MST.V_FUNC_NM_EN <!--  DECODE(V_ALLERGEN_REG_YN,NULL,UPPER(FN_ZPLM34_FCNAME('E',V_CON_CD)),FN_ZPLM34_FCNAME('E',V_CON_CD)) -->
+	                  ELSE V_ALLERGEN_FUNC END V_ALLERGEN_FUNC
+	                , CASE WHEN N_CONCD_CNT &gt; 1 THEN MST.V_FUNC_NM_EN <!--  DECODE(V_ALLERGEN_REG_YN,NULL,UPPER(FN_ZPLM34_FCNAME('E',V_CON_CD)),FN_ZPLM34_FCNAME('E',V_CON_CD))-->
+	                  ELSE V_COMP_ORIGIN_FC END V_COMP_ORIGIN_FC	                  
+	                , V_ZGLLIM 
+	                , V_ZGLOBAL 
+	                , V_ALLERGEN_REG_YN
+	                , V_CON_NM_EN
+	                , V_CON_NM_CN
+	                , V_CON_NM_KO
+	                , N_SUM_RCONT
+		        FROM
+		        (
+	            SELECT    
+	                  N_PART_NO
+	                , MST.V_ODMDB_ID
+	                , COUNT(*) OVER(PARTITION BY MST.V_CON_CD) AS N_CONCD_CNT
+	                , (MST.N_COMP_IN_PER * MST.N_RAW_PER * 0.01) AS V_RCONT
+	                , MST.N_COMP_IN_PER
+	                , MST.V_RAW_CD
+	                , MST.V_CON_CD
+	                , MST.V_COMP_CAS_NO
+	                , MST.V_COMP_ORIGIN_FC
+	                , MST.V_ALLERGEN_FUNC
+	                , MST.V_ZGLLIM 
+	                , MST.V_ZGLOBAL 
+	                , MST.V_ALLERGEN_YN AS V_ALLERGEN_REG_YN
+	                , MST.V_SUB_RAW_CD
+	                , V_CON_NM_EN
+	                , V_CON_NM_CN
+	                , V_CON_NM_KO
+	                , V_FUNC_NM_EN
+		        FROM    
+		        	TODM_PDCP_D MST
+		        WHERE    
+		            V_PRODUCT_CD = #{i_sMatrcd}
+		        AND N_VER_SEQ = #{i_iVsn}
+				<if test="i_sPartNo != null and i_sPartNo != ''">
+				AND	N_PART_NO = #{i_sPartNo}
+				</if>
+		        )MST
+		        LEFT OUTER JOIN
+		        (
+		            SELECT
+		                N_PART_NO                 
+		               ,V_ODMDB_ID                
+		               ,V_UCON_CD
+		               ,V_SUB_RAW_CD                 
+		               ,SUM(N_RCONT) N_SUM_RCONT              
+		            FROM
+		                ALLERGEN_TBL                         
+		            WHERE
+		                1=1            
+		            <if test="i_sWhereStr1 != null and i_sWhereStr1 != ''">
+		            	${i_sWhereStr1}		            
+		            </if>        
+					<if test="i_sLeaveonYn == &quot;Y&quot;">
+					  AND TO_NUMBER(N_CON_ALLERGEN_SUM) &gt; 0.001
+					</if>
+					<if test="i_sLeaveonYn == &quot;N&quot;">
+					  AND TO_NUMBER(N_CON_ALLERGEN_SUM) &gt; 0.01
+					</if>                    
+		            GROUP BY
+		                N_PART_NO
+		               ,V_ODMDB_ID
+		               ,V_UCON_CD
+		               ,V_SUB_RAW_CD
+		        )SUB                   
+		        ON (
+		            MST.V_ODMDB_ID = SUB.V_ODMDB_ID               
+		        AND(
+		        	(MST.V_CON_CD = SUB.V_UCON_CD OR (SUB.V_UCON_CD IS NULL AND MST.N_COMP_IN_PER = 100 OR SUB.V_UCON_CD IS NULL AND MST.V_CON_CD = '10093'))
+		        	AND (MST.V_SUB_RAW_CD = SUB.V_SUB_RAW_CD OR MST.V_SUB_RAW_CD IS NULL)
+		        )              
+		        AND MST.N_PART_NO  = SUB.N_PART_NO          
+		        ) 
+		    )MST
+		    GROUP BY
+		         MST.N_PART_NO
+		       , MST.V_CON_CD
+		       , V_ALLERGEN_FUNC
+		       , V_COMP_ORIGIN_FC
+		       , V_ALLERGEN_REG_YN
+		       , V_CON_NM_EN
+		       , V_CON_NM_CN
+		       , V_CON_NM_KO	                  
+               , V_ZGLLIM 
+               , V_ZGLOBAL 
+		)MST
+		LEFT OUTER JOIN (
+		        SELECT    
+		                  A.V_CON_CD
+		                , A.N_PART_NO
+		                , WM_CONCAT(A.V_COMP_CAS_NO) AS V_ODM_CASNO
+		        FROM (
+		                SELECT    V_CON_CD
+		                        , N_PART_NO
+		                        , V_COMP_CAS_NO 
+		                FROM TODM_PDCP_D MST
+		                WHERE V_PRODUCT_CD = #{i_sMatrcd}
+		                 AND N_VER_SEQ = #{i_iVsn}
+						<if test="i_sPartno != null and i_sPartno != ''">
+							AND	N_PART_NO = #{i_sPartno}
+						</if>
+		                GROUP BY V_CON_CD, N_PART_NO, V_COMP_CAS_NO
+		        ) A
+		        GROUP BY A.V_CON_CD, A.N_PART_NO
+		) SUB
+		ON (
+		          SUB.V_CON_CD  = MST.V_CON_CD
+		      AND SUB.N_PART_NO = MST.N_PART_NO
+		)
+		WHERE	N_SEQ = 1
+            <if test="i_sWhereStr2 != null and i_sWhereStr2 != ''">
+            	${i_sWhereStr2}		            
+            </if>
+			<if test="i_sLeaveonYn == &quot;Y&quot;">
+		  		AND ((TO_NUMBER(N_RCONT) &gt; 0.001 AND V_ALLERGEN_REG_YN = 'Y') OR V_ALLERGEN_REG_YN IS NULL)
+			</if>
+			<if test="i_sLeaveonYn == &quot;N&quot;">
+		  		AND ((TO_NUMBER(N_RCONT) &gt; 0.01 AND  V_ALLERGEN_REG_YN = 'Y') OR V_ALLERGEN_REG_YN IS NULL)
+			</if>
+		ORDER BY MST.N_PART_NO ASC, TO_NUMBER(${i_sSortCol}) DESC, MST.V_CON_CD ASC
+	</select>
+	
+	<sql id="with_allergen">
+		/* BrPr012Mapper.with_allergen */
+		WITH ALLERGEN_TBL AS
+		(
+	        SELECT
+	             V_ODMDB_ID
+	            ,N_PART_NO
+	            ,N_RCONT 
+	            , 0 AS N_SUM_RCONT
+	            ,V_SUB_RAW_CD
+	            ,V_UCON_CD
+	            ,V_CON_CD           
+	            ,V_ALLERGEN_REG_YN
+	            ,V_PRODUCT_CD        
+	            ,V_CON_NM_EN        
+	            ,V_CON_NM_CN        
+	            ,V_CON_NM_KO            
+	            ,SUM(N_RCONT) OVER(PARTITION BY V_CON_CD) AS N_CON_ALLERGEN_SUM
+	            ,N_VER_SEQ
+	        FROM
+	            (
+	            SELECT
+	            	 V_ODMDB_ID
+	                ,N_PART_NO
+	                ,(MST.N_COMP_IN_PER * MST.N_RAW_PER * 0.01) AS N_RCONT
+	                ,V_SUB_RAW_CD
+	                ,V_UCON_CD
+	                ,MST.V_CON_CD
+	                ,'Y' AS V_ALLERGEN_REG_YN
+	                ,MST.V_PRODUCT_CD        
+	                ,(MST.N_COMP_IN_PER * MST.N_RAW_PER * 0.01) AS N_AL_RCONT         
+	                ,MST.V_CON_NM_EN        
+	                ,MST.V_CON_NM_CN        
+	                ,MST.V_CON_NM_KO
+	                ,MST.N_VER_SEQ
+	            FROM TODM_PDCP_D MST
+	                WHERE 1=1
+					AND V_PRODUCT_CD = TRIM(#{i_sMatrcd})
+					<if test="i_sPartno != null and i_sPartno != ''">
+						AND N_PART_NO = #{i_sPartNo}
+					</if>	                   
+					AND N_VER_SEQ = #{i_iVsn}
+	              	AND V_ALLERGEN_YN = 'Y'            
+	        )
+		)		
+	</sql>
+	
+	<select id="selectOdmFragranceList" parameterType="CmMap" resultType="CmMap">		
+		SELECT /* BrPr012Mapper.selectOdmFragranceList */ 
+			V_FRAGRANCE 
+		 	,MST.V_FRAGRANCE_SMELL 
+		 	,MST.V_MANUFACTURE 
+		 	,MST.N_PART_NO 
+		 FROM TODM_PDFG_D MST
+		 WHERE	MST.V_RECORD_ID = TRIM(#{i_sRecordId})
+		 AND MST.V_PRODUCT_CD = TRIM(#{i_sProductCd})
+		 <if test="i_sPartNo != null and i_sPartNo != ''">
+		   AND	MST.N_PART_NO = #{i_sPartNo}
+		 </if>
+		   AND	MST.N_VER_SEQ = #{i_iVsn}
+	</select>
+	
+	<select id="getSectionList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr012Mapper.getSectionList */ 
+			OMV.V_RECORD_ID
+                , OMV.V_PRODUCT_CD
+                , PIF.V_UCLASS_CD
+                , PIF.V_CLASS_CD
+                , OMV.V_MSDS_VAL
+                , PIF.V_CLASS_NM
+                , PIF.V_TYPE
+                , PIF.V_DESCRIPTION
+                , OMV.V_REG_DTM
+                , OMV.V_UPDATE_DTM
+                , PIF.V_TYPE
+                , PIF.V_TYPE
+        FROM TODM_PDMD_D OMV, TSI_MSDS_CL_L PIF
+        WHERE OMV.V_CLASS_CD(+) = PIF.V_CLASS_CD
+          AND OMV.V_RECORD_ID(+) = #{i_sRecordId}
+          AND OMV.V_PRODUCT_CD(+) = TRIM(#{i_sProductCd})
+        <!-- AND OMV.N_VER_SEQ(+) = #{i_iVerSeq} -->
+        <if test="v_sub_flag == &quot;Y&quot;">
+          AND V_UCLASS_CD != #{uClassCd}
+          AND V_UCLASS_CD != '0000000'
+        </if>
+        <if test="v_sub_flag == &quot;N&quot;">
+          AND V_UCLASS_CD = #{uClassCd}
+        </if>
+        ORDER BY V_CLASS_CD
+	</select>
+			
+	<select id="getExpDocStr" parameterType="CmMap" resultType="java.lang.String">
+		SELECT /* BrPr012Mapper.getExpDocStr */
+			WM_CONCAT(MST.V_DOC_CD)
+		FROM TSI_DOC_MT MST
+		INNER JOIN TSI_DOC_NATION NAT ON MST.V_DOC_CD = NAT.V_DOC_CD 
+		WHERE 1=1
+		AND EXISTS (
+			SELECT V_NATION_CD FROM US_TIMS_MGR.TSI_PD_D
+			WHERE V_RECORD_ID = #{i_sRecordId}
+			AND V_PRODUCT_CD  = #{i_sProductCd}
+			AND V_NATION_CD = NAT.V_NATION_CD	
+		)
+	</select>
+			
+	<select id="getExpDocList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr012Mapper.getExpDocList */
+			MST.V_DOC_CD
+			,MST.V_DOC_NM_KO
+			,MST.V_DOC_NM_EN
+			,MST.V_PART_TYPE
+			,NAT.V_NATION_CD
+			,NAT.V_ESSENTIAL_YN
+		FROM TSI_DOC_MT MST
+		INNER JOIN TSI_DOC_NATION NAT ON MST.V_DOC_CD = NAT.V_DOC_CD 
+		WHERE 1=1
+		AND EXISTS (
+			SELECT V_NATION_CD FROM US_TIMS_MGR.TSI_PD_D
+			WHERE V_RECORD_ID = #{i_sRecordId}
+			AND V_PRODUCT_CD  = #{i_sProductCd}
+			AND V_NATION_CD = NAT.V_NATION_CD	
+		)
+	</select>
+	
+	
+	<select id="selectOdmMsds" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr012Mapper.selectOdmMsds */
+			V_FLASH_POINT, V_FILL_GAS
+		FROM ODM_MSDS
+		WHERE V_RECORDID = #{i_sRecordid}
+		  AND N_VER_SEQ = #{i_iVerSeq}
+	</select>
+	<select id="selectOdmMayContainList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr012Mapper.selectOdmMayContainList */	
+			V_RECORD_ID
+			, N_VER_SEQ
+			, N_PART_NO
+			, V_MAY_CONTAIN
+		  FROM	TODM_MAY_CON_D
+		 WHERE	V_RECORD_ID = #{i_sRecordId}
+		 AND V_PRODUCT_CD = #{i_sProductCd}
+		   AND	N_VER_SEQ = (
+		   		SELECT	MAX(N_VER_SEQ)
+		   		  FROM	TODM_PDCP_D
+		   		 WHERE	V_PRODUCT_CD = #{i_sProductCd}
+		   )
+		 <if test="i_sPopPartNo != null and i_sPopPartNo != ''">
+		   AND	N_PART_NO = #{i_sPopPartNo}
+		 </if>
+		 <if test="i_sPopPartNo == null or i_sPopPartNo == ''">
+		   AND	N_PART_NO = #{i_sPartNo}
+		 </if>
+	</select>
+</mapper>

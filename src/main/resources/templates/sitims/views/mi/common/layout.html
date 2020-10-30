@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  
+<title th:if="${@environment.getActiveProfiles()[0] == 'live'}"     th:text="${@environment.getProperty('globals.systemName')}"></title>
+<title th:unless="${@environment.getActiveProfiles()[0] == 'live'}" th:text="${@environment.getProperty('globals.systemName') +' ['+@environment.getActiveProfiles()[0] + ']'}"></title>
+<link id='cssDhtmlx'   rel='stylesheet' type='text/css' href='/dhtmlx/codebase/dhtmlx.css' />
+<link id='cssFontAs'   rel='stylesheet' type='text/css' href='/dhtmlx/codebase/fonts/font_awesome/css/font-awesome.min.css' />
+<link id='cssTemplate' rel='stylesheet' type='text/css' href='/css/layout.css' />
+
+<script type='text/javascript' src='/dhtmlx/codebase/dhtmlx.js' ></script>
+<script type='text/javascript' src='/js/jquery/jquery-1.11.1.min.js'></script>
+<script type='text/javascript' src='/js/jquery/jquery-ui-1.10.4.custom.min.js'></script>
+
+<script type='text/javascript' src='/js/dhtmlx/common.js'></script>
+<script type='text/javascript' src='/js/dhtmlx/commonUtils.js'></script>
+<script type='text/javascript' src='/js/dhtmlx/commonMdi.js'></script>
+<script type='text/javascript' src='/js/dhtmlx/commonTransaction.js'></script>
+
+<script type='text/javascript' src='/js/commonUtils.js'></script>
+  <!-- css -->
+  <link rel="stylesheet" type="text/css" href="/sitims/CSS/common.css">
+  <!--[if lt IE 9]>
+  <script type="text/javascript" src="/sitims/js/lib/html5.js"></script>
+  <![endif]-->
+
+<style>
+.dhxlayout_base_material div.dhx_cell_layout div.dhx_cell_hdr {
+	position:relative;
+	height:42px;
+	line-height:42px;
+	background-color:#333333;
+	overflow:hidden;
+	font-family: "Nanum Gothic", Arial, dotum, sans-serif;
+	font-size:14px;
+	font-weight: 700;
+	color:#ffffff;
+	cursor:default;
+	-webkit-user-select:none;
+	-khtml-user-select:none;
+	-moz-user-select:none;
+	-ms-user-select:none;
+	-o-user-select:none;
+	user-select:none;
+}
+.dhxtreeview_item_label { font-family: "Nanum Gothic", Arial, dotum, sans-serif !important; }
+	/* css for custom icons */
+	.icon_file {
+		background-image: url(/sitims/images/common/blank.gif);
+	}
+	.icon_opened {
+		background-image: url(/sitims/images/common/ico_menu_on.png);
+	}
+	.icon_closed {
+		background-image: url(/sitims/images/common/ico_menu_off.png);
+	}
+</style>
+<script type="text/javascript" th:inline="javascript">
+
+//layout
+var layoutMain;
+
+//layout - tree
+var menuTreeView;
+
+//local variable
+var mdiMode     = "Y";
+var contextMode = "Y";
+var menuDs;
+
+function mdiInitMain(layout) {
+	
+	mdiObj.tabbar = layout.attachTabbar("mdi menu tab");
+	
+	mdiObj.tabbar.addTab("home","Home","100");
+	mdiObj.tabbar.cells("home").attachURL("/tiims/main/init.do");
+	mdiObj.tabbar.cells("home").setActive();
+	mdiObj.tabbar.enableTabCloseButton(true);
+	mdiObj.tabbar.enableAutoReSize(true);
+	mdiObj.tabbar.setArrowsMode("auto");
+	
+	mdiObj.tabbar.attachEvent("onTabClose",function(id) {
+		delete localStorage[id];
+    	delete mdiObj.pages[id];
+    	mdiObj.pageCount--;
+		return true;
+	});
+	
+	// mdi context menu 초기화
+	mdiContextMenuInit();
+}
+
+$(function() {
+    /****************************************************************************************************
+     * Layout 초기화
+     ****************************************************************************************************/
+    layoutMain = new dhtmlXLayoutObject("layoutObj2", "2U");
+
+    /****************************************************************************************************
+     * 왼쪽 메뉴 레이아웃 - 트리 메뉴 용도
+     ****************************************************************************************************/
+    layoutMain.cells('a').setText('Menu');
+    layoutMain.cells('a').setWidth(250);
+
+    menuTreeView = layoutMain.cells('a').attachTreeView();
+
+    // GNB 생성
+    fn_ajax({  url                 : "/dhtmlx/auth/selectMenuList.do"
+    		 , type				   : "GET"
+             , success             : function(responseData) {
+            	 menuDs = responseData;
+            	 var html = "";
+            	 for( var i=0; i < menuDs.length; i++ ){
+            		 if (menuDs[i].id != 'SY')
+            		 html += "<li id=\""+menuDs[i].id+"\"><a href='javascript:;' onclick='fn_makeLnb(\""+menuDs[i].id+"\", this);' class='clsTopMenu'>"+menuDs[i].text+"</a></li>";
+            	 }
+            	 $("#gnbList").append(html);
+            	 fn_makeLnb("MIBR");
+            	 // 링크로 들어온 경우 그 링크의 화면 호출
+            	 var openMenuCd = fn_getParameterByName("openMenuCd");
+            	 var openUrl = fn_getParameterByName("openUrl");
+            	 if( openMenuCd != undefined && openMenuCd != "" ){
+            		 fn_switchScrn(openMenuCd,null);
+            	 }
+            	 if (!fn_isNull(openUrl)) {
+            		 mdiObj.create_tab(fn_getParameterByName("menuCd"),fn_getParameterByName("menuNm"),openUrl);
+            	 }
+
+			}
+    });
+    
+    
+    
+    /*<![CDATA[*/
+    var userLvl = /*[[ ${userInfo.LOGIN_LVL} ]]*/;
+    if ((userLvl != null) && (userLvl != "")) {
+        if (userLvl > 4) {
+            //	menuTreeView.loadStruct("/dhtmlx/data/menuAdmin.json");
+        } else {
+            //	menuTreeView.loadStruct("/dhtmlx/data/menu.json");
+        }
+    } else {
+        //   	menuTreeView.loadStruct("/dhtmlx/data/menu.json");
+    }
+    /*]]>*/
+
+
+    //menuTreeView.attachEvent("onSelect", showDirContent);
+    menuTreeView.attachEvent("onClick", function (id, mode) {
+
+        title = menuTreeView.getItemText(id);
+        url = menuTreeView.getUserData(id, "url");
+
+        if (fn_isNotNull(url) != '') {
+        	if (url.indexOf("?") > -1 ) {
+        		url = url + "&openMenuCd=" + id
+        	} else {
+        		url = url + "?openMenuCd=" + id;
+        	}
+        	
+            if (mdiMode == "Y") {
+                mdiObj.create_tab(id, title, url);
+            } else {
+                layoutMain.cells('b').detachObject(true);
+                layoutMain.cells('b').attachURL(url);
+            }
+        } else {
+            menuTreeView.openItem(id);
+        }
+    })
+
+    if (contextMode == "Y") {
+        var menuContext = new dhtmlXMenuObject({
+            icons_path: "/images/dhtmlx/menu/",
+            context: true,
+            items: [
+                {id: "newWin", text: "새창에서...", img: "newwin.gif"},
+                {type: "separator"},
+                {id: "newTab", text: "새탭에서...", img: "newtab.gif"},
+            ]
+        });
+        
+
+        
+                
+
+        menuContext.renderAsContextMenu();
+        menuContext.attachEvent("onClick", function (id, zoneId, cas) {
+            onContextMenuButtonClick(id, zoneId, cas);
+        });
+
+        menuTreeView.enableContextMenu(true);
+        menuTreeView.attachEvent("onContextMenu", function (id, x, y, ev) {
+            menuContext.showContextMenu(x, y);
+            menuTreeView.contextID = id;
+            return false;
+        });
+    }
+
+    /****************************************************************************************************
+     * 프로그램 영역 선언
+     ****************************************************************************************************/
+    var b = layoutMain.cells('b');
+    b.hideHeader();
+    b.setText('');
+
+    if (mdiMode == "Y" && !fn_isMobile()) {
+    	mdiInitMain(layoutMain.cells("b"));
+    } else if (mdiMode == "Y" && fn_isMobile()) {
+        mdiMobileInit(layoutMain.cells("b"));
+        layoutMain.cells('a').collapse();
+    } else {
+        b.attachURL("/home/init.do"); // mdi아닐때는 그냥 홈화면
+    }
+
+    /****************************************************************************************************
+     * 프로그램 초기화
+     ****************************************************************************************************/
+     fn_init();
+    /****************************************************************************************************
+     * 함수
+     ****************************************************************************************************/
+	if (-1 < '[[${userInfo.ROLE_NO}]]'.indexOf('ADMIN'))
+		$('#systemMenu').show();
+});
+
+// 새창탭
+function onContextMenuButtonClick(menuitemId, zoneId, cas){
+	
+    var id  = menuTreeView.contextID;
+    var url = menuTreeView.getUserData(id, 'url');
+    
+    if ((url != '') && (url != null)) {
+        var wop;
+        var popupUrl;
+        //var popupUrl = url + "?m=p";
+        if (url.indexOf("?") > -1 ) {
+        	popupUrl = url + "&openMenuCd=" + id
+        } else {
+        	popupUrl = url + "?openMenuCd=" + id;
+        }
+                    
+        if (menuitemId == 'newWin') {
+        	delete localStorage[id];
+            wop = window.open(popupUrl, "", "location=no, toolbar=no, menubar=no, scrollbars=yes, resizable=yes, fullscreen=yes" );
+        } else if (menuitemId == 'newTab') {
+        	delete localStorage[id];
+            wop = window.open(popupUrl, id);
+        }
+        
+        wop.onload = function() { 
+            var popLayoutMain = $(wop.document).find("[id='layoutMain']");
+            wop.focus();
+        };
+    }
+}
+
+function fn_logOut() {
+	parent.location.href = "/login/logout.do?userNo="+[[${userInfo.USER_NO}]]+"&sysId="+[[${userInfo.SYS_ID}]];
+}
+
+var popup;
+var popup2;
+var pwdFrm;
+
+var pwdIds = {
+    "PHONE_NO": "변경할 전화번호를 - 없이 입력하세요",
+    "PWD": "변경할 비밀번호를 입력하세요",
+    "PWD_CONFIRM": "비밀번호를 다시한번 입력하세요"
+};
+
+function fn_changePwd(inp) {
+    if (!popup) {
+        popup = new dhtmlXPopup({mode: "left"});
+        pwdFrm = popup.attachForm([
+            {type: "block", style: "margin: 10px 20px 10px 0px;", list: [
+                {type: "input", position: "label-left", labelWidth: 110, name: "PHONE_NO", label: "전화번호", value: "", maxLength: 11},
+                {type: "password", position: "label-left", labelWidth: 110, name: "PWD", label: "비밀번호", value: "", maxLength: 35},
+                {type: "password", position: "label-left", labelWidth: 110, name: "PWD_CONFIRM", label: "비밀번호 확인", value: "", maxLength: 35},
+                {type: "button", name: "proceed", value: "변경", offsetTop: 10, offsetLeft: 165}
+            ]}
+        ]);
+        pwdFrm.attachEvent("onFocus", function(name){
+            if (!pwdIds[name]) return;
+            if (!popup2) {
+                var id2 = [];
+                for (var a in pwdIds) id2.push(a);
+                popup2 = new dhtmlXPopup({form: pwdFrm, id: id2});
+            }
+            popup2.attachHTML("<div style='margin: 5px 10px;'>"+pwdIds[name]+"</div>");
+            popup2.show(name);
+        });
+        pwdFrm.attachEvent("onBlur", function(name){
+            if (popup2) popup2.hide();
+        });
+        pwdFrm.attachEvent("onButtonClick", function(name){
+            if (name == "proceed") {
+                var num = pwdFrm.getItemValue('PHONE_NO');
+                var pwd = pwdFrm.getItemValue('PWD');
+                var pwd_confirm = pwdFrm.getItemValue('PWD_CONFIRM');
+                
+                console.log(num);
+                console.log(pwd);
+                console.log(pwd_confirm);
+                
+                if(num==null || num=="" || pwd==null || pwd=="" || pwd_confirm==null || pwd_confirm==""){
+                	fn_alertMsg('필수항목이 있습니다');
+                	return false;
+                }
+                
+                if (fn_pwdValidateForm(pwd, pwd_confirm)) {
+                    var sUrl = "/admin/user/updatePwd.do";
+                    var postParam = fn_getPostParam(pwdFrm);
+
+                    fn_ajaxSaveForm({
+                        url : sUrl,
+                        type : "POST",
+                        postParam : postParam,
+                        postType : 'save',
+                        success : pwdFrm.clear()
+                    });
+                }
+
+                popup.hide();
+                return;
+            }
+        });
+    }
+    if (popup.isVisible()) {
+        popup.hide();
+    } else {
+        var x = dhx4.absLeft(inp);
+        var y = dhx4.absTop(inp) + 25;
+        var w = inp.offsetWidth;
+        var h = inp.offsetHeight;
+        popup.show(x,y,w,h);
+    }
+}
+
+function fn_pwdValidateForm(arg1, arg2) {
+    var bValid = true;
+    if (arg1 != arg2) {
+        fn_alertMsg('비밀번호가 일치하지 않습니다.');
+        bValid = false;
+    }
+    return bValid;
+}
+
+function fn_getParMenuCd(menuCd){
+	var obj = {};
+	var parMenuCd = "";
+	var gnbMenuCd = "";
+
+	for( var i=0; i < menuDs.length; i++ ){
+		var lnb = menuDs[i].items;
+		for(var j=0; j < lnb.length; j++ ){
+			var menus = lnb[j].items;
+			for( var k=0; k < menus.length; k++ ){
+				if( menus[k].id == menuCd ){
+					parMenuCd = menus[k].userdata.par_menu_cd;
+					break;
+				}
+			}
+			if( parMenuCd != "" ){
+				gnbMenuCd = lnb[j].userdata.par_menu_cd;
+				break;
+			}
+		}
+		if( gnbMenuCd != "" ){
+			break;
+		}
+	}
+	
+	obj.parMenuCd = parMenuCd;
+	obj.gnbMenuCd = gnbMenuCd;
+	
+	return obj;
+}
+
+function fn_makeLnb(menuCd, objTop){
+	layoutMain.cells('a').expand();
+	$('.clsTopMenu').removeClass('is_on');
+	$(objTop).addClass('is_on');
+
+	for( var i=0; i < menuDs.length; i++ ){
+		if( menuDs[i].id == menuCd ){
+			menuTreeView.clearAll();
+			layoutMain.cells('a').setText(menuDs[i].text);
+			
+			menuTreeView.loadStruct(menuDs[i].items, function(){
+				for (var j in menuDs[i].items) {
+					var	id	= menuDs[i].items[j].id;
+					menuTreeView.openItem(id);
+					menuTreeView.setItemIcons(id, {
+					    file:           "icon_file",    // css for a file
+					    folder_opened:  "icon_opened",  // css for an opened folder
+					    folder_closed:  "icon_closed"   // css for a closed folder
+					});
+				}
+			});
+			break;
+		}
+	}
+
+	
+}
+function fn_logOut() {
+	parent.location.href = "/login/logout.do?userNo="+[[${userInfo.USER_NO}]]+"&sysId="+[[${userInfo.SYS_ID}]];
+}
+
+function fn_goSy() {
+	location.href = "/main/init.do";
+}
+
+function fn_home() {
+	mdiObj.tabbar.cells("home").setActive();
+//	location.href	= '/tiims/init.do';
+}
+</script>
+</head>
+    <body style="overflow:auto">
+
+  <!-- wrap -->
+  <div id="wrap" class="wrap">
+    <!-- header -->
+    <header class="header">
+      <div class="header_inner">
+        <div class="logo" style="cursor: pointer;" onclick="fn_home();"><span class="blind">TIIMS - Technical integrated information management system</span></div>
+        <div class="header_r">
+          <p class="top_txt">[ <span th:text='${userInfo.DEPT_NM}'/> ] <span th:text='${userInfo.LOGIN_NM}'/>님 안녕하세요</p>
+          <ul class="top_menu">
+            <li><a href="javascript:;" title="개인정보변경" onclick="fn_changePwd(this);"><i class="ico ico_01"></i><span class="blind">개인정보변경</span></a></li>
+            <li id="systemMenu" style="display: none;"><a href="javascript:;" title="관리자" onclick="fn_goSy();"><i class="ico ico_02"></i><span class="blind">관리자</span></a></li>
+            <li><a href="javascript:;" title="로그아웃" onclick="fn_logOut();"><i class="ico ico_03"></i><span class="blind">로그아웃</span></a></li>
+
+          </ul>
+        </div>
+      </div>
+    </header><!-- header -->
+    <!-- gnb_menu -->
+    <div class="gnb_menu">
+      <ul class="clearfix" id="gnbList">
+      </ul>
+    </div><!-- //gnb_menu -->
+    <!-- lnb_menu -->
+    <aside class="lnb_menu">
+      <div class="lnb_inner">
+        <ul id="lnbList">
+        </ul>
+      </div>
+      <!-- button class="btn_lnb_toggle"><span class="blind">좌측메뉴 열기/닫기</span></button -->
+    </aside><!-- //lnb_menu -->
+    <!-- header -->
+
+    <div class="container" id="layoutObj2" >
+    </div><!-- //container -->
+  </div><!-- //wrap -->
+
+    </body>
+</html>

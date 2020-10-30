@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript' src='/sitims/js/util/cm_function.js'></script>   
+<script type='text/javascript'>
+
+//layout
+var layoutMain;
+var searchForm;
+var mainTree;
+var subForm;
+var InputTreePop;
+var popup = null;
+
+//toolbar
+var formToolbar;
+
+
+var saveMode = 'I';
+
+$(function(){
+
+/****************************************************************************************************
+  * 초기화 
+  ****************************************************************************************************/    
+	
+	  layoutMain = new dhx.Layout("layoutObj", {
+		     css: "dhx_layout-cell--border_top",
+		     rows: [
+                     {cols:[
+	                   	 {id: "mainTree", header: "MSDS", width: "50%",css: "layout_padding_right",resizable: true}
+	                   	 ,{rows:[
+	                   		  {id: "toolbarSub", gravity:false}
+	                   		 ,{id: "subForm", gravity:false, height: "400px",}
+	                   	 ],resizable: true, header: "MSDS 상세",width: "50%"}
+  	 				]}
+		     	 ]
+		 });
+	  
+	  
+	  // sub-툴바    
+	  formToolbar = new dhx.Toolbar(null, {
+	      css: "dhx_widget--bordered dhx_widget--bg_gray",
+	      data: [
+	          {id: "INS_DEPT",icon: "dxi dxi-plus",value: "신규"}
+	          ,{id: "SAV_DEPT",icon: "dxi dxi-check",value: "저장"}
+	          ,{id: "DEL_DEPT",icon: "dxi dxi-delete ",value: "삭제"}
+	      ]
+	  });    
+	  layoutMain.getCell("toolbarSub").attach(formToolbar);
+	  
+	  
+	  // Tree-메인
+	  $.getJSON("/si/cm/040/si_cm_040_list_ajax.do",function(data){
+			  var treeData = getTreeData(data.data);
+			  mainTree = new dhx.Tree();
+			  mainTree.data.parse(treeData);
+			  mainTree.expand("S000001");
+			  layoutMain.getCell("mainTree").attach(mainTree);
+			  
+				mainTree.events.on("ItemClick", function(id, e){
+					saveMode = 'U';
+					var	obj		= mainTree.data.getItem(id);
+					var	selId	= obj.id;
+					var	selTopId	= obj.TOPID;
+					var	MsdsText	= obj.value;
+					subForm.setValue({
+						"i_sMenuNm" : MsdsText, //MSDS 이름
+						"i_sMsdsId" : selId, //MSDS 코드
+						
+					});
+			 		$.ajax({
+			 			url : "/si/cm/040/si_cm_040_MsdsDesc_ajax.do",
+			 			type : "post",
+			 			dataType : "json",
+			 			data : {i_sMsdsId : selId, i_sMsdsTopId : selTopId},
+			 			success : function(xhr){
+			 				var msdsSetValue = xhr.data[0];
+			 				//MSDS 데이터 SET
+			 				  if(msdsSetValue != null && msdsSetValue != "") {
+			 					  var flagUse = msdsSetValue.FLAGUSE =='Y' ? true : false;
+			 					 subForm.setValue({
+			 		 					"i_sMsdsTop" : msdsSetValue.TOPCLASSNM, // 상위요소
+			 		 					"i_sSeqNo" : msdsSetValue.SEQNO, //조회순서
+			 		 					"i_sType" : msdsSetValue.v_type, //입력타입
+			 		 					"i_tDescription" : msdsSetValue.v_desc, //MSDS DESC 삽입
+			 		 					"i_sFlagUse" : flagUse
+			 		 				}); 
+			 				  }
+
+			 			}
+			 			
+			 		});
+				});
+			  
+		});
+	  layoutMain.getCell("mainTree").attach(mainTree);
+	  
+	  // Form-서브  
+	  subForm = new dhx.Form(null, {
+	      rows: [
+	 			{type:"input", id:"i_sMsdsTop", name:"i_sMsdsTop", label:"상위요소", readOnly:true, required:true,labelPosition: "left", labelWidth: "70", gravity: false}
+	 			,{type : "input", id : "i_sMenuNm", name : "i_sMenuNm", label : "TITLE", required : true,labelPosition: "left", labelWidth: "70", gravity: false}
+	 			,{type : "input",id : "i_sSeqNo",name : "i_sSeqNo", label : "조희순서",labelPosition: "left", labelWidth: "70", gravity: false}
+	 			,{type : "checkbox", id : "i_sFlagUse", name : "i_sFlagUse", label : "사용여부",labelPosition: "right", labelWidth: "70px", width: "190", gravity: false}
+	 			,{type : "input", id : "i_sType", name : "i_sType",label : "입력타입",labelPosition: "left", labelWidth: "70", gravity: false}
+	 			,{type : "textarea", id : "i_tDescription", name : "i_tDescription", label : "작성예시",height: "150",labelPosition: "left", labelWidth: "70", gravity: false}
+				,{type : "input", id : "i_sMsdsId", name : "i_sMsdsId", hidden : true}
+				,{type : "input", id : "i_sMsdsTopId", name : "i_sMsdsTopId", hidden : true}
+				
+	 		]
+	  });
+	  layoutMain.getCell("subForm").attach(subForm);
+	  
+	  
+	  $(document).on('click','#i_sMsdsTop',function(e){
+		  if(saveMode == 'I'){
+			var config = {
+					centering: true,
+					mode: "bottom",
+					indent: 10
+				};
+		  // Tree- 상위부서 선택 
+		  $.getJSON("/si/cm/040/si_cm_040_list_ajax.do?i_sSubMsds=Y",function(data){
+				popup = new dhx.Popup({
+					css: "dhx_widget--border-shadow custom-treepopup-class"
+				});
+				  var treeData = getTreeData(data.data);
+				  InputTreePop = new dhx.Tree();
+				  InputTreePop.data.parse(treeData);
+				  InputTreePop.expand("S000001");
+				  
+				  popup.attach(InputTreePop);
+				  
+				  InputTreePop.events.on("ItemClick", function(id, e){
+						var	obj		= InputTreePop.data.getItem(id);
+						var	selId	= obj.id;
+						var	selVal	= obj.value;
+						subForm.setValue({
+							"i_sMsdsTop" : selVal,
+							"i_sMsdsTopId" : selId
+						});
+						popup.hide();
+					});
+				  popup.show('i_sMsdsTop', config);
+			});
+		  }
+	  });
+	  
+	  
+	formToolbar.events.on("Click", function(id, e){
+    	subForm.validate();
+    	var data = subForm.getValue(); //데이터 가져옴 
+		
+		if (id == "INS_DEPT") {
+			saveMode = 'I';
+			subForm.clear();
+			
+		}
+		if (id == "SAV_DEPT") {
+			
+			 if (saveMode == 'I') {
+				 
+				 fn_add(data);
+			 }else{
+				 
+				 fn_modify(data);
+			}
+			 
+			
+		}
+		if (id == "DEL_DEPT") {
+			fn_del(data);
+
+		}
+    });
+	
+
+
+
+});
+/****************************************************************************************************
+ * 초기화 function 종료 
+ ****************************************************************************************************/
+
+//등록
+	function fn_add(data){
+		
+		 var regex= /^[0-9]{1,2}$/g;
+		 
+			if(fn_isNull(data.i_sMsdsTop)){
+				fn_s_alertMsg("상위요소를 지정해 주세요.");
+				return;
+			}
+			if(fn_isNull(data.i_sMenuNm)){
+				fn_s_alertMsg("Title을 입력해 주세요.");
+				return;
+			}
+			if(!check_length(data.i_sMenuNm,100)){
+				fn_s_alertMsg("Title이 최대 제한글자수를 초과했습니다.");
+				return;
+			}
+			if(isNaN(data.i_sSeqNo)){
+				fn_s_alertMsg("조회순서는 숫자만 입력가능합니다.");
+				return;
+			}
+			if(!fn_isNull(data.i_sSeqNo)){
+				if(!regex.test(data.i_sSeqNo)){
+					fn_s_alertMsg("조회순서는 0~99까지 숫자만 입력해 주세요.");
+					return;
+				}
+			}
+			if(!check_length(data.i_sType,20)){
+				fn_s_alertMsg("입력타입이 최대 제한글자수를 초과했습니다.");
+				return;
+			}
+			if(!check_length(data.i_tDescription,4000)){
+				fn_s_alertMsg("작성예시가 최대 제한글자수를 초과했습니다.");
+				return;
+			}
+			data.i_sFlagUse = (data.i_sFlagUse == '1' ? 'Y' : 'N');
+			dhx.confirm({
+				header : "알림",
+				text : "등록 하시겠습니까?",
+				buttons : ["예","아니오"],
+				buttonsAlignment: "center"
+			}).then( function (result) {
+				if(result){
+					$.ajax({
+						  url  : "/si/cm/040/si_cm_040_regMsds_ajax.do"
+						, type : "POST"
+				        , data   : data
+				        , dataType : "json"
+				        , success : function(xhr){
+							fn_msdsCRUDAfterAction();
+							fn_s_alertMsg(xhr.message);
+						}, error : function(xhr){
+				        	fn_s_alertMsg("등록 실패");
+						}
+				     });
+				}
+				else{
+					return;
+				}
+			}); 
+		
+	}
+	//수정
+	function fn_modify(data){
+		var regex= /^[0-9]{1,2}$/g;
+		
+		if(fn_isNull(data.i_sMsdsId)){
+			fn_s_alertMsg("왼쪽 트리메뉴에서 클릭 후 이용해주세요.");
+			return;
+		}
+		if(fn_isNull(data.i_sMenuNm)){
+			fn_s_alertMsg("Title을 입력해 주세요.");
+			return;
+		}
+		if(!check_length(data.i_sMenuNm,100)){
+			fn_s_alertMsg("Title이 최대 제한글자수를 초과했습니다.");
+			return;
+		}
+		if(isNaN(data.i_sSeqNo)){
+			fn_s_alertMsg("조회순서는 숫자만 입력가능합니다.");
+			return;
+		}
+		if(!fn_isNull(data.i_sSeqNo)){
+			if(!regex.test(data.i_sSeqNo)){
+				fn_s_alertMsg("조회순서는 0~99까지 숫자만 입력해 주세요.");
+				return;
+			}
+		}
+		if(!check_length(data.i_sType,20)){
+			fn_s_alertMsg("입력타입이 최대 제한글자수를 초과했습니다.");
+			return;
+		}
+		if(!check_length(data.i_tDescription,4000)){
+			fn_s_alertMsg("작성예시가 최대 제한글자수를 초과했습니다.");
+			return;
+		}
+		dhx.confirm({
+			header : "알림",
+			text : "수정 하시겠습니까?",
+			buttons : ["예","아니오"],
+			buttonsAlignment: "center"
+		}).then( function (result) {
+			if(result){
+				var FlagUse;
+
+				if (data.i_sFlagUse == 1) {
+					FlagUse = 'Y';
+				} else {
+					FlagUse = 'N';
+				}
+				ParamData = {
+						i_sMenuNm : data.i_sMenuNm,
+						i_sSeqNo : data.i_sSeqNo,
+						i_sFlagUse : FlagUse,
+						i_sType : data.i_sType,
+						i_tDescription : data.i_tDescription,
+						i_sMsdsId : data.i_sMsdsId
+				}
+				$.ajax({
+
+					url : "/si/cm/040/si_cm_040_modifyMsds_ajax.do",
+					type : "POST",
+					data : ParamData,
+					dataType : "json",
+					success : function(xhr) {
+						fn_msdsCRUDAfterAction();
+						fn_s_alertMsg(xhr.message);
+					}, error : function(xhr){
+			        	fn_s_alertMsg("수정 실패");
+					}
+
+				});
+			}
+			else{
+				return;
+			}
+		});
+		
+	}
+	//삭제
+	function fn_del(data){
+		
+		if(fn_isNull(data.i_sMsdsId)){
+			fn_s_alertMsg("왼쪽 트리메뉴에서 클릭 후 이용해주세요.");
+			return;
+		}
+		dhx.confirm({
+			header : "알림",
+			text : "삭제 하시겠습니까?",
+			buttons : ["예","아니오"],
+			buttonsAlignment: "center"
+		}).then( function (result) {
+			if(result){
+				paramData = {
+						i_sMsdsId : data.i_sMsdsId
+					}
+					$.ajax({
+
+						url : "/si/cm/040/si_cm_040_deletetMsds_ajax.do",
+						type : "POST",
+						data : paramData,
+						dataType : "json",
+						success : function(xhr) {
+							fn_msdsCRUDAfterAction();
+							fn_s_alertMsg(xhr.message);
+						}, error : function(xhr){
+				        	fn_s_alertMsg("삭제 실패");
+						}
+
+					});
+			}
+			else{
+				return;
+			}
+		});
+	}
+
+	
+	//ajax success 공통
+	function fn_msdsCRUDAfterAction(){
+		saveMode = "I";
+		subForm.clear();
+		  $.getJSON("/si/cm/040/si_cm_040_list_ajax.do",function(data){
+				 
+			  var treeData = getTreeData(data.data);
+			  mainTree.data.parse(treeData);
+			  mainTree.expand("S000001");
+		});
+	}
+
+ 
+ function getTreeData(array){
+	var	map	= {};
+	for(var i = 0; i < array.length; i++){
+		var	obj		= {"id" : array[i]['ID'], "value" : array[i]['TEXT'] , "LVL" : array[i]['LVL'] 
+		 				, "TOPID" : array[i]['TOPID']};
+		obj.items	= [];
+		map[obj.id]	= obj;
+
+		var parent	= array[i]['TOPID'] || '-';
+		if(!map[parent]){
+			map[parent] = {
+				items: []
+			};
+		}
+		map[parent].items.push(obj);
+	}
+	return map['-'].items;
+}
+
+</script>
+</html>

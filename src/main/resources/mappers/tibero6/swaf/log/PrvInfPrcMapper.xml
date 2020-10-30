@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : PrvInfPrcLogMapper.xml
+    Description   : PrvInfPrc Log 기록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.04.05  조은정       1.0        최초 생성
+-->
+<mapper namespace="PrvInfPrc">
+
+	<!--  1. 조회  -->
+	<!--  1.1. 마스터 조회  -->
+    <select id="selectList"  parameterType="hashMap" resultType="hashMap">
+      <![CDATA[
+        SELECT /* PrvInfPrc.selectList */
+		      	PINF_PROC_NO
+		      , PROC_USER_NO
+		      , MENU_CD
+		      , TO_CHAR(OCCU_DTM, 'YYYY-MM-DD HH24:MI:SS') AS OCCU_DTM
+		      , PROC_CLS_CD
+		      , CLNT_IP
+		      , SVR_IP
+          FROM TZF_PINFPROC_L
+        ]]>
+        WHERE 1=1
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_ID)">
+           AND PROC_USER_NO = #{USER_ID}
+        </if>
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(MENU_CD)">
+           AND MENU_CD = #{MENU_CD}
+        </if>
+        <if test="START_DT != null and !START_DT.equals('') and END_DT != null and !END_DT.equals('')">
+		   AND TO_CHAR(OCCU_DTM, 'YYYYMMDD') BETWEEN #{START_DT} AND #{END_DT}
+		</if>
+          ORDER BY PINF_PROC_NO DESC
+    </select>
+	
+	<!--  1.2. 상세조회  -->
+    <select id="selectDetail"  parameterType="hashMap" resultType="hashMap">
+      <![CDATA[
+	     SELECT  /* PrvInfPrc.selectDetail */
+				   A.PINF_PROC_NO
+				 , A.PINF_NO
+				 , B.PINF_NM
+				 , B.ENC_BASI_TP_CD
+				 , CASE B.ENC_BASI_TP_CD
+				    WHEN '01' THEN '법적대상'
+				    WHEN '02' THEN '그룹권고대상'
+				    ELSE '비대상'
+				   END AS ENC_BASI_TP_NM		/* 수정 필요 */
+				  , A.REG_USER_NO
+				  , TO_CHAR(A.REG_DTM, 'YYYY-MM-DD HH24:MI:SS') AS REG_DTM
+		FROM TZF_PINFPROC_D A, TZF_PINF_M B
+        ]]>
+        WHERE A.PINF_NO = B.PINF_NO(+)
+        	AND A.PINF_PROC_NO = #{PINF_PROC_NO}  	
+		ORDER BY A.PINF_PROC_NO DESC
+    </select>
+    
+    <!--  1.3. 개인정보 대상 조회. 인터셉터에서 사용됨.  -->
+    <select id="selectPinfNos"  parameterType="Map" resultType="String">
+	     SELECT/* PrvInfPrc.selectPinfNos */ 
+	           B.PINF_NO
+	      FROM TZF_MENU_M A
+			   , TZF_MENUPINF_L B
+			WHERE A.SYS_ID = B.SYS_ID
+			AND A.MENU_CD = B.MENU_CD
+			AND A.SYS_ID = #{SYS_ID}
+			AND A.MENU_CD = #{MENU_CD}
+			AND A.PINF_YN = 'Y'
+    </select>
+    
+    
+    <!--  2. 등록  -->
+    <!--  2.1. 마스터 등록  -->
+    <insert id="insert"  parameterType="com.shinsegae_inc.core.vo.PinfProcVO">
+        <selectKey keyProperty="pinfProcNo" resultType="int" order="BEFORE">
+            SELECT  NVL(MAX(PINF_PROC_NO), 0) + 1 AS pinfProcNo
+              FROM TZF_PINFPROC_L
+        </selectKey>
+        
+        INSERT /* PrvInfPrc.insert */
+          INTO TZF_PINFPROC_L
+             (
+                PINF_PROC_NO
+              , PROC_USER_NO
+              , SYS_ID
+              , MENU_CD
+              
+              , OCCU_DTM
+              , PROC_CLS_CD
+              , CLNT_IP
+              , SVR_IP
+              
+              , AC_URL
+              , AC_PARM
+              
+              , REG_USER_NO
+              , REG_DTM
+              , REG_IP
+             )  
+	    VALUES
+	         (
+	            #{pinfProcNo} 
+	          , #{procUserNo} 
+	          , #{sysId} 
+	          , #{menuCd} 
+	          
+	          , SYSDATE
+	          , #{procClsCd}
+	          , #{clntIp}
+	          , #{svrIp}
+	          
+	          , #{acUrl}
+	          , #{acParm}
+	          
+	          , #{regUserNo} 
+	          , SYSDATE 
+	          , #{regIp} 
+	         )
+    </insert>
+    
+    <!--  2.2. 상세 등록  -->
+    <insert id="insertDetail"  parameterType="com.shinsegae_inc.core.vo.PinfProcDetailVO">
+        INSERT /* PrvInfPrc.insertDetail */
+          INTO TZF_PINFPROC_D
+             (
+                PINF_PROC_NO
+              , PINF_NO
+              , REG_USER_NO
+              , REG_DTM
+              , REG_IP
+             )  
+	    VALUES
+	         (
+	            #{pinfProcNo} 
+	          , #{pinfNo} 
+	          , #{regUserNo} 
+	          , SYSDATE
+	          , #{regIp}
+	         )
+    </insert>
+    
+</mapper>

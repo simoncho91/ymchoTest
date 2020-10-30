@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : IsHm010Mapper.xml
+    Description   : 파일 다운로드 내역
+
+    ==개정이력========================================
+    구분               					 파일명       					ID			사용자		날짜
+    ========== ======= =========   ===================
+    Batch Coding System  111988214A_.pdf       1111		 관리자        최초 생성
+-->
+
+<mapper namespace="IsHm010Mapper">
+
+	<!--	파일 다운로드 내역 기본 SQL	-->
+	<sql id="IsHm010ListInclude">	
+		FROM TSI_FLDN_LG_L TFDL
+		LEFT OUTER JOIN TZF_USER_M TUM ON TUM.USER_NO = TFDL.V_REG_USER_ID
+		WHERE 1=1
+			AND TUM.USER_NO = TFDL.V_REG_USER_ID
+		 <if test="i_sStDate != '' and i_sEnDate != ''">
+	 		AND TFDL.V_REG_DTM BETWEEN #{i_sStDate} AND #{i_sEnDate}
+		 </if>
+         <if test="i_sSearchNm != null and i_sSearchNm != ''">
+         	AND UPPER(TFDL.V_ATTACH_CLASS) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+         	OR UPPER(TFDL.V_USER_ID) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+         	OR UPPER(FN_GET_USERNM(TFDL.V_USER_ID)) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+         	OR UPPER(TFDL.V_FILE_NM) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+         </if>
+	</sql>
+	
+	<!--	파일 다운로드 내역 조회	-->
+	<select id="selectIsHm010List"  parameterType="CmMap" resultType="CmMap">
+	SELECT * FROM /* IsHm010Mapper.selectIsHm010List */
+		(SELECT ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_REG_DTM DESC
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+					
+					,T.*
+		FROM (
+			SELECT
+				FN_GET_USERNM(V_USER_ID) V_USER_ID,
+	 			V_DOWNLOAD_DTM,
+	 			V_ATTACH_CLASS,
+	 			V_PRODUCT_CD,
+	 			V_ATTACH_ID,
+	 			V_FILE_NM,
+				V_IP_ADDRESS,
+				TUM.LOGIN_ID AS V_REG_USER_ID,
+				V_REG_DTM,
+				TO_DATE(SUBSTRING(V_REG_DTM,'1','8'), 'yyyy/mm/dd') AS N_V_REG_DTM
+			<include refid="IsHm010ListInclude"/>
+			) T
+		) TEMP
+		 WHERE 1=1
+		 <if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		 </if>
+	</select>
+	
+	<!--	파일 다운로드 내역 Count조회	-->
+	<select id="getIsHm010ListCount" parameterType="CmMap" resultType="java.lang.Integer">	
+		SELECT /* IsHm010Mapper.getIsHm010ListCount */ 
+			COUNT(*) AS CNT
+		<include refid="IsHm010ListInclude"/>
+	</select>
+    
+</mapper>

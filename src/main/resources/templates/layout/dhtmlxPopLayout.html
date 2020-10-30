@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html th:fragment="layout(script)" xmlns:th="http://www.thymeleaf.org">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title id="title" th:if="${programInfo.get('TITLE') != null}" th:text="${programInfo.get('TITLE') +' ['+@environment.getActiveProfiles()[0] + ']'}"></title>
+
+<script th:replace="${script}"></script>
+
+<body style="overflow:auto;">
+    <div id="wrapper">
+		<div id="layoutObj"></div>
+     </div>
+</body>

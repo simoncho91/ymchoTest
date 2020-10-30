@@ -1,0 +1,109 @@
+spring:
+    profiles:
+        active: local # 기본 환경 선택
+
+--- #개발환경(local)
+spring:
+    profiles: local
+    boot:
+        admin:
+            client:
+                url:
+                  - http://localhost:8282
+                instance:
+                    service-base-url: http://localhost:8080
+logging: 
+    path: C:/logs
+    file: ${logging.path}/${globals.systemID}.log
+globals:
+    domain: localhost
+    encFilePath1: C:\Shinsegae\Shinsegae_rdp\sitims\ssgetc\swaf\key1.txt
+    encFilePath2: C:\Shinsegae\Shinsegae_rdp\sitims\ssgetc\swaf\key2.txt
+    dataSource:
+        driverClassName: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+        url: N9jRlgeHLap6Uokt1IhQKc6NfZLZqcz0VC3YJ1WKGdSRVPvGQbgeQJnNo0h9FS12KRZ17BX7WQgeClV4lXx+Cw==
+        userName: xuzfc+XGYNzA6MYlO4wHDQ==
+        password: FJxvUIG0H4CUq7MYuCxSNQ==
+        maximumPoolSize: 10
+    file:
+        tempPath: C:/temp  #임시파일들 처리경로
+        templatePath:  #다운로드용 서식파일 저장경로
+        uploadPath: C:/temp   #파일 업로드 경로(게시판 등 프로그램에서 업로드 하는 파일경로)
+        ckEditorImagePath: C:/temp/ckeditor    #ckeditor내에서 업로드하는 이미지 경로
+        linkPath: http://${globals.domain}:${server.port} #외부 제공용 링크 생성 경로    
+    smtp:
+        host: 10.105.16.81
+        port: 25
+        username: cKyCIWao8JmxgyzMQWe64vfPeTA8bs6+02GVY69O3Ao=
+        password: HuxbKIukcrHraA7vNuxzGGEHnRcPEdnEfogfVvlo2Hc=
+            
+--- #개발기 실행환경
+spring:
+    profiles: dev
+    boot:
+        admin:
+            client:
+                url:
+                  - http://10.105.16.81:8282
+                instance:
+                    service-base-url: http://10.105.16.81
+logging: 
+    path: /app/jeus/sitims/logs
+    file: ${logging.path}/${globals.systemID}.log
+globals:
+    domain: 10.105.16.81
+    encFilePath1: /app/jeus/sitims/ssgetc/swaf/key1.txt
+    encFilePath2: /app/jeus/sitims/ssgetc/swaf/key2.txt
+    dataSource:
+        driverClassName: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+        url: N9jRlgeHLap6Uokt1IhQKc6NfZLZqcz0VC3YJ1WKGdSRVPvGQbgeQJnNo0h9FS12KRZ17BX7WQgeClV4lXx+Cw==
+        userName: xuzfc+XGYNzA6MYlO4wHDQ==
+        password: FJxvUIG0H4CUq7MYuCxSNQ==
+        maximumPoolSize: 10
+    file:
+        tempPath: /app/jeus/sitims/temp  #임시파일들 처리경로
+        templatePath: /app/jeus/sitims/temp #다운로드용 서식파일 저장경로
+        uploadPath: /app/jeus/sitims/temp   #파일 업로드 경로(게시판 등 프로그램에서 업로드 하는 파일경로)
+        ckEditorImagePath: /app/jeus/sitims/temp/ckeditor    #ckeditor내에서 업로드하는 이미지 경로
+        linkPath: http://${globals.domain}:${server.port} #외부 제공용 링크 생성 경로
+    smtp:
+        host: 10.105.16.81
+        port: 25
+        username: cKyCIWao8JmxgyzMQWe64vfPeTA8bs6+02GVY69O3Ao=
+        password: HuxbKIukcrHraA7vNuxzGGEHnRcPEdnEfogfVvlo2Hc=
+
+--- #운영기 실행환경
+spring:
+    profiles: live
+    boot:
+        admin:
+            client:
+                url:
+                  - http://10.102.16.56:8282
+                instance:
+                    service-base-url: http://10.102.16.56
+logging: 
+    path: /home/jeus/sitims/logs
+    file: ${logging.path}/${globals.systemID}.log
+globals:
+    domain: tiims.sikorea.co.kr
+    encFilePath1: /home/jeus/sitims/ssgetc/swaf/key1.txt
+    encFilePath2: /home/jeus/sitims/ssgetc/swaf/key2.txt
+    dataSource:
+        driverClassName: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+        url: N9jRlgeHLap6Uokt1IhQKc6NfZLZqcz0VC3YJ1WKGdTHw/SYILjmlqIQE1ynYX495cfJkyX7GtUfoQBGvsZwYg==
+        userName: xuzfc+XGYNzA6MYlO4wHDQ==
+        password: FJxvUIG0H4CUq7MYuCxSNQ==
+        maximumPoolSize: 10
+    file:
+        tempPath: /home/jeus/sitims/temp  #임시파일들 처리경로
+        templatePath: /home/jeus/sitims/temp #다운로드용 서식파일 저장경로
+        uploadPath: /home/jeus/sitims/temp   #파일 업로드 경로(게시판 등 프로그램에서 업로드 하는 파일경로)
+        ckEditorImagePath: /home/jeus/sitims/temp/ckeditor    #ckeditor내에서 업로드하는 이미지 경로
+        linkPath: http://${globals.domain}:${server.port} #외부 제공용 링크 생성 경로
+    smtp:
+        host: 10.102.16.57
+        port: 25
+        username: cKyCIWao8JmxgyzMQWe64vfPeTA8bs6+02GVY69O3Ao=
+        password: HuxbKIukcrHraA7vNuxzGGEHnRcPEdnEfogfVvlo2Hc=
+        

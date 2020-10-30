@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : SiIm020Mapper.xml
+    Description   : 성분등록요청
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.08.07  kykwak       1.0        최초 생성
+-->
+<mapper namespace="SiIm020Mapper">
+	<!-- 페이징을 위한 include -->
+	<sql id="SiIm020ListInclude">	
+		  FROM TODM_CONRQ_M MST
+		  LEFT OUTER JOIN (
+		    SELECT 
+			    V_REQ_CON_ID
+			    , WM_CONCAT(V_CAS_NO) AS V_CAS_NO
+			    , REPLACE(WM_CONCAT(V_CAS_NO), ',' , CHR(13)||CHR(10)) AS V_CAS_NMRN
+		    	, MIN(V_CAS_NO)  V_CAS_NO1
+		    	, COUNT(*) AS N_CAS_CNT
+		      FROM TODM_CONRQ_CAS_D 
+		     GROUP BY V_REQ_CON_ID
+		  ) SUB
+		 ON MST.V_REQ_CON_ID = SUB.V_REQ_CON_ID
+		WHERE 1=1
+		<if test="i_sInciNm != null and i_sInciNm != ''">
+			AND (TRIM(UPPER(MST.V_INCI_NM_KO)) || TRIM(UPPER(MST.V_INCI_NM_EN)) || TRIM(UPPER(V_CAS_NO))) LIKE '%'|| TRIM(UPPER(#{i_sInciNm})) ||'%'
+		</if>
+		<if test="i_sState != null and i_sState != ''">
+			AND MST.V_STATE= #{i_sState}
+		</if>
+		<if test="i_sConfmStDate != '' and i_sConfmEnDate != '' and i_sConfmStDate != null and i_sConfmEnDate != null">
+			AND SUBSTR(MST.V_CONFM_DTM, 1, 8) BETWEEN #{i_sConfmStDate} AND #{i_sConfmEnDate}
+		</if>
+		<if test="i_sReqStDate != '' and i_sReqEnDate != '' and i_sReqStDate != null and i_sReqEnDate != null">
+			AND SUBSTR(MST.V_REQ_DTM, 1, 8) BETWEEN #{i_sReqStDate} AND #{i_sReqEnDate}
+		</if>
+	</sql>
+	<!-- 성분등록요청 리스트 -->
+	<select id="selectSiIm020List" resultType="CmMap" parameterType="CmMap">
+	  SELECT * FROM( /* SiIm020Mapper.selectSiIm020List */
+		SELECT 
+			ROW_NUMBER() OVER(ORDER BY 
+			<choose> 
+				<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+					${i_sSortCol} ${i_sSortDir}
+				</when>	 
+				<otherwise>
+					A.V_REQ_DTM 
+				</otherwise>	
+			</choose>
+			) AS N_NUM
+			, A.*
+			FROM(
+				SELECT
+					 TO_CHAR(TO_DATE(MST.V_REQ_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REQ_DTM
+					, MST.V_REQ_DTM AS V_REQ_DTM_EXCEL
+					, MST.V_INCI_NM_KO 
+					, MST.V_OPINION
+					, FN_SUB_CODENM('CONREQ_STATUS',MST.V_STATE) AS V_STATE_NM
+					, MST.V_REJECT_OPN 
+					, TO_CHAR(TO_DATE(MST.V_CONFM_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_CONFM_DTM
+					, MST.V_CONFM_DTM AS V_CONFM_DTM_EXCEL
+					, (SELECT  B.V_VENDOR_NM FROM TODM_VD_I AS B WHERE B.V_VENDOR_ID = MST.V_VENDOR_ID) ||' (' || MST.V_USER_NM ||')' AS V_USER_VENDOR_NM
+					, MST.V_EMAIL 
+					, MST.V_REQ_CON_ID 
+					, MST.V_INCI_NM_EN
+					, MST.V_STATE
+					, MST.V_RELATE_PRODUCT_NM
+					, MST.V_REG_CON_CD
+					, MST.V_GI_CON_CD
+					, FN_GET_USERNM(MST.V_CONFM_USER_ID) AS V_CONFM_USER_NM
+					, MST.V_BRAND
+					, MST.V_BM
+					, SUB.*
+					<include refid="SiIm020ListInclude"/>
+			) A
+		) TEMP
+		 WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+	<!-- 페이징을 위한 리스트 총 개수 -->
+	<select id="getSiIm020ListCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT /* SiIm020Mapper.getSiIm020ListCount */
+			COUNT(*) AS CNT 
+			<include refid="SiIm020ListInclude"/>
+	</select>
+	<!-- 성분등록요청 리스트  수정 -->
+	<update id="modifyForSiIm020" parameterType="CmMap">
+			UPDATE /* SiIm020Mapper.modifyForSiIm020 */
+				TODM_CONRQ_M  
+			SET                     
+				V_STATE = #{i_sState}
+			<if test="i_sGiConCd != null and i_sGiConCd != ''">
+			  , V_GI_CON_CD = #{i_sGiConCd}
+			</if>
+			  , V_REJECT_OPN =	#{i_sRejectOpn}
+			  , V_CONFM_USER_ID = #{i_sConFmUserId}
+			  , V_CONFM_DTM = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			  , V_UPDATE_USER_ID = #{i_sUpdateUserId}
+			  , V_UPDATE_DTM  = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			  , V_IF_YN = 'N'
+			WHERE
+				V_REQ_CON_ID = #{i_sRegConId}
+	</update>
+	<!-- 성분등록요청 리스트  수정을 위한 유효성 검사 -->
+	 <select id="CountForSiIm020Modify" parameterType="CmMap" resultType="java.lang.Integer">
+			SELECT /* SiIm020Mapper.CountForSiIm020Modify */
+				COUNT(*) 
+			FROM TODM_CONRQ_M
+			WHERE V_REQ_CON_ID = #{i_sRegConId}
+	</select>
+	<!-- 메일 보내는 목록  -->
+		<select id="selectSiIm020ForMailSend" parameterType="CmMap" resultType="CmMap">
+				SELECT /* SiIm020Mapper.selectSiIm020ForMailSend */
+			 TO_CHAR(TO_DATE(MST.V_REQ_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REQ_DTM
+			, MST.V_INCI_NM_KO 
+			, MST.V_OPINION
+			, FN_SUB_CODENM('CONREQ_STATUS',MST.V_STATE) AS V_STATE_NM
+			, MST.V_REJECT_OPN 
+			, TO_CHAR(TO_DATE(MST.V_CONFM_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_CONFM_DTM
+			, (SELECT  B.V_VENDOR_NM FROM TODM_VD_I AS B WHERE B.V_VENDOR_ID = MST.V_VENDOR_ID) ||' (' || MST.V_USER_NM ||')' AS V_USER_VENDOR_NM
+			, MST.V_EMAIL 
+			, MST.V_REQ_CON_ID 
+			, MST.V_INCI_NM_EN
+			, MST.V_STATE
+			, MST.V_RELATE_PRODUCT_NM
+			, MST.V_REG_CON_CD
+			, MST.V_GI_CON_CD
+			, FN_GET_USERNM(MST.V_CONFM_USER_ID) AS V_CONFM_USER_NM
+			, MST.V_BRAND
+			, MST.V_BM
+			, SUB.*
+		  FROM TODM_CONRQ_M MST
+		  LEFT OUTER JOIN (
+		    SELECT V_REQ_CON_ID, WM_CONCAT(V_CAS_NO) AS V_CAS_NO
+		      FROM TODM_CONRQ_CAS_D 
+		     GROUP BY V_REQ_CON_ID
+		  ) SUB
+		 ON MST.V_REQ_CON_ID = SUB.V_REQ_CON_ID
+		WHERE MST.V_REQ_CON_ID = #{i_sRegConId}
+	</select>
+	<select id="getSiIm020Statue" parameterType="CmMap" resultType ="Integer">
+		SELECT COUNT(*) /* SiIm020Mapper.getSiIm020Statue */
+			FROM TODM_CONRQ_M 
+		WHERE V_STATE = 'CO_ST01'
+			AND V_REQ_CON_ID = #{i_sReqConId}
+	</select>
+</mapper>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var grdMain;
+
+//local variable
+var rowIndex = 0;
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/
+    // Layout
+    dhtmlx.image_path = dhtmlx_image_path;
+    layoutMain = new dhtmlXLayoutObject({
+        parent: "layoutObj",
+        pattern: "2E",
+        skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+    });
+    
+    /* Form-조건 */
+    var a = layoutMain.cells('a');
+    a.setText('검색조건');
+    a.setHeight(SearchFormHeight[2]);
+    
+    var strLabel =  [{ type:'settings', position:'label-left', labelWidth:'115', inputWidth:'172', offsetLeft:'10', offsetTop:'1'}
+                    ,{ type: "label", list:[
+											{ type:"combo" , name:"SYS_ID", label:"시스템", required:"true", readonly:true, className:"offsetRight"},
+											{ type:"newcolumn"   },
+											{ type:"calendar"  , name:"START_DT" , value:"", label: "시작일", dateFormat:"%Y-%m-%d" , className:"offsetRight"},
+											{ type:"newcolumn"   },
+											{ type:"calendar"  , name:"END_DT" , value:"", label: "종료일", dateFormat:"%Y-%m-%d", className:"offsetRight" },
+                                            { type:"newcolumn"},
+                                            { type:"input" , name:"CLNT_IP", label: "Request IP", className:"offsetRight"}
+			                               ]}
+				    ,{ type: "label", list:[
+											{ type: "input", name: "LOGIN_ID", label: "사용자ID", className:"offsetRight" },
+											{ type:"newcolumn"},
+											{ type:"input" , name:"USER_NM", label: "사용자명", className:"offsetRight"}
+					                       ]
+				    }];
+    frmSearch = a.attachForm(strLabel);
+
+	var today = new Date();
+	frmSearch.setItemValue("START_DT", today);
+	frmSearch.setItemValue("END_DT", today);
+    
+    /* Grid-메인 */
+    var b = layoutMain.cells('b');
+    b.setText('사용자별 목록');
+    grdMain = b.attachGrid();
+    grdMain.setHeader(["NO","접속로그번호","접속일시","접속결과","시스템ID","클라이언트IP","서버IP","접속URL","로그인ID","사용자명"]);
+    grdMain.setColumnIds("NO,AC_LOG_NO,REG_DTM,AC_RSLT_CD_NM,SYS_ID,CLNT_IP,SVR_IP,AC_URL,LOGIN_ID,USER_NM");
+    grdMain.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+    grdMain.setInitWidths('40,100,150,80,120,120,120,300,100,*');
+
+    layoutMain.cells('b').attachStatusBar({
+        text: "<div><span id='pagingArea'></span>&nbsp;<span id='infoArea'></span></div>",
+        paging: true
+    });
+    grdMain.enablePaging(true,100,10,"pagingArea",true,"infoArea");
+    
+    fn_initGrid(grdMain);
+    
+    // DataStore 초기화
+    fn_initDS();
+    
+    // 나머지 초기화
+    layoutMain.setAutoSize("a;b", "b");
+    fn_init();
+
+    // 최초 조회
+    fn_search();
+    
+    /****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+
+});
+
+// DataStore 초기화
+function fn_initDS() {
+
+    var postParam = new Object();
+    postParam.grpcd = "dsSysId:SY002:Y:S";
+
+    fn_ajaxGetDsForCombo({ postParam : postParam
+    	                 , async:false
+		                 , success : 
+		                	 function(responseData) { 
+		                	                            frmSearch.getCombo("SYS_ID").load(responseData.dsSysId); 
+								                	    frmSearch.getCombo("SYS_ID").setComboValue("SITIMS");
+								                	 }
+	});
+}
+
+// 조회
+function fn_search() {
+    if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(frmSearch);
+	    
+	    fn_ajaxGetGrid({ gridName         : grdMain
+	             , url                 : "/dhtmlx/admin/accessLog/selectList.do"
+	             , postParam           : postParam
+	             , success             : function() {
+									                 grdMain.selectRow(rowIndex);
+									                }
+	    });
+    }
+}
+
+</script>
+</html>

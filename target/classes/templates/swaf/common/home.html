@@ -1,0 +1,153 @@
+<!--
+설명       : 홈화면 프로그램
+
+-------------- ---------- -----------------------------------------------------------
+2019.02.19     이웅재     최초작성
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<title id="title" th:if="${programInfo.get('TITLE') != null}" th:text="${programInfo.get('TITLE')}"></title>
+
+<script th:src="@{/js/includeDhtmlx6.js?20200402}"></script>
+<style>
+    .bg-gray {
+        background-color: #bea3a3;
+    }
+    .bg-blue {
+        background-color: rgb(127, 127, 231);
+    }
+</style>
+<script>
+
+//layout
+var layoutMain;
+
+
+$(function(){
+
+    /****************************************************************************************************
+     * 화면구조 정의
+     ****************************************************************************************************/
+     var layoutMain = new dhx.Layout("layoutObj", {
+    	 padding: 5,
+         css: "dhx_layout-cell--bordered",
+         rows: [
+             {  cols: [
+		                 {    
+		                	  id:"validChart"
+		                	, header:"검증 추이"
+		                	, headerImage:"/images/home/a.png"
+		                	, collapsable: true
+		                	, height: "500px"
+		                 },
+		                 {    
+		                	  id:"validGrid"
+		                    , header:"일자/업무별 검증 결과"
+		                	, headerImage:"/images/home/dc.png"
+                            , width : "350px"
+		                 }
+	                 ]
+             },
+             {  cols: [
+		                 {    
+		                	  id:"errorChart"
+	                        , header:"결함 추이"
+	                        , headerImage:"/images/home/a.png"
+		                    , collapsable: true
+		                 },
+		                 {    
+		                	  id:"errorGrid"
+	                        , header:"결함처리 현황"
+	                        , headerImage:"/images/home/dc.png"
+                            , width : "350px"
+		                 }
+                   ]
+             }
+         ]
+     });
+    
+    
+    // 나머지 초기화
+    fn_s_init();
+    
+    // 데이터 조회
+//     fn_search();
+    
+    /****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+});
+
+// DataStore 초기화
+function fn_search() {
+
+    var postParam    = new Object();
+        /* 
+    fn_ajax({         url           : "/home/selectDashboard.do"
+                    , postParam     : postParam
+                    , success       : function(responseData) {
+                    	
+                    	//세로 축 최대값
+                        var maxValue = 0;
+                        
+                        // 검증추이
+                        var data = responseData.validationResultForMainChart.data1;
+                        var str="";
+                        data.forEach(function(d) {
+                            if(str != "")  str = str + ",";
+                            str = str + "{ A:'"+d.SUCCESS+"',B:'"+d.VALID_FAIL+"',C:'"+d.RUN_FAIL+"', day:'"+d.REG_DTM+"' }";
+                            
+                            if (d.SUCCESS    > maxValue) maxValue = d.SUCCESS;
+                            if (d.VALID_FAIL > maxValue) maxValue = d.VALID_FAIL;
+                            if (d.RUN_FAIL   > maxValue) maxValue = d.RUN_FAIL;
+                        });
+                        createChart1(maxValue);
+                        chart1.clearAll();
+                                                
+                        var companies = eval("["+str+"]");  
+                        chart1.parse(companies,"json");     
+                        
+                        
+                        // 장애접수 추이
+                        var data = responseData.validationResultForMainChart.data2;
+                        var str="";
+                        data.forEach(function(d) {
+                            if(str != "")  str = str + ",";
+                            str = str + "{ A:'"+d.REG+"',B:'"+d.COMPLETE+"', day:'"+d.DTM+"' }";
+                        });
+                        createChart2();
+                        chart2.clearAll();
+                                                
+                        var companies = eval("["+str+"]");  
+                        chart2.parse(companies,"json");     
+                        
+                    }
+    });
+ */
+}
+
+</script> 
+<body style="overflow:auto"> 
+    <div id="wrapper">
+        <div id="centerWrap">
+            <div id="appAreaWrap">
+                <div id="appRoleArea">
+                    <div class="title_area_wrap">
+                        <div class="role_title">
+                           <!-- <img src="/images/dhtmlx/fw_title.gif" alt="titleicon" /> -->
+                           <span id="title">Dashboard</span>
+                        </div> 
+                        <div class="role_btn_area">
+                           <button class="button-default pure-button" type="button" id="btnSearch" onclick="fn_search();">새로고침</button>
+                        </div>
+                    </div> 
+                </div>
+                <div id="appArea">
+                    <div id="layoutObj"></div>
+                </div>
+            </div>
+        </div>
+     </div>
+</body>
+</html>

@@ -1,0 +1,906 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : BrPr020Mapper.xml
+    Description   : 제품 등록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.08.18  ash       1.0        최초 생성
+-->
+<mapper namespace="BrPr020Mapper">
+	<sql id="getAcceptListInclude">
+		SELECT 
+				M.*
+				, ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_AD_REQ_ID DESC,V_REG_DTM DESC
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+			FROM (
+				SELECT 
+				    TAL.V_AD_REQ_ID,
+				    TAL.V_TITLE,
+				    TAL.V_PRODUCT_CD,
+				    TPD.V_BRAND_CD,
+				    FN_SUB_CODENM('BRAND_CODE',TPD.V_BRAND_CD) AS BRAND_NM,
+				    TAL.V_REG_USER_ID,
+				    FN_GET_USERNM(TAL.V_REG_USER_ID) V_REG_USER_NM,
+				    TO_CHAR(TO_DATE(TAL.V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REG_DTM,
+				    TAL.V_REG_DTM AS V_REG_DTM_ORI,
+				    TAL.V_RA_ID,
+				    FN_GET_USERNM(TAL.V_RA_ID) V_RA_NM,
+				    TAL.V_AD_REQ_STATUS_CD,
+				    FN_SUB_CODENM('AD_REQ_STATUS',TAL.V_AD_REQ_STATUS_CD) STATUS,
+				    (SELECT V_VENDOR_LABOR_ID FROM TSI_PD_M WHERE V_RECORD_ID = TPD.V_RECORD_ID) AS VENDOR_ID
+				FROM 
+					TSI_ADRQ_L TAL 
+				LEFT OUTER JOIN 
+					TSI_PD_D TPD 
+				ON TAL.V_PRODUCT_CD = TPD.V_PRODUCT_CD
+				WHERE 1=1
+				<if test="i_sStatus != null and i_sStatus != ''">
+					AND  	TAL.V_AD_REQ_STATUS_CD = #{i_sStatus}
+				</if>
+				<if test="i_sBrandCd != null and i_sBrandCd != ''">
+					AND  	TPD.V_BRAND_CD 		= #{i_sBrandCd}
+				</if>
+				<if test="i_sSearchKeyword != null and i_sSearchKeyword != ''">
+				AND		(   
+							TAL.V_TITLE			LIKE	'%' || #{i_sSearchKeyword} || '%' OR
+							FN_GET_USERNM(TAL.V_REG_USER_ID)	LIKE	'%' || #{i_sSearchKeyword} || '%'
+						)
+				</if>
+				<if test="i_sStDate != null and i_sStDate != ''">
+				AND	SUBSTR(TAL.V_REG_DTM, 1, 8)   BETWEEN #{i_sStDate} AND #{i_sEnDate}
+				</if>
+				<if test = "i_sUserBrand != '' and i_sUserBrand != null">
+				AND TPD.V_BRAND_CD = #{i_sUserBrand}
+				</if>
+			) M
+	</sql>
+	
+	<sql id="includeProdPopList">
+		SELECT 
+			ROW_NUMBER() OVER(ORDER BY 
+				<choose> 
+					<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+						${i_sSortCol} ${i_sSortDir}
+					</when>	 
+					<otherwise>
+						TPD.V_PRODUCT_CD
+					</otherwise>	
+				</choose>
+			) AS N_NUM,	
+			TPD.V_RECORD_ID,
+			TPD.V_PRODUCT_CD,
+			TPD.V_BRAND_CD,
+			TPD.V_PRODUCT_NM_KO,
+			TPD.V_PRODUCT_NM_EN,
+			FN_SUB_CODENM('BRAND_CODE',TPD.V_BRAND_CD) AS BRAND_NM,	
+			TO_DATE(SUBSTRING(TPD.V_RELEASE_DTM,'1','8'), 'YYYY-MM-DD') V_RELEASE_DTM,
+			TPD.V_STOCK_DTM,
+			TPD.V_FUNC_YN,
+			TPD.V_CNTR_FORM,
+			FN_SUB_CODENM('ODM_CONT1', TPD.V_CNTR_FORM) AS CNTR_FORM,
+			FN_SUB_CODENM('ODM_ORIGINDIV', TPD.V_ORIGIN_DIV) AS ORIGIN_DIV,
+			TPD.V_ORIGIN_YN,
+			TPD.V_CAPACITY,
+			TPD.V_SHELF_LIFE,
+			TPD.V_PAO,
+			TPD.V_PACKET_UNIT,	/*포장범위*/
+			TPD.V_FREE_GN, 		/*소구,무소구 플래그*/
+			TPD.V_MUSOGU_CONT,	/*무소구 내용*/
+			TPD.V_SOGU_CONT,	/*소구 내용*/
+			(SELECT V_VENDOR_LABOR_ID FROM TSI_PD_M WHERE V_RECORD_ID = TPD.V_RECORD_ID) AS VENDOR_ID
+		FROM 
+			TSI_PD_D TPD
+		WHERE 
+			TPD.V_CK_DOMESTIC_YN = 'Y'
+		<if test="i_sInput != null and i_sInput != ''">
+			AND (UPPER(V_PRODUCT_CD) LIKE '%'|| UPPER(#{i_sInput}) || '%'
+			OR UPPER(V_PRODUCT_NM_KO) LIKE '%'|| UPPER(#{i_sInput}) || '%')
+		</if>
+		<if test = "i_sUserBrand != '' and i_sUserBrand != null">
+			AND TPD.V_BRAND_CD = #{i_sUserBrand}
+		</if>
+	</sql>
+	
+	<select id="getAcceptCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT 
+			COUNT(*)
+		FROM
+			(<include refid="getAcceptListInclude"/>) TEMP
+	</select>
+	
+	<select id="getAcceptList" parameterType="CmMap" resultType="CmMap">
+		SELECT 
+			TEMP.*
+		FROM
+			(<include refid="getAcceptListInclude"/>) TEMP
+		WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>		
+		AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+	
+	<select id="getProdPopCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT 
+			COUNT(*)
+		FROM
+			(<include refid="includeProdPopList"/>) MST
+		WHERE 1=1
+	</select>
+	
+	<select id="getProdPopList" parameterType="CmMap" resultType="CmMap">
+		SELECT 
+			MST.*
+		FROM
+			(<include refid="includeProdPopList"/>) MST
+		WHERE 1=1
+		AND MST.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+	</select>
+	
+	<select id="getFuncReport" parameterType="CmMap" resultType="CmMap">
+		/*기능성화장품 관련 데이터(new ver)*/
+		SELECT 
+			TPD.V_FUNC_YN,			/*기능성 여부 Y/N*/
+		    TPRM.N_FUNC_NO,         /*보고번호(1,2,3)*/
+		    TPD.V_PRODUCT_NM_KO,	/*제품명*/
+		    TPD.V_PH,				/*PH지수*/
+		    TPRM.V_LAB_NO,			/*랩넘버*/
+		    TPRM.V_STAND_TEST_CD,	/*고시한기준 및 시험방법 코드*/
+		    (SELECT 
+		        COMM_CD_DESC 
+		    FROM TZF_COMMCD_D 
+		    WHERE GRP_CD = 'STAND_TEST' AND COMM_CD = TPRM.V_STAND_TEST_CD) AS STAND_TEST,	/*고시한기준 및 시험방법*/
+		    (SELECT 
+		        COMM_CD_DESC 
+		    FROM TZF_COMMCD_D 
+		    WHERE GRP_CD = 'EFFECT' AND COMM_CD = TPRM.V_EFFECT_CD) AS EFFECT,				/*1호 효능효과*/
+		    (SELECT COMM_CD_DESC FROM TZF_COMMCD_D WHERE GRP_CD = 'PRD_CAUTION' AND COMM_CD = 'PRD_CAUTION01') AS PRD_CAUTION,			/*공통주의사항*/
+		    (SELECT COMM_CD_DESC FROM TZF_COMMCD_D WHERE GRP_CD = 'HOWTO_METHOD' AND COMM_CD = TPRM.V_HOWTO_METHOD) AS HOWTO_METHOD, 	/*용법용량*/
+		    TPRM.V_ADD_CAUTION,		/*추가주의사항*/
+		    FN_SUB_CODENM('FUNC_TYPE',TPRM.V_FUNC_TYPE_CD) AS FUNC_TYPE,					/*유형별구분*/
+		    FN_SUB_CODENM('FUNC_INGRI',TPRM.V_FUNC_INGRI_CD) AS FUNC_INGRI,					/*성분별구분*/
+		    FN_SUB_CODENM('FUNC_MAT',TPRM.V_FUNC_MAT_CD_1) AS FUNC_MAT1,					/*세부구성1(1제,2제)*/
+		    FN_SUB_CODENM('FUNC_MAT',TPRM.V_FUNC_MAT_CD_2) AS FUNC_MAT2,					/*세부구성2(나머지)*/
+		    TPRM.V_FUNC_MAT_ETC,															/*세부구성 기타*/
+		    TVI.V_VENDOR_NM,		
+		    TVI.V_ADDR1,																	/*제조사 주소*/
+		   	TVI.V_ADDR2,															/*제조사(상호)*/
+		   	TVI.V_ADDR1 V_ADDR1_DEC_AES,																	/*제조사 주소*/
+		   	TVI.V_ADDR2 V_ADDR2_DEC_AES,																	/*제조사 주소 상세*/
+			TPGI.V_MATRMEMO_AL AS MATRMEMO_AL,												/*전성분명*/
+		   	TPD.V_BF_PRODUCT_NM,															/*기심사 제품명*/
+		   	TPD.V_CERTI_NO,																	/*심사번호*/
+		   	TPD.V_CERT_DTM,																	/*심사결과통지일*/
+		   	TPRM.V_EFFECT_MAT_NM,															/*활성물질용량*/
+		   	FN_SUB_CODENM('WATER_PF',TPRM.V_WATER_PROOF_CD) AS WATER_PROOF,					/*내수성지수*/
+		   	TPRM.V_REPORT_NO,																/*보고번호*/
+		   	TPRM.V_REPORT_DTM,																/*보고일*/
+		   	TPRM.V_HOWTO_METHOD															/*용법용량(코드연계 X)*/
+		FROM 
+		    TODM_PDEF_R_M TPRM 
+		    LEFT OUTER JOIN 
+		    TSI_PD_D TPD
+		    ON(TPRM.V_RECORD_ID = TPD.V_RECORD_ID AND TPRM.V_PRODUCT_CD = TPD.V_PRODUCT_CD)
+		    LEFT OUTER JOIN 
+		    TSI_PD_M TPM
+		    ON(TPRM.V_RECORD_ID = TPM.V_RECORD_ID) 
+		    LEFT OUTER JOIN
+		    TODM_VD_I TVI
+		    ON(TPM.V_VENDOR_ID = TVI.V_VENDOR_ID)
+		    LEFT OUTER JOIN
+		    TODM_PDIG_NA_D TPGI
+		    ON(TPRM.V_RECORD_ID = TPGI.V_RECORD_ID AND TPRM.V_PRODUCT_CD = TPGI.V_PRODUCT_CD AND TPGI.V_GUBUN = 'NAT')
+		    WHERE 1=1
+		AND TPRM.V_RECORD_ID	=	#{i_sRecordCd}
+		AND TPRM.V_PRODUCT_CD	=	#{i_sProductCd}
+	</select>
+	
+	<!-- 기능성 주원료 함량 리스트 -->
+	<select id="getFuncMatList" parameterType="Map" resultType="CmMap">
+		SELECT 
+			V_ODMDB_NM_KO,
+			V_ODMDB_NM_EN,
+		   	V_WEIGHT,																		/*함량*/
+		   	FN_SUB_CODENM('UNIT', V_UNIT) V_UNIT											/*단위*/	
+		FROM TODM_PDEFR_L
+		WHERE 1=1
+		AND	V_PRODUCT_CD = #{i_sProductCd}
+		AND V_RECORD_ID	 = #{i_sRecordCd}
+	</select>
+	
+	<!-- 기능성 보고서 2,3호 효능효과 멀티 데이터 가져오기 -->
+	<select id="getEffectData" parameterType="CmMap" resultType="CmMap">
+		/*기능성 보고서 2,3호 효능효과 멀티 데이터 가져오기*/
+		SELECT 
+			TPL.V_EFFECT_CD,										/*2,3호 효능효과 코드*/
+			FN_SUB_CODENM('EFFECT',TPL.V_EFFECT_CD) AS EFFECT_NM,	/*2,3호 효능효과*/
+			CASE WHEN TPL.V_EFFECT_CD = 'EFFECT09' 
+        		THEN TPRM.V_SPF_LV
+        		ELSE null
+        	END	AS SPF_LV,											/*자외선 차단지수(효능효과 자외선인 경우)*/
+    		CASE WHEN TPL.V_EFFECT_CD = 'EFFECT09' 
+        		THEN FN_SUB_CODENM('PA_LV',TPRM.V_PA_LV_CD)
+        		ELSE null
+        	END AS PA_LV											/*자외선차단레벨(효능효과 자외선인 경우)*/
+		FROM
+			TODM_PDEF_L TPL
+			LEFT OUTER JOIN TODM_PDEF_R_M TPRM 
+			ON(TPL.V_RECORD_ID = TPRM.V_RECORD_ID AND TPL.V_PRODUCT_CD = TPRM.V_PRODUCT_CD)
+		WHERE
+			TPL.V_RECORD_ID			=	#{i_sRecordCd}
+			AND TPL.V_PRODUCT_CD	=	#{i_sProductCd}
+	</select>
+	
+	
+	<insert id="insertBrPr020" parameterType="CmMap">
+		/*문안검토 데이터 등록*/
+		<selectKey keyProperty="i_sAdReqId" resultType="java.lang.String" order="BEFORE">
+			SELECT 'PRF' || SUBSTR(SUBSTR(MAX(V_AD_REQ_ID),4,5) + 100001,2,5) FROM TSI_ADRQ_L
+		</selectKey>
+		
+		INSERT INTO	TSI_ADRQ_L
+		(
+			V_AD_REQ_ID,		/*요청번호*/
+			V_PRODUCT_CD,		/*제품코드*/
+			V_RECORD_ID,		/*문서코드*/
+			V_TITLE,			/*제목*/
+			V_RA_ID,			/*RA ID*/
+			V_AD_REQ_STATUS_CD,	/*상태코드*/
+			V_AD_CONTENT,		/*의뢰내용*/
+			V_FILTERING_TEXT,	/*금지어 필터링*/
+			V_REG_USER_ID,		/*등록자(마케터)*/
+			V_REG_DTM,			/*등록일*/
+			V_IF_YN				/*인터페이스 여부*/
+		)
+		VALUES
+		(
+			#{i_sAdReqId},
+			#{i_sProductCd},
+			#{i_sRecordCd},
+			#{i_sTitle},
+			#{i_sRaId},
+			#{i_sStatus},
+			#{i_sReqText},
+			#{i_sFilteringText},
+			#{i_sUserId},
+			TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS'),
+			'N'
+		)
+	</insert>
+	
+	<!-- 문안검토요청 수정 -->
+	<update id="updateBrPr020" parameterType="CmMap">
+		UPDATE TSI_ADRQ_L
+		SET 
+			 V_TITLE				=	#{i_sTitle}		/*제목*/
+			,V_PRODUCT_CD			=	#{i_sProductCd}	/*제품코드*/
+			,V_RECORD_ID			=	#{i_sRecordCd}	/*문서코드*/
+			,V_AD_REQ_STATUS_CD		=	#{i_sStatus}	/*상태코드*/
+			,V_AD_CONTENT			=	#{i_sReqText}	/*의뢰내용*/
+			,V_FILTERING_TEXT		=	#{i_sFilteringText}	/*금지어 필터링*/
+			,V_UPDATE_USER_ID		=	#{i_sUserNm}	/*수정자*/
+			,V_UPDATE_DTM			=	TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+			,V_RA_ID				=	#{i_sRaId}		/*RA ID*/
+			,V_IF_YN				=	'N'
+		WHERE V_AD_REQ_ID			=	#{i_sAdReqId}
+	</update>
+	
+	<!-- 문안검토요청 상태변경(요청취소, 반려) -->
+	<update id="changeStatus" parameterType="CmMap">
+		UPDATE 
+			TSI_ADRQ_L
+		SET 
+			V_AD_REQ_STATUS_CD		=	#{i_sStatus}							/*상태코드*/
+			,V_UPDATE_USER_ID		=	#{i_sUserId}							/*수정자*/
+			,V_UPDATE_DTM			=	TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')	/*업데이트일자*/
+			<if test="i_sStatus == 'AD_REQ_STATUS03' or i_sStatus == 'AD_REQ_STATUS04'">
+			,V_AD_CONTENT_RS		=	#{i_sAdContentRs}						/*검토의견(RA승인,반려)*/
+			</if>
+			<if test="i_sStatus == 'AD_REQ_STATUS10'">
+			,V_PACKING_ODM_ID		=	#{i_sPackingId}							/*패킹제작자ID*/
+			</if>
+			,V_IF_YN				=	'N'										/*인터페이스 여부*/
+		WHERE V_AD_REQ_ID			=	#{i_sAdReqId}
+	</update>
+	
+	<!-- 문안검토완료 여부 업데이트 -->
+	<update id="adComplete" parameterType="CmMap">
+		UPDATE 
+			TSI_PD_D
+		SET 
+			 V_CK_ADVERTISE_YN		=	'Y'
+			,V_CK_ADVERTISE_DTM		=	TO_CHAR(SYSDATE, 'YYYYMMDD')
+		WHERE V_RECORD_ID			=	#{i_sRecordCd}
+		AND V_PRODUCT_CD			=	#{i_sProductCd}
+	</update>
+	
+	<select id="getBrPr020Info" parameterType="CmMap" resultType="CmMap">
+		/*문안검토 상세*/
+		SELECT 
+			TPRM.N_FUNC_NO,							/*보고서번호(1,2,3)*/
+			TAL.V_AD_REQ_ID,						/*문안코드(PK)*/
+			TAL.V_PRODUCT_CD,						/*제품코드*/
+			TAL.V_RECORD_ID,						/*문서코드*/
+			TAL.V_AD_REQ_STATUS_CD,					/*상태코드*/
+			TAL.V_TITLE,							/*제목*/
+			TAL.V_CAUTION,							/*주의사항*/
+			TAL.V_PAY_TX,							/*보상문구*/
+			TAL.V_CS_PHONE_NO,						/*고객상담실 전화번호*/
+			TAL.V_REG_USER_ID,						/*등록자*/
+			FN_GET_USERNM(TAL.V_REG_USER_ID) AS V_REG_USER_NM, 	/*등록자명*/
+			(SELECT EMAIL FROM TZF_USER_M WHERE USER_NO = TAL.V_REG_USER_ID) AS V_BM_EMAIL, /*BM 이메일*/
+			SUBSTRING(TAL.V_REG_DTM,0,8) V_REG_DTM,	/*등록일*/
+			TAL.V_AD_CONTENT,						/*의뢰내용*/
+			TAL.V_FILTERING_TEXT,					/*금지어 필터링*/
+			TAL.V_AD_CONTENT_RS,					/*검토의견*/
+			TPD.V_PRODUCT_NM_KO,					/*제품명*/
+			FN_SUB_CODENM('BRAND_CODE',TPD.V_BRAND_CD) AS BRAND_NM,			/*브랜드명*/
+			TPD.V_CNTR_FORM,
+			FN_SUB_CODENM('ODM_CONT1', TPD.V_CNTR_FORM) AS CNTR_FORM,
+			TPD.V_SHELF_LIFE,						/*사용기한*/
+			TPD.V_PAO,								/*개봉 후 사용기한*/
+			TPD.V_PAO_ETC,							/*개봉 후 사용기한(기타)*/
+			TPD.V_RELEASE_DTM,						/*출시일*/
+			TAL.V_RA_ID,							/*RA ID*/
+			FN_GET_USERNM(TAL.V_RA_ID) AS V_RA_NM, 	/*RA명*/
+			(SELECT V_VENDOR_LABOR_ID FROM TSI_PD_M WHERE V_RECORD_ID = TAL.V_RECORD_ID) AS VENDOR_ID,
+			(SELECT COMM_CD_DESC FROM TZF_COMMCD_D WHERE GRP_CD = 'HOWTO_METHOD' AND COMM_CD = TPRM.V_HOWTO_METHOD) AS HOWTO_METHOD,	/*용량용법*/
+			CASE TPD.V_ORIGIN_YN 
+				WHEN 'Y' THEN '본품'
+				ELSE FN_SUB_CODENM('ODM_ORIGINDIV', TPD.V_ORIGIN_DIV)	END	AS ORIGIN_NM,			/*본품 및 테스터 여부*/
+			TPD.V_ORIGIN_YN,
+			TPD.V_ORIGIN_DIV,
+			TAL.V_PIC_REQ_CONTENT,
+			TAL.V_VESSEL_YN,						/*용기 Y/N*/
+			TAL.V_BOX_YN,							/*단상자 Y/N*/
+			TAL.V_PAPER_YN,							/*내지 설명서 Y/N*/
+			TPD.V_FUNC_YN,							/*기능성 여부 Y/N*/
+			TAL.V_MAKER_NM,							/*제조사*/
+			TAL.V_SELLER_NM,						/*판매사*/
+			TAL.V_MAKER_ADDR,						/*제조사 주소*/
+			TAL.V_ORIGIN_SITE,						/*원산지*/
+			TAL.V_DESIGNER_ID,						/*디자이너 아이디*/
+			TAL.V_DESIGN_ODM_ID,					/*외주디자이너 아이디*/
+			TAL.V_DESIGN_VENDOR_ID,					/*외주디자이너 소속 회사코드*/
+			TAL.V_PACKING_ODM_ID,					/*패킹제작업체 아이디*/
+			(SELECT USER_NM FROM TZF_USER_M		WHERE LOGIN_ID	= TAL.V_DESIGNER_ID)	DESIGNER_NM,	/*디자이너명*/
+			(SELECT V_USER_NM FROM TODM_VD_UR_I WHERE V_USER_ID = TAL.V_DESIGN_ODM_ID)	ODM_DESIGNER_NM,/*외주디자이너명*/
+			(SELECT V_USER_NM FROM TODM_VD_UR_I WHERE V_USER_ID = TAL.V_PACKING_ODM_ID)	PACKING_NM,		/*패킹업체명*/
+			TAL.V_VESSEL_PIC_STATUS_CD,				/*용기 검토 상태코드*/
+			TAL.V_BOX_PIC_STATUS_CD,				/*단상자 검토 상태코드*/
+			TAL.V_PAPER_PIC_STATUS_CD,				/*내지 검토 상태코드*/
+			TPD.V_PACKET_UNIT,						/*포장범위*/
+			TPD.V_FREE_GN, 							/*소구,무소구 플래그*/
+			TPD.V_MUSOGU_CONT,						/*무소구 내용*/
+			TPD.V_SOGU_CONT,						/*소구 내용*/
+			TPRM.V_ADD_CAUTION,															/*추가 주의사항*/
+			TPRM.V_HOWTO_METHOD,														/*용량용법*/
+			TPRM.V_FUNC_TYPE_CD,														/*유형별 구분 코드*/
+			TPRM.V_FUNC_INGRI_CD,														/*성분별 구분 코드*/
+			FN_SUB_CODENM('FUNC_TYPE', TPRM.V_FUNC_TYPE_CD) V_FUNC_TYPE_NM,				/*유형별 구분*/
+			FN_SUB_CODENM('FUNC_INGRI',TPRM.V_FUNC_INGRI_CD) V_FUNC_INGRI_NM,			/*성분별 구분*/
+			TVI.V_VENDOR_NM,															/*제조회사*/
+			TVI.V_ADDR1 V_ADDR1_DEC_AES,												/*제조회사 주소1*/
+			TVI.V_ADDR2 V_ADDR2_DEC_AES,												/*제조회사 주소2*/
+			TPGI.V_MATRMEMO																/*전성분*/
+		FROM TSI_ADRQ_L TAL 
+		INNER JOIN 
+			TSI_PD_D TPD
+		ON (TAL.V_PRODUCT_CD = TPD.V_PRODUCT_CD AND TAL.V_RECORD_ID = TPD.V_RECORD_ID)
+		INNER JOIN 
+			TSI_PD_M TPM
+		ON (TPD.V_RECORD_ID = TPM.V_RECORD_ID)
+		INNER JOIN
+			TODM_VD_I TVI
+		ON (TPM.V_VENDOR_ID = TVI.V_VENDOR_ID)
+		LEFT OUTER JOIN
+			TODM_PDEF_R_M TPRM
+		ON (TPD.V_RECORD_ID = TPRM.V_RECORD_ID AND TPD.V_PRODUCT_CD = TPRM.V_PRODUCT_CD)
+		LEFT OUTER JOIN
+		    TODM_PDIG_NA_D TPGI
+		ON (TPD.V_RECORD_ID = TPGI.V_RECORD_ID AND TPD.V_PRODUCT_CD = TPGI.V_PRODUCT_CD AND TPGI.V_GUBUN = 'NAT')
+		WHERE V_AD_REQ_ID = #{i_sAdReqId}
+	</select>
+	
+	<select id="getRaList" parameterType="CmMap" resultType="CmMap">
+		/*RA ID 리스트*/
+		SELECT 
+			 TUM.USER_NM AS V_USER_NM
+			,TGRL.V_USER_ID 
+			,TUM.EMAIL V_EMAIL
+		FROM 
+			(SELECT DISTINCT V_USER_ID, V_NATION_CD FROM TSI_GLB_RA_L) TGRL 
+		INNER JOIN 
+			TZF_USER_M	TUM
+		ON(TGRL.V_USER_ID = TUM.USER_NO)
+		WHERE V_NATION_CD = 'KO'
+		ORDER BY TGRL.V_USER_ID ASC
+	</select>
+	
+	<!-- 원화등록요청 -->
+	<update id="updateBrPrOri020" parameterType="CmMap">
+		UPDATE TSI_ADRQ_L
+		SET 
+			 V_VESSEL_YN				= 	#{i_sVesselYn}		/*용기 Y/N*/
+			,V_BOX_YN					=	#{i_sBoxYn}			/*단상자 Y/N*/
+			,V_PAPER_YN					=	#{i_sPaperYn}		/*내지설명서 Y/N*/
+			,V_MAKER_NM					=	#{i_sVendorNm}		/*제조사*/
+			,V_SELLER_NM				=	#{i_sSellerNm}		/*판매사*/
+			,V_MAKER_ADDR				=	#{i_sVendorAddr}	/*제조사 주소*/
+			,V_ORIGIN_SITE				=	#{i_sOriginSite}	/*원산지*/
+			,V_PAY_TX					=	#{i_sPayTx}			/*보상문구*/
+			,V_CS_PHONE_NO				=	#{i_sCsPhoneNo}		/*고객상담실 전화번호*/
+			,V_HOWTO_METHOD				=	#{i_sHowTo}			/*용법용량*/
+			,V_PIC_REQ_CONTENT			=	#{i_sPicReqContent}	/*원화작성 요청내역*/
+			,V_PACKING_ODM_ID			=	#{i_sPackingOdmId}	/*패킹제작 ODM 아이디*/
+			,V_AD_REQ_STATUS_CD			=	#{i_sStatus}		/*상태코드*/
+			,V_CAUTION					=	#{i_sCaution}		/*주의사항*/
+			,V_DESIGNER_ID				=	#{i_sDesignerId}	/*디자이너 아이디*/
+			,V_DESIGN_ODM_ID			=	#{i_sOdmDesignerId}	/*외주디자이너 아이디*/
+			,V_DESIGN_VENDOR_ID			=	#{i_sOdmDesignerVendorId}	/*외주디자이너 소속 회사 아이디*/
+			,V_IF_YN					=	'N'					/*인터페이스 여부*/
+		WHERE V_AD_REQ_ID				=	#{i_sAdReqId}
+	</update>
+	
+	<!-- 디자이너 리스트 include -->
+	<sql id ="includeDesignerList">
+		SELECT M.*
+			,ROW_NUMBER() OVER(ORDER BY
+				<choose> 
+					<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+						${i_sSortCol} ${i_sSortDir}
+					</when>	 
+					<otherwise>
+						REG_DTM
+					</otherwise>	
+				</choose>
+			) AS N_NUM		
+		FROM (
+		SELECT 
+			US.USER_NO V_USER_NO
+			,US.USER_NM V_USER_NM
+			,US.LOGIN_ID V_LOGIN_ID
+			,US.DEPT_CD V_DEPT_CD
+			,DEPT.V_DEPT_NM	
+			,US.REG_DTM	
+		FROM TZF_USER_M US
+		LEFT JOIN TSI_DEPT_I DEPT 
+		ON US.DEPT_CD = DEPT.V_DEPT_CD
+		WHERE 1=1
+		AND DEPT.V_DEPT_CD = '30000001'
+		<if test="i_sInput != null and i_sInput != ''">
+			AND (UPPER(US.USER_NM) 		LIKE '%' 	||	UPPER(#{i_sInput})	||	'%' 
+			OR  UPPER(US.LOGIN_ID) 		LIKE '%'	||	UPPER(#{i_sInput})	||	'%'
+			OR 	UPPER(DEPT.V_DEPT_NM) 	LIKE '%'	|| 	UPPER(#{i_sInput}) 	|| 	'%')
+		</if>
+		) M
+	</sql>
+	
+	<!-- 외주디자이너 리스트 include -->
+	<sql id ="includeOdmDesignerList">
+		SELECT 
+			 ROW_NUMBER() OVER(ORDER BY 
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_REG_DTM
+						</otherwise>	
+					</choose>
+			 		) AS N_NUM
+			,V_USER_ID
+			,V_PHONENO
+			,V_USER_NM
+			,V_VENDOR_NM
+			,V_REG_DTM 
+			,V_VENDOR_ID
+		FROM 
+			TODM_VD_UR_I
+		WHERE 1=1
+		<if test="i_sInput != null and i_sInput != ''">
+			AND (UPPER(V_USER_NM) LIKE '%'|| UPPER(#{i_sInput}) || '%'
+			OR UPPER(V_VENDOR_NM) LIKE '%'|| UPPER(#{i_sInput}) || '%')
+		</if>
+	</sql>
+	
+	<!-- 디자이너 리스트 카운트 -->
+	<select id="getDesignerCount" parameterType="CmMap" resultType="java.lang.Integer">
+		/* 디자이너 리스트 카운트 */
+		SELECT 
+		       COUNT(*)
+		FROM (
+			<include refid="includeDesignerList"/>
+		)
+		WHERE 1=1
+	</select>
+	
+	<!-- 외주디자이너 리스트 카운트 -->
+	<select id="getOdmDesignerCount" parameterType="CmMap" resultType="java.lang.Integer">
+		/* 외주디자이너 리스트 카운트 */
+		SELECT
+		       COUNT(*)
+		FROM (
+			<include refid="includeOdmDesignerList"/>
+		)
+		WHERE 1=1
+	</select>
+	
+	<!-- 디자이너 리스트 -->
+	<select id="getDesignerList" parameterType="CmMap" resultType="CmMap">
+		/* 디자이너 리스트 */
+		SELECT  
+		      TEMP.*
+		FROM (
+			<include refid="includeDesignerList"/>
+		) TEMP
+		WHERE 1=1
+		AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+	</select>
+	
+	<!-- 외주디자이너 리스트 -->
+	<select id="getOdmDesignerList" parameterType="CmMap" resultType="CmMap">
+		/* 외주디자이너 리스트 */
+		SELECT  
+		      TEMP.*
+		FROM (
+			<include refid="includeOdmDesignerList"/>
+		) TEMP
+		WHERE 1=1
+		AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+	</select>
+	
+	<!-- 금지어필터링 후 넣어둔거 다 삭제 -->
+	<delete id="deleteFilteringTextWord" parameterType="CmMap">
+		DELETE FROM
+			TSI_PF_FR_WD_L
+		WHERE
+			V_FILTER_ID = #{i_sRecordId}
+	</delete>
+	
+	<!-- 금지어필터링 후 넣어둔거 다 삭제후 다시 넣기-->
+	<insert id="insertDraftedFilteringTextWord" parameterType="CmMap">
+		INSERT INTO TSI_PF_FR_WD_L
+		(
+			V_FILTER_ID
+			, V_TYPE
+			, N_SEQ_NO
+		) 
+		
+		WITH KR_DRAFT_TEXT AS (
+			 SELECT
+					#{i_sFilteringCd} AS V_FILTER_ID
+					, V_TYPE_CD 
+					, N_SEQ_NO
+				FROM
+				(
+				SELECT
+					INSTR(UPPER(V_REQTEXT), TRIM(UPPER(V_WORD))) AS N_FILTERING_CNT
+					, A.*
+				  FROM 
+				  (
+					SELECT
+						TRIM(UPPER(V_WORD)) V_WORD
+						, V_TYPE_CD
+						, N_SEQ_NO
+						, ( SELECT 
+								FN_KR_FILTERING_EXCEPT_WORD2(V_AD_CONTENT, 'encode')
+							  FROM
+							  	TSI_ADRQ_L
+							 WHERE V_AD_REQ_ID = #{i_sFilteringCd}
+						) AS V_REQTEXT
+					FROM
+						TSI_PF_BAN_L FT
+					WHERE
+						V_DEL_YN = 'N'
+					) A
+				) 
+				WHERE
+					N_FILTERING_CNT &gt; 0
+				GROUP BY
+					V_TYPE_CD, N_SEQ_NO, V_WORD
+		)
+		
+		SELECT
+			V_FILTER_ID
+			, V_TYPE_CD
+			, N_SEQ_NO
+		  FROM
+			KR_DRAFT_TEXT
+	</insert>
+	
+	<select id="getKrFilteringWordList" parameterType="CmMap" resultType="CmMap">
+		SELECT
+			 M.*
+			, FN_SUB_CODENM('PROOF_BAN', W.V_TYPE) AS V_TYPENM
+			, SC.BUFFER1 AS V_COLOR
+			, W.V_TYPE
+		  FROM
+			TSI_PF_FR_WD_L W
+		  LEFT OUTER JOIN
+		  	TSI_PF_BAN_L M
+		  	ON ( W.V_TYPE = M.V_TYPE_CD
+		  		AND W.N_SEQ_NO = M.N_SEQ_NO
+		  	)
+		  LEFT OUTER JOIN
+			TZF_COMMCD_D SC
+			ON ( SC.GRP_CD = 'PROOF_BAN'
+				AND SC.COMM_CD = W.V_TYPE
+			) 
+		WHERE
+			V_FILTER_ID = #{i_sFilteringCd}
+	</select>
+	
+	
+	<insert id="brPr020OpinionReg" parameterType="CmMap">
+		/*원화검토 의견 등록*/
+		<selectKey keyProperty="i_sOpinionNo" resultType="java.lang.String" order="BEFORE">
+			SELECT '${type}_' || TO_CHAR(NVL(MAX(TO_NUMBER(SUBSTR(V_OPINION_NO, INSTR(V_OPINION_NO,'_')+1))), 0) + 1)  FROM TSI_OPAD_L
+		</selectKey>
+		
+		INSERT INTO	TSI_OPAD_L
+		(
+			V_OPINION_NO		/*의견넘버(PK/시퀀스)*/
+			,V_AD_REQ_ID		/*문안코드*/
+			,V_PRODUCT_CD		/*제품코드*/
+			,V_RA_OPINION		/*의견(RA)*/
+			,V_REG_USER_ID		/*등록자*/
+			,V_REG_DTM			/*등록일*/
+			,V_PACKING_TYPE		/*용기타입(용기,단상자,내지)*/
+			,V_FLAG_TYPE		/*S:신세계 / P:파트너*/
+			,V_IF_YN			/*인터페이스 여부*/
+		)
+		VALUES
+		(
+			#{i_sOpinionNo}
+			,#{i_sAdReqId}
+			,#{i_sProductCd}
+			,#{i_sMessage}
+			,#{i_sRegUserId}
+			,TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+			,#{i_sMsgType}
+			,'S'
+			,'N'
+		)
+	</insert>
+	
+	<!-- 원화검토 의견 수정 -->
+	<update id="brPr020OpinionModify" parameterType="CmMap">
+		/* 원화검토 의견 수정 */
+		UPDATE 
+			TSI_OPAD_L
+		SET	
+			 V_RA_OPINION	=	#{i_sOpinion}
+			,V_UPDATE_DTM	=	TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+			,V_IF_YN		=	'N'
+		WHERE	
+			V_OPINION_NO	=	#{i_sMessageNo}
+	</update>
+	
+	<!-- 원화검토 의견 삭제 -->
+	<update id="brPr020OpinionDelete" parameterType="CmMap">
+		/* 원화검토 의견 삭제 */
+		UPDATE 
+			TSI_OPAD_L
+		SET
+			V_DEL_YN		=	'Y'
+			,V_IF_YN		=	'N'
+			,V_UPDATE_DTM	=	TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+		WHERE
+			V_OPINION_NO	=	#{i_sMessageNo}		
+	</update>
+		
+	<!-- 원화검토 의견 목록 -->
+	<select id="brPr020OpinionList" parameterType="CmMap" resultType="CmMap">
+		/* 원화검토 의견 목록 */
+		SELECT	TOL.V_OPINION_NO
+				, TOL.V_PRODUCT_CD
+				, TOL.V_RA_OPINION			/*의견*/
+				, TOL.V_REG_USER_ID
+				, TO_CHAR(TO_DATE(TOL.V_REG_DTM, 'YYYYMMDDHH24MISS')) V_REG_DTM
+				, TOL.V_UPDATE_USER_ID
+				, TOL.V_UPDATE_DTM
+				, TOL.V_PACKING_TYPE
+				, TOL.V_DEL_YN				/*삭제여부*/
+				, TDI.V_DEPT_NM				/*부서명*/ 
+				, TUM.USER_NM V_USER_NM		/*유저명*/
+		FROM 
+		TSI_OPAD_L TOL
+		LEFT OUTER JOIN /*추후 이너조인으로 변경*/
+		TZF_USER_M TUM
+		ON(TOL.V_REG_USER_ID = TUM.USER_NO)
+		LEFT OUTER JOIN /*추후 이너조인으로 변경*/
+		TSI_DEPT_I TDI
+		ON(TDI.V_DEPT_CD = TUM.DEPT_CD)
+		WHERE 1=1
+		AND V_AD_REQ_ID		=	#{i_sAdReqId}
+		AND V_PRODUCT_CD	=	#{i_sProductCd}
+		ORDER BY TO_DATE(TOL.V_REG_DTM, 'YYYYMMDDHH24MISS') ASC
+	</select>
+	
+	<!-- 원화검토 승인,반려 -->
+	<update id="brPr020OpinionApprChange" parameterType="CmMap">
+		/*원화검토 승인,반려*/
+		UPDATE
+			TSI_ADRQ_L
+		SET
+			V_${type}_PIC_STATUS_CD	=	#{i_sApprStatus}
+			,V_${type}_PIC_DTM		=	TO_CHAR(SYSDATE, 'YYYYMMDD')
+			,V_IF_YN				=	'N'
+		WHERE
+			V_AD_REQ_ID				=	#{i_sAdReqId}
+	</update>
+	
+	
+	<select id="brPr020oriCompleteCheck" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT 
+			COUNT(*) AS COUNT
+		FROM
+			TSI_ADRQ_L
+		WHERE
+			V_AD_REQ_STATUS_CD	IN	('AD_REQ_STATUS09','AD_REQ_STATUS10')
+			AND V_PRODUCT_CD	=	#{i_sProductCd} 
+			AND V_RECORD_ID		=	#{i_sRecordId}
+	</select>
+	
+	<!-- 실증자료 코멘트 리스트 -->
+	<select id="getReviewContentList" parameterType="CmMap" resultType="CmMap">
+		/*실증자료 코멘트 리스트*/
+		SELECT 
+			*
+		FROM
+			TSI_ADRC_L
+		WHERE 1=1
+			AND V_AD_REQ_ID	 = #{i_sAdReqId}
+			AND V_PRODUCT_CD = #{i_sProductCd}
+	</select>
+	
+	<!-- 실증자료 코멘트 등록,수정-->
+	<insert id="brPr020ReviewContentReg" parameterType="CmMap">
+		/*실증자료 코멘트 등록,수정*/
+		MERGE INTO TSI_ADRC_L TAL
+		USING DUAL
+		ON(TAL.V_AD_REQ_ID 			=	#{i_sAdReqId} 
+			AND TAL.V_PRODUCT_CD	=	#{i_sProductCd} 
+			AND TAL.N_SEQ			=	#{i_nSeq})
+		WHEN MATCHED THEN
+			UPDATE SET
+			 	 TAL.V_CONTENT 		=	#{i_sContent}
+				,TAL.V_REG_USER_ID	=	#{i_sUserNm}
+				,TAL.V_REG_DTM		=	TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+		WHEN NOT MATCHED THEN
+			INSERT
+			(
+				V_AD_REQ_ID
+				, V_PRODUCT_CD
+				, N_SEQ
+				, V_CONTENT
+				, V_REG_USER_ID
+				, V_REG_DTM
+			) 
+			VALUES
+			(
+				#{i_sAdReqId}
+				,#{i_sProductCd}
+				,#{i_nSeq}
+				,#{i_sContent}
+				,#{i_sUserNm}
+				,#{i_sRegDtm}
+			)
+	</insert>
+	
+	<!-- 원화추가등록요청 -->
+	<update id="brPrOri020AddPacking" parameterType="CmMap">
+		/*원화추가등록요청*/
+		UPDATE TSI_ADRQ_L
+		SET 
+			 V_VESSEL_YN				= 	#{i_sVesselYn}		/*용기 Y/N*/
+			,V_BOX_YN					=	#{i_sBoxYn}			/*단상자 Y/N*/
+			,V_PAPER_YN					=	#{i_sPaperYn}		/*내지설명서 Y/N*/
+			,V_AD_REQ_STATUS_CD			=	'AD_REQ_STATUS06'
+		WHERE 
+			V_AD_REQ_ID = #{i_sAdReqId}
+	</update>
+	
+	<select id="getPackingYn" parameterType="CmMap" resultType="CmMap">
+		SELECT V_VESSEL_YN
+			,V_BOX_YN
+			,V_PAPER_YN
+			,V_VESSEL_PIC_STATUS_CD
+			,V_BOX_PIC_STATUS_CD
+			,V_PAPER_PIC_STATUS_CD
+		FROM TSI_ADRQ_L
+		WHERE
+			V_AD_REQ_ID = #{i_sAdReqId}
+	</select>
+	
+	<!-- 일반(기능성X)화장품 부가정보 가져오기 -->
+	<select id="getNonFuncData" parameterType="CmMap" resultType="CmMap">
+		/* 일반(기능성X)화장품 부가정보 가져오기 */
+		SELECT 
+			TVI.V_VENDOR_NM							/*제조회사*/
+  			,TVI.V_ADDR1 V_ADDR1_DEC_AES			/*제조사 주소*/
+		   	,TVI.V_ADDR2 V_ADDR2_DEC_AES			/*제조사 주소 상세*/
+			,TPND.V_MATRMEMO						/*전성분*/
+		FROM
+			TSI_PD_D TPD
+			INNER JOIN 
+			TSI_PD_M TPM 
+			ON (TPD.V_RECORD_ID = TPM.V_RECORD_ID)
+			INNER JOIN
+			TODM_PDIG_NA_D TPND
+			ON (TPD.V_RECORD_ID = TPND.V_RECORD_ID AND TPD.V_PRODUCT_CD = TPND.V_PRODUCT_CD  AND TPND.V_GUBUN = 'NAT')
+			INNER JOIN
+			TODM_VD_I TVI
+			ON (TPM.V_VENDOR_ID = TVI.V_VENDOR_ID)
+		WHERE 1=1
+		AND TPD.V_RECORD_ID  = #{i_sRecordCd}
+		AND TPD.V_PRODUCT_CD = #{i_sProductCd}
+	</select>
+	
+	<!-- 용량용법 리스트 -->
+	<select id="getHowtoList" parameterType="CmMap" resultType="CmMap">
+		/* 용량용법 리스트 */
+		SELECT	ROW_NUMBER() OVER(ORDER BY X.SORT_SEQ) AS ROW_NUM
+				, X.*
+		  FROM(
+		  	SELECT	A.SORT_SEQ
+		  			, A.COMM_CD_NM AS CATEGORY_NM
+		  			, (SELECT COMM_CD_DESC
+		  			   FROM TZF_COMMCD_D B
+		  			  WHERE B.GRP_CD = 'HOWTO_METHOD'
+		  			    AND B.COMM_CD = A.BUFFER3) AS HOWTO_METHOD
+			  FROM	TZF_COMMCD_D A
+			 WHERE	GRP_CD ='STAND_TEST'
+			   AND	BUFFER1 = '3') X
+	</select>
+	
+	<!-- 일반(기능성X)화장품 부가정보 등록 -->
+	<insert id="regNonFuncData" parameterType="CmMap">
+		/* 일반(기능성X)화장품 부가정보 등록 */
+		MERGE INTO TODM_PDEF_R_M TPRM
+			USING DUAL
+			ON (TPRM.V_RECORD_ID = #{i_sRecordId2} AND TPRM.V_PRODUCT_CD = #{i_sProductCd})
+		WHEN MATCHED THEN
+			UPDATE SET
+				 V_HOWTO_METHOD		=	#{i_sHowtoMethod}
+				,V_FUNC_TYPE_CD 	=	#{i_sFuncTypeCd}
+				,V_FUNC_INGRI_CD 	= 	#{i_sFuncIngriCd}
+				,V_ADD_CAUTION		=	#{i_sAddCaution}
+				,V_UPDATE_USER_ID	=	#{i_sUserId}
+				,V_UPDATE_DTM		=	TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+				,V_IF_YN			=	'N'
+		WHEN NOT MATCHED THEN
+			INSERT(
+				  V_RECORD_ID
+				, V_PRODUCT_CD
+				, V_HOWTO_METHOD
+				, V_FUNC_TYPE_CD
+				, V_FUNC_INGRI_CD
+				, V_ADD_CAUTION
+				, V_REG_USER_ID
+				, V_REG_DTM
+				, V_IF_YN
+			) VALUES(
+				  #{i_sRecordId2}
+				, #{i_sProductCd}
+				, #{i_sHowtoMethod}
+				, #{i_sFuncTypeCd}
+				, #{i_sFuncIngriCd}
+				, #{i_sAddCaution}
+				, #{i_sUserId}
+				, TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+				, 'N'
+			)
+	</insert>
+</mapper>

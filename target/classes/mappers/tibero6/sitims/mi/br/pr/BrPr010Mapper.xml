@@ -1,0 +1,814 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : BrPr010Mapper.xml
+    Description   : 제품 등록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.24  jjw       1.0        최초 생성
+-->
+<mapper namespace="BrPr010Mapper">
+	<sql id="includeProdPopList">
+		SELECT 
+			V_MATNR
+			, V_MAKTX
+			, V_MAKTX_EN
+			, ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_MATNR
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+			, NA.V_NATION_CD
+			, NA.V_NATION_NM
+		FROM TSI_ZQMT_M M
+		LEFT JOIN (
+			SELECT V_RECORD_ID,V_PRODUCT_CD,WM_CONCAT(V_NATION_CD) V_NATION_CD,WM_CONCAT(FN_SUB_CODENM('ODM_EXPORT',V_NATION_CD)) V_NATION_NM
+			FROM TSI_PD_NA_L
+			GROUP BY V_RECORD_ID,V_PRODUCT_CD) NA ON M.V_MATNR=NA.V_PRODUCT_CD
+		WHERE 1=1		
+		<!-- AND V_USE_YN = '0' -->
+		AND V_TP_CD IN ('1000', '2000', '3000', '4000', '5000')
+		<if test='i_sReferYn == "N"'>
+		AND NOT EXISTS (
+			SELECT 1 FROM TSI_PD_D
+			WHERE V_MATNR = V_PRODUCT_CD
+			AND V_DEL_YN = 'N'
+		)
+		</if>
+		<if test='i_sReferYn == "Y"'>
+		AND EXISTS (
+			SELECT 1 FROM TSI_PD_D PROD
+			INNER JOIN TSI_PD_M MST ON MST.V_RECORD_ID = PROD.V_RECORD_ID
+			INNER JOIN(
+				SELECT V_RECORD_ID,V_PRODUCT_CD
+				,COUNT(*) CNT
+				FROM TSI_PD_NA_L
+				GROUP BY V_RECORD_ID,V_PRODUCT_CD
+			) 
+			 NA ON NA.V_RECORD_ID = PROD.V_RECORD_ID
+									AND NA.V_PRODUCT_CD = PROD.V_PRODUCT_CD									
+			WHERE V_MATNR = PROD.V_PRODUCT_CD
+			AND PROD.V_DEL_YN = 'N'
+			AND MST.V_DEL_YN = 'N'
+			AND NVL(PROD.V_FAST_TRACK_YN, 'N') != 'Y'
+			AND PROD.V_FINAL_RST = DECODE(NA.CNT,1,'RS050','RS060')
+			--AND MST.V_RECEIP_STATUS IN ('RS060','RS050')
+		)
+		</if>
+		<if test="i_sMakTx != null and i_sMakTx != ''">
+			AND V_MAKTX LIKE '%'|| #{i_sMakTx} || '%'
+		</if>
+		<if test="i_sMakNr != null and i_sMakNr != ''">
+			AND V_MATNR =#{i_sMakNr}
+		</if>
+		<if test="i_sInput != null and i_sInput != ''">
+			AND (UPPER(V_MAKTX) LIKE '%'|| UPPER(#{i_sInput}) || '%'
+				OR UPPER(V_MATNR) LIKE '%'|| UPPER(#{i_sInput}) || '%')
+		</if>
+	</sql>
+	
+	<select id="getProdPopList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr010Mapper.getProdPopList */ 
+			TEMP.*
+		FROM (
+			<include refid="includeProdPopList"/>
+		) TEMP
+		WHERE 1=1
+		AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		
+	</select>
+	<select id="getProdPopCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT	/* BrPr010Mapper.getProdPopCount */ 
+			COUNT(*)
+		FROM (
+			<include refid="includeProdPopList"/>
+		) TEMP
+		WHERE 1=1
+	</select>
+	
+	
+	<sql id="includeProdList">
+		SELECT 
+			M.*
+			, ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_RECORD_ID DESC,V_REG_DTM DESC
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+		FROM (
+			SELECT 
+				MST.V_RECORD_ID
+				, PROD.V_PRODUCT_CD
+				, PROD.V_PRODUCT_NM_KO
+				, PROD.V_PRODUCT_NM_EN
+				, PROD.V_PRODUCT_NM_CN
+				, MST.V_RECEIP_STATUS
+				, DECODE(PROD.V_FINAL_RST, NULL, FN_SUB_CODENM('DOC_STATUS',MST.V_RECEIP_STATUS), FN_SUB_CODENM('DOC_STATUS',PROD.V_FINAL_RST)) V_RECEIP_STATUS_NM
+				, NVL(PROD.V_FINAL_RST, MST.V_RECEIP_STATUS) V_PRODUCT_STATUS_CD
+				, PROD.V_CK_DOMESTIC_YN
+				, DECODE(PROD.V_CK_DOMESTIC_YN,'Y','검토완료','N','검토중','') V_CK_DOMESTIC_YN_NM
+				, PROD.V_CK_ADVERTISE_YN
+				, DECODE(PROD.V_CK_ADVERTISE_YN,'Y','검토완료','N','검토중','') V_CK_ADVERTISE_YN_NM
+				, PROD.V_CK_OVERSEAS_YN
+				, DECODE(PROD.V_CK_OVERSEAS_YN,'Y','검토완료','N','검토중','') V_CK_OVERSEAS_YN_NM
+				, PROD.V_FUNC_YN
+				, TO_CHAR(TO_DATE(MST.V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REG_DTM
+				, MST.V_REG_DTM AS V_REG_DTM_ORI
+				, PROD.V_SPECIAL_YN
+				, DECODE(PROD.V_SPECIAL_YN,'Y','특수','N','보통','') V_SPECIAL_NM
+				, PROD.V_FINAL_RST
+				, FN_SUB_CODENM('DOC_STATUS',PROD.V_FINAL_RST) V_FINAL_RST_NM
+				, PROD.V_CHINA_RA_AGENT
+				, FN_GET_USERNM(PROD.V_CHINA_RA_AGENT) V_CHINA_RA_AGENT_NM
+				, FN_GET_USERNM(MST.V_BM_ID) V_BM_NM
+				, PROD.V_FAST_TRACK_YN				
+				, DECODE(PROD.V_FAST_TRACK_YN,'Y','(기처리)'||PROD.V_PRODUCT_NM_KO,PROD.V_PRODUCT_NM_KO) AS V_PRODUCT_NM_FAST
+				, NVL(NAL.V_REVIEW_STATUS_KO,'NS010') V_REVIEW_STATUS_KO
+				, FN_SUB_CODENM('REVIEW_STATUS',NVL(NAL.V_REVIEW_STATUS_KO,'NS010'))  V_REVIEW_STATUS_KO_NM
+				, TO_CHAR(TO_DATE(NAL.V_REQUEST_DTM_KO,'YYYYMMDDHH24MISS'),'YYYY-MM-DD')  V_REQUEST_DTM_KO
+				, FN_SUB_CODENM('BRAND_CODE',PROD.V_BRAND_CD) V_BRAND_NM
+				, NAL.V_REVIWERS_NM
+			FROM  TSI_PD_M MST
+			INNER JOIN TSI_PD_D PROD ON MST.V_RECORD_ID =PROD.V_RECORD_ID
+			LEFT OUTER JOIN (
+				SELECT 
+					V_RECORD_ID
+					,V_PRODUCT_CD
+					,WM_CONCAT(FN_GET_USERNM(V_REVIWER_ID)) V_REVIWERS_NM
+					,WM_CONCAT(V_REVIEW_STATUS) V_REVIEW_STATUS
+					,MAX(V_REVIEW_STATUS_KO) V_REVIEW_STATUS_KO
+					,MAX(V_REQUEST_DTM_KO) V_REQUEST_DTM_KO
+				FROM (
+					SELECT
+						ROW_NUMBER () OVER(PARTITION  BY V_RECORD_ID,V_PRODUCT_CD ORDER BY DECODE(V_NATION_CD,'KO',1,2),V_NATION_CD) V_RNUM
+						,V_RECORD_ID
+						,V_PRODUCT_CD
+						,V_NATION_CD
+						,V_REVIWER_ID
+						,V_REVIEW_STATUS
+						,DECODE(V_NATION_CD,'KO',V_REQUEST_DTM) V_REQUEST_DTM_KO
+						,DECODE(V_NATION_CD,'KO',V_REVIEW_STATUS) V_REVIEW_STATUS_KO
+					FROM TSI_PD_NA_L
+				)
+				WHERE V_RNUM <![CDATA[<]]> 3  
+				GROUP BY V_RECORD_ID ,V_PRODUCT_CD
+			) 
+			NAL ON NAL.V_RECORD_ID=MST.V_RECORD_ID AND NAL.V_PRODUCT_CD = PROD.V_PRODUCT_CD
+			WHERE 1=1
+			AND MST.V_DEL_YN = 'N'
+			AND PROD.V_DEL_YN = 'N'
+			<if test="i_sSearchStatus != null and i_sSearchStatus != '' and i_sSearchStatusVal != null and i_sSearchStatusVal != '' ">
+				<choose>
+					<when test="i_sSearchStatus == 'product'">
+						<choose>
+							<when test='i_sSearchStatusVal == "N" or i_sSearchStatusVal == "Y"'>								
+								AND DECODE(MST.V_RECEIP_STATUS,NULL,'N','RS000','N','RS010','Y','') = #{i_sSearchStatusVal}
+							</when>
+							<when test='i_sSearchStatusVal == "0"'>
+								AND MST.V_RECEIP_STATUS = 'RS000'
+							</when>
+							<when test='i_sSearchStatusVal == "1"'>
+								AND MST.V_RECEIP_STATUS != 'RS000'
+							</when>
+							<otherwise>
+								AND NVL(PROD.V_FINAL_RST,MST.V_RECEIP_STATUS) = #{i_sSearchStatusVal}
+							</otherwise>
+						</choose>
+					</when>
+					<when test="i_sSearchStatus == 'overseas'">
+<!-- 						AND NVL(PROD.V_CK_OVERSEAS_DTM,'N') = #{i_sSearchStatusVal}					 -->
+						<choose>
+							<when test='i_sSearchStatusVal == "0"'>
+								AND PROD.V_FINAL_RST = 'RS063'
+							</when>
+							<when test='i_sSearchStatusVal == "1"'>
+								AND PROD.V_FINAL_RST = 'RS060'
+							</when>
+							<when test='i_sSearchStatusVal == "2"'>
+								AND PROD.V_FINAL_RST = 'RS065'
+							</when>
+							<when test='i_sSearchStatusVal == "N" or i_sSearchStatusVal == "Y"'>
+								AND NVL(PROD.V_CK_OVERSEAS_YN,'N') = #{i_sSearchStatusVal}
+							</when>
+						</choose>
+					</when>
+					<when test="i_sSearchStatus == 'advertise'">
+						AND NVL(PROD.V_CK_ADVERTISE_YN,'N') = #{i_sSearchStatusVal}
+					</when>
+					<when test="i_sSearchStatus == 'func'">
+						AND NVL(PROD.V_FUNC_YN,'N') = #{i_sSearchStatusVal}
+					</when>
+				</choose>
+			</if>
+			<if test ="i_sOverseas != null and i_sOverseas != '' ">
+				<choose>
+					<when test='i_sOverseas == "0"'>
+						AND PROD.V_FINAL_RST = 'RS063'
+					</when>
+					<when test='i_sOverseas == "1"'>
+						AND PROD.V_FINAL_RST = 'RS060'
+					</when>
+					<when test='i_sOverseas == "2"'>
+						AND PROD.V_FINAL_RST = 'RS065'
+					</when>
+				</choose>
+			</if>
+			<if test ="i_sFunc != null and i_sFunc != '' ">
+				AND NVL(PROD.V_FUNC_YN,'N') = #{i_sFunc}
+			</if>
+			<if test="i_sSearchStatusInput != null and i_sSearchStatusInput != ''">
+				
+						AND (
+							PROD.V_PRODUCT_NM_KO LIKE '%' || #{i_sSearchStatusInput} || '%'
+							OR PROD.V_PRODUCT_NM_EN LIKE '%' || #{i_sSearchStatusInput} || '%'
+							OR PROD.V_PRODUCT_NM_CN LIKE '%' || #{i_sSearchStatusInput} || '%'
+							OR PROD.V_PRODUCT_CD LIKE '%' || #{i_sSearchStatusInput} || '%'
+						)
+				
+			</if>
+			<if test="i_sReceiptStatus != null and i_sReceiptStatus != '' ">
+				AND MST.V_RECEIP_STATUS = #{i_sReceiptStatus}
+			</if>
+			<if test="i_sComplProdYn != null and i_sComplProdYn != '' ">
+				AND (PROD.V_CK_DOMESTIC_YN  = 'Y' OR  PROD.V_CK_OVERSEAS_YN = 'Y')
+			</if>
+			<if test='i_sExpCountryYn == "Y"'>				 				
+				<!-- 로직테스트를 위한 주석 -->
+				AND (
+					EXISTS (SELECT 1 FROM TSI_PD_NA_L WHERE V_RECORD_ID = MST.V_RECORD_ID AND V_PRODUCT_CD = PROD.V_PRODUCT_CD AND V_NATION_CD != 'KO')
+					AND MST.V_RECEIP_STATUS  = 'RS010'
+					AND(
+						(PROD.V_CK_DOMESTIC_YN  = 'Y' AND PROD.V_FINAL_RST IN ('RS060','RS063','RS065','RS040','RS050','RS090'))						
+						<!-- OR PROD.V_FINAL_RST IS NULL -->
+<!-- 					OR  (PROD.V_REFER_PRODUCT_CD IS NOT NULL AND PROD.V_REFER_RECORD_ID IS NOT NULL AND PROD.V_FINAL_RST IS NULL)) -->
+						OR  (PROD.V_REFER_PRODUCT_CD IS NOT NULL AND PROD.V_FINAL_RST IS NULL)
+					)
+				)
+			</if>
+			<if test='i_sRaReqYn == "Y"'>
+				  <!--AND (CAST(SUBSTR(NVL(PROD.V_FINAL_RST,0),3,5)AS INT) >= 040-->
+			  	AND (
+			  		MST.V_RECEIP_STATUS  = 'RS010'				  	
+					AND (PROD.V_FINAL_RST IN ('RS050','RS053','RS055','RS040','RS060','RS063','RS065')
+<!-- 						OR (PROD.V_REFER_PRODUCT_CD IS NOT NULL AND PROD.V_REFER_RECORD_ID IS NOT NULL AND PROD.V_FINAL_RST IS NULL) -->
+						OR  (PROD.V_REFER_PRODUCT_CD IS NOT NULL AND PROD.V_FINAL_RST IS NULL)
+					)
+				)
+			</if>
+			<if test = "i_sUserBrand != '' and i_sUserBrand != null">
+				AND PROD.V_BRAND_CD = #{i_sUserBrand}
+			</if>
+
+		) M
+		WHERE 1=1
+		<if test="i_sReqStDate != '' and i_sReqEnDate != '' and i_sReqStDate != null and i_sReqEnDate != null">
+			AND SUBSTR(M.V_REQUEST_DTM_KO, 1, 8) BETWEEN #{i_sReqStDate} AND #{i_sReqEnDate}
+		</if>
+		<if test="i_sSearchStatus != null and i_sSearchStatus != '' and i_sSearchStatusVal != null and i_sSearchStatusVal != '' ">
+			<choose>
+				<when test="i_sSearchStatus == 'domestic'">						 
+					<!-- AND NVL(PROD.V_CK_DOMESTIC_YN,'N') = #{i_sSearchStatusVal} -->						
+					<choose>
+						<when test='i_sSearchStatusVal == "0"'>
+							<!-- AND PROD.V_FINAL_RST = 'RS053' -->
+								AND M.V_REVIEW_STATUS_KO = 'NS010'
+							</when>
+							<when test='i_sSearchStatusVal == "1"'>
+<!-- 								AND PROD.V_FINAL_RST IN ('RS050','RS060','RS063','RS065') -->
+								AND M.V_REVIEW_STATUS_KO = 'NS020'
+							</when>
+							<when test='i_sSearchStatusVal == "2"'>
+<!-- 								AND PROD.V_FINAL_RST = 'RS055' -->
+							AND M.V_REVIEW_STATUS_KO = 'NS030'
+						</when>							
+						<when test='i_sSearchStatusVal == "N" or i_sSearchStatusVal == "Y"'>
+							AND NVL(M.V_CK_DOMESTIC_YN,'N') = #{i_sSearchStatusVal}
+						</when>
+					</choose>
+				</when>
+			</choose>
+		</if>
+		<if test ="i_sDomestic != null and i_sDomestic != '' ">
+			<choose>
+				<when test='i_sDomestic == "0"'>
+					AND M.V_REVIEW_STATUS_KO = 'NS010'
+				</when>
+				<when test='i_sDomestic == "1"'>
+					AND M.V_REVIEW_STATUS_KO = 'NS020'
+				</when>
+				<when test='i_sDomestic == "2"'>
+					AND M.V_REVIEW_STATUS_KO = 'NS030'
+				</when>							
+			</choose>
+		</if>
+	</sql>
+	<select id="getProdCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT	/* BrPr010Mapper.getProdCount */ 
+			COUNT(*)
+		FROM (
+			<include refid="includeProdList"/>
+		) TEMP
+		WHERE 1=1
+	</select>
+	
+	<select id="selectBrPr010List" parameterType="CmMap" resultType="CmMap">
+		SELECT	/* BrPr010Mapper.selectBrPr010List */ 
+			TEMP.* 
+		FROM (
+			<include refid="includeProdList"/>
+		) TEMP
+		WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+			AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>	
+	<select id="getBrPr010Info" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr010Mapper.getBrPr010Info */
+			MST.V_RECORD_ID
+			, MST.V_RECEIP_STATUS
+			, MST.V_VENDOR_ID
+			, ODM_COMPANY.V_VENDOR_NM
+			, MST.V_VENDOR_LABOR_ID
+			, FN_GET_USERNM_MASK(ODM_USER.V_USER_ID, #{s_groupid},'ODM') V_ODM_USER_NM
+			, ODM_USER.V_PHONENO V_ODM_USER_PHON_DEC_AES
+			, ODM_USER.V_EMAIL V_ODM_USER_EMAIL_DEC_AES
+			, MST.V_IMPORT_YN
+			, MST.V_FLAG_IMP
+			, MST.V_F_MAKER_NM
+			, MST.V_L_MAKER_NM
+			, MST.V_BM_ID
+			, FN_GET_USERNM_MASK(MST.V_BM_ID, #{s_groupid},'TIIMS') V_BM_NM 
+			, MST.V_DEL_YN
+			, MST.V_IF_YN
+			, MST.V_REG_USER_ID
+			, TO_CHAR(TO_DATE(MST.V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REG_DTM
+			, MST.V_UPDATE_USER_ID
+			, MST.V_UPDATE_DTM
+		FROM TSI_PD_M MST
+		INNER JOIN TODM_VD_UR_I ODM_USER ON MST.V_VENDOR_LABOR_ID =ODM_USER.V_USER_ID
+												AND MST.V_VENDOR_ID =ODM_USER.V_VENDOR_ID
+		INNER JOIN TODM_VD_I ODM_COMPANY ON ODM_COMPANY.V_VENDOR_ID =ODM_USER.V_VENDOR_ID
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sRecordId}
+	</select>
+	
+	<select id="getBrPr010ProdList" parameterType="CmMap" resultType="CmMap">
+		SELECT /* BrPr010Mapper.getBrPr010ProdList */
+			PROD.V_RECORD_ID
+			, PROD.V_PRODUCT_CD
+			, PROD.V_PRODUCT_NM_KO
+			, PROD.V_PRODUCT_NM_EN
+			, PROD.V_PRODUCT_NM_CN
+			, PROD.V_BRAND_CD
+			, FN_SUB_CODENM('BRAND_CODE',V_BRAND_CD) V_BRAND_NM
+			, PROD.V_RELEASE_DTM
+			, PROD.V_STOCK_DTM
+			, PROD.V_TYPE
+			, FN_SUB_CODENM('ODM_PRODUCT_TYPE',V_TYPE) V_TYPE_NM			
+			, PROD.V_CATEGORY1
+			, FN_GET_PROD_CLASS_NM(PROD.V_CATEGORY1) V_CATEGORY1_NM
+			, PROD.V_CATEGORY2
+			, FN_GET_PROD_CLASS_NM(PROD.V_CATEGORY2) V_CATEGORY2_NM
+			, PROD.V_FUNC_YN			
+			, (SELECT WM_CONCAT(V_FUNC_CD) FROM TSI_PDFC_L WHERE V_RECORD_ID = PROD.V_RECORD_ID AND V_PRODUCT_CD=PROD.V_PRODUCT_CD) V_FUNC_CODE
+			, (SELECT WM_CONCAT(FN_SUB_CODENM('MRC03',V_FUNC_CD)) FROM TSI_PDFC_L WHERE V_RECORD_ID = PROD.V_RECORD_ID AND V_PRODUCT_CD=PROD.V_PRODUCT_CD) V_FUNC_NM
+			, PROD.V_CNTR_FORM_ETC
+			, PROD.V_CNTR_MATR_ETC
+			, PROD.V_CAPACITY
+			, PROD.V_CNTR_FORM
+			, FN_SUB_CODENM('ODM_CONT1',PROD.V_CNTR_FORM) V_CNTR_FORM_NM
+			, PROD.V_CNTR_MATR
+			, FN_SUB_CODENM('ODM_CONT2',PROD.V_CNTR_MATR) V_CNTR_MATR_NM
+			, PROD.V_PH
+			, PROD.V_FREE_GN
+			, PROD.V_MUSOGU_CONT
+			, PROD.V_SOGU_CONT
+			, PROD.V_ACCEPT_DTM
+			, PROD.V_FINAL_RST
+			, PROD.V_CK_DOMESTIC_YN
+			, PROD.V_CK_OVERSEAS_YN
+			, PROD.V_CK_ADVERTISE_YN
+			, PROD.V_CK_DOMESTIC_DTM
+			, PROD.V_CK_OVERSEAS_DTM
+			, PROD.V_CK_ADVERTISE_DTM
+			, PROD.V_ASNCRT_YN
+			, PROD.V_ASNCRT_ID
+			, PROD.V_ASNCRT_DTM
+			, PROD.V_REEXAM_YN
+			, PROD.V_COMPANY_NM_EN
+			, PROD.V_LEAVEON_YN
+			, PROD.V_COMPANY_ADDR1
+			, PROD.V_COMPANY_ADDR2
+			, PROD.V_COMPANY_ADDR3
+			, PROD.V_SHELF_LIFE
+			, FN_SUB_CODENM('SHELF_CD',PROD.V_SHELF_LIFE) AS V_SHELF_LIFE_NM
+			, PROD.V_PAO
+			, FN_SUB_CODENM('PAO_CD',PROD.V_PAO) AS V_PAO_NM
+			, PROD.V_ALLERGEN_OPEN_YN
+			, PROD.V_COMPANY_PHONE
+			, PROD.V_COMPANY_FAX
+			, PROD.V_REFER_PRODUCT_CD
+			, (SELECT V_PRODUCT_NM_KO FROM TSI_PD_D WHERE V_PRODUCT_CD = PROD.V_REFER_PRODUCT_CD) V_REFER_PRODUCT_NM
+			, PROD.V_REEXAM_NO
+			, PROD.V_ORIGIN_YN
+			, PROD.V_ORIGIN_DIV
+			, FN_SUB_CODENM('ODM_ORIGINDIV',PROD.V_ORIGIN_DIV) V_ORIGIN_DIV_NM
+			, PROD.V_PON_MSG
+			, PROD.V_TEXTURE
+			, PROD.V_PRODUCT_COLOR
+			, PROD.V_PRODUCT_TEXTURE
+			, PROD.V_DEL_YN
+			, PROD.V_CONTENT_NUM
+			, PROD.V_KID_GUIDE_YN
+			, PROD.N_NOW_VER
+			, PROD.V_IF_YN
+<!-- 			, PROD.V_REFER_RECORD_ID -->
+			, (SELECT V_RECORD_ID FROM TSI_PD_D WHERE V_PRODUCT_CD=PROD.V_REFER_PRODUCT_CD) V_REFER_RECORD_ID
+			, PROD.V_FAST_TRACK_YN
+			, PROD.V_SPECIAL_YN
+			, PROD.V_MI_MG_FLAG
+			, PROD.V_COLOR_STATE
+			, PROD.V_PHYSICAL_STATE
+			, PROD.V_ODOR_STATE
+			, PROD.V_CHINA_RA_AGENT
+			, PROD.V_PACKET_UNIT
+			, PROD.V_STABILITY_FILE_YN
+			, PROD.V_SHELF_LIFE_ETC
+			, PROD.V_PAO_ETC
+			, PROD.V_REG_USER_ID
+			, PROD.V_REG_DTM
+			, PROD.V_UPDATE_USER_ID
+			, PROD.V_UPDATE_DTM
+			, MST.V_VENDOR_ID
+			, (SELECT WM_CONCAT(V_NATION_CD) FROM TSI_PD_NA_L WHERE V_RECORD_ID = PROD.V_RECORD_ID AND V_PRODUCT_CD=PROD.V_PRODUCT_CD) V_EXP_COUNTRY
+			, (SELECT WM_CONCAT(FN_SUB_CODENM('ODM_EXPORT',V_NATION_CD)) FROM TSI_PD_NA_L WHERE V_RECORD_ID = PROD.V_RECORD_ID AND V_PRODUCT_CD=PROD.V_PRODUCT_CD AND V_NATION_CD != 'KO') V_EXP_COUNTRY_NM
+			, NVL((SELECT MAX(N_VER_SEQ) FROM TODM_PDCP_D WHERE V_PRODUCT_CD = PROD.V_PRODUCT_CD GROUP BY V_PRODUCT_CD), 1) AS N_VSN
+			, ODM_COMPANY.V_VENDOR_NM
+			, MST.V_VENDOR_LABOR_ID
+			, ODM_USER.V_USER_NM V_ODM_USER_NM
+			, ODM_USER.V_PHONENO V_ODM_USER_PHON_DEC_AES
+			, ODM_USER.V_EMAIL V_ODM_USER_EMAIL_DEC_AES
+			, MST.V_IMPORT_YN
+			, MST.V_F_MAKER_NM
+			, MST.V_L_MAKER_NM
+			, MST.V_BM_ID
+			, FN_GET_USERNM_MASK(MST.V_BM_ID, #{s_groupid},'TIIMS') V_BM_NM
+			, MST.V_RECEIP_STATUS
+			, PROD.V_CHINA_FIN_DTM
+			, PROD.V_CHINA_SP_DTM
+			, (SELECT V_AD_REQ_ID FROM TSI_ADRQ_L WHERE V_PRODUCT_CD = PROD.V_PRODUCT_CD AND V_RECORD_ID = MST.V_RECORD_ID AND V_AD_REQ_STATUS_CD = 'AD_REQ_STATUS09') V_AD_REQ_ID
+			<!-- 20201029 AD_REQ_ID 기처리시 원화재처리로 변경(쿼리원복)
+				, (SELECT V_AD_REQ_ID FROM TSI_ADRQ_L WHERE V_PRODUCT_CD = DECODE(PROD.V_FAST_TRACK_YN,'Y',PROD.V_REFER_PRODUCT_CD,PROD.V_PRODUCT_CD) AND V_RECORD_ID = DECODE(PROD.V_FAST_TRACK_YN,'Y',(SELECT V_RECORD_ID FROM TSI_PD_D WHERE V_PRODUCT_CD=PROD.V_REFER_PRODUCT_CD),MST.V_RECORD_ID) AND V_AD_REQ_STATUS_CD = 'AD_REQ_STATUS09') V_AD_REQ_ID						 
+			-->
+			, NVL((SELECT V_LEAVE_ON_YN FROM TODM_PDCONM_D WHERE V_PRODUCT_CD = PROD.V_PRODUCT_CD AND V_RECORD_ID = PROD.V_RECORD_ID AND N_PART_NO = <choose><when test="i_sPartNo != null and i_sPartNo != ''">#{i_sPartNo}</when><otherwise>'1'</otherwise></choose>),PROD.V_LEAVEON_YN) V_PART_LEAVEON_YN
+		FROM TSI_PD_D PROD
+		LEFT JOIN TSI_PD_M MST ON PROD.V_RECORD_ID = MST.V_RECORD_ID
+		LEFT JOIN TODM_VD_UR_I ODM_USER ON MST.V_VENDOR_LABOR_ID =ODM_USER.V_USER_ID
+												AND MST.V_VENDOR_ID =ODM_USER.V_VENDOR_ID
+		LEFT JOIN TODM_VD_I ODM_COMPANY ON ODM_COMPANY.V_VENDOR_ID =ODM_USER.V_VENDOR_ID
+		WHERE 1=1
+		<if test="i_sRecordId != null and i_sRecordId != ''">
+			AND PROD.V_RECORD_ID = #{i_sRecordId}
+		</if>
+		<if test="i_sNotRecordId != null and i_sNotRecordId != ''">
+			AND PROD.V_RECORD_ID != #{i_sNotRecordId}
+		</if>
+		<if test="i_sProductCd != null and i_sProductCd != ''">
+			AND PROD.V_PRODUCT_CD = #{i_sProductCd}
+		</if>
+		<if test="i_arrProductCd != null">
+		AND PROD.V_PRODUCT_CD IN (
+			<foreach collection="i_arrProductCd" item="i_sProductCd" separator=",">
+				#{i_sProductCd}
+			</foreach>)
+		</if>
+	</select>
+	
+	<select id="getBrPr010RecordId" resultType="java.lang.String">
+		SELECT /* BrPr010Mapper.getBrPr010RecordId */ 
+			'MR' || LPAD(TO_NUMBER(NVL(SUBSTR(MAX(V_RECORD_ID),3,11),'0'))+1,10,0)
+		  FROM	TSI_PD_M
+		 WHERE	V_RECORD_ID LIKE 'MR' || '%'
+	</select>
+	
+	<insert id="insertBrPr010Mst" parameterType="CmMap">
+		INSERT INTO /* BrPr010Mapper.insertBrPr010Mst */ 
+		TSI_PD_M(
+			V_RECORD_ID
+			, V_RECEIP_STATUS
+			, V_VENDOR_ID
+			, V_VENDOR_LABOR_ID
+			, V_IMPORT_YN
+			, V_FLAG_IMP
+			, V_F_MAKER_NM
+			, V_L_MAKER_NM
+			, V_BM_ID
+			, V_DEL_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sRecordId}
+			, #{i_sReceipStatus}
+			, #{i_sCompanycd}
+			, #{i_sCompanyLabor}
+			, #{i_sImportyn}
+			, #{i_sImport}
+			, #{i_sF_mager_nm}
+			, #{i_sL_mager_nm}
+			, #{i_sUserid}
+			, 'N'
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<insert id="insertBrPr010Prod" parameterType="CmMap">
+		INSERT INTO /* BrPr010Mapper.insertBrPr010Prod */ 
+		TSI_PD_D
+		(
+			V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_PRODUCT_NM_KO
+			, V_PRODUCT_NM_EN
+			, V_PRODUCT_NM_CN
+			, V_BRAND_CD
+			, V_STOCK_DTM
+			, V_TYPE
+			, V_CATEGORY1
+			, V_CATEGORY2
+			, V_FUNC_YN
+			, V_CNTR_FORM_ETC
+			, V_CNTR_MATR_ETC
+			, V_CAPACITY
+			, V_CNTR_FORM
+			, V_CNTR_MATR
+			, V_FREE_GN
+			, V_MUSOGU_CONT
+			, V_SOGU_CONT
+			, V_SHELF_LIFE
+			, V_PAO
+			, V_ORIGIN_YN
+			, V_ORIGIN_DIV
+			, V_KID_GUIDE_YN			
+			, V_PACKET_UNIT
+			, V_STABILITY_FILE_YN
+			, V_REFER_RECORD_ID
+			, V_REFER_PRODUCT_CD
+			, V_CONTENT_NUM
+			, V_PON_MSG
+			, V_LEAVEON_YN
+			, V_DEL_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sRecordId}
+			, #{i_sProduct_Refcd}
+			, #{i_sProduct_RefNm}
+			, #{i_sProduct_RefNm_En}
+			, #{i_sProduct_RefNm_Cn}
+			, #{i_sBrand}
+			, REPLACE(#{i_sStockDt},'-','')
+			, #{i_sType}
+			, #{i_sCategory1}
+			, #{i_sCategory2}
+			, NVL(#{i_sFuncyn},'N')
+			, #{i_sCntrFormEtc}
+			, #{i_sCntrMatrEtc}
+			, #{i_sProductCapacity}
+			, #{i_sCntrForm}
+			, #{i_sCntrMatr}
+			, #{i_sSogugn}
+			, #{i_sMusogucont}
+			, #{i_sSogucont}
+			, #{i_sLife}
+			, #{i_sPao}
+			, NVL(#{i_sOriginYn},'Y')
+			, #{i_sOriginDiv}	
+			, NVL(#{i_sKidYn},'N')
+			, #{i_sPacketUnit}
+			, NVL(#{i_sStabilityFileYn},'N')
+			, #{i_sGiReferRecordId}
+			, #{i_sGiReferProductCd}
+			, #{i_sCNnum}
+			, #{i_sPonMsg}
+			, #{i_sLeaveonYn}
+			, 'N'
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<insert id="insertBrPr010ProdNation" parameterType="CmMap">
+		INSERT /* BrPr010Mapper.insertBrPr010ProdNation */
+		INTO TSI_PD_NA_L(
+			V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_NATION_CD
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_REVIWER_ID
+		)VALUES(
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, #{i_sExp}
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, #{i_sRaUser}
+		)
+	</insert>
+	
+	<insert id="insertBrPr010ProdFunc" parameterType="CmMap">
+		INSERT /* BrPr010Mapper.insertBrPr010ProdFunc */
+		INTO TSI_PDFC_L(
+			V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_FUNC_CD
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, #{i_sFuncCode}
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<update id="updateBrPr010Mst" parameterType="CmMap">
+		UPDATE /* BrPr010Mapper.updateBrPr010Mst */
+			TSI_PD_M	SET
+			V_RECEIP_STATUS     = #{i_sReceipStatus}
+			,V_VENDOR_ID        = #{i_sCompanycd}    
+			,V_VENDOR_LABOR_ID  = #{i_sCompanyLabor} 
+			,V_IMPORT_YN        = #{i_sImportyn}     
+			,V_FLAG_IMP         = #{i_sImport}       
+			,V_F_MAKER_NM       = #{i_sF_mager_nm}   
+			,V_L_MAKER_NM       = #{i_sL_mager_nm}   
+			,V_BM_ID            = #{i_sUserid}      
+			,V_UPDATE_USER_ID	= #{i_sLoginUserId}                       
+			,V_UPDATE_DTM       = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			,V_IF_YN            = 'N'
+		WHERE V_RECORD_ID = #{i_sRecordId}
+	</update>
+
+	
+	<delete id="deleteBrPr010Prod" parameterType="CmMap">
+		DELETE /* BrPr010Mapper.deleteBrPr010Prod */
+			TSI_PD_D
+		WHERE V_RECORD_ID = #{i_sRecordId}
+	</delete>
+	
+	<delete id="deleteBrPr010Nation" parameterType="CmMap">
+		DELETE	/* BrPr010Mapper.deleteBrPr010Nation */ 
+			TSI_PD_NA_L
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		<if test="i_sProductCd != null and i_sProductCd != ''">
+			AND V_PRODUCT_CD = #{i_sProductCd}
+		</if>
+		<if test="i_sExp != null and i_sExp != ''">
+			AND V_NATION_CD = #{i_sExp}
+		</if>
+		<if test='i_sExistReviewStatue == "Y"'>
+			AND V_REVIEW_STATUS IS NULL
+			AND V_NATION_CD != 'KO'
+		</if>	
+		
+	</delete>
+	
+	<delete id="deleteBrPr010Func" parameterType="CmMap">
+		DELETE	/* BrPr010Mapper.deleteBrPr010Func */
+			TSI_PDFC_L
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		<if test="i_sProductCd != null and i_sProductCd != ''">
+			AND V_PRODUCT_CD = #{i_sProductCd}
+		</if>
+	</delete>
+	
+	<update id="updateBrPr010Prod" parameterType="CmMap">
+		UPDATE /* BrPr010Mapper.updateBrPr010Prod */
+				TSI_PD_D	
+			SET
+			V_PRODUCT_NM_KO = #{i_sProduct_KoNm}
+			, V_PRODUCT_NM_EN = #{i_sProduct_EnNm}
+			<if test="i_sProduct_CnNm != null">
+			, V_PRODUCT_NM_CN = #{i_sProduct_CnNm}
+			</if>
+ 			, V_CONTENT_NUM = #{i_sCNnum}
+ 			, V_CAPACITY = #{i_sProductCapacity}
+ 			, V_CNTR_FORM = #{i_sCntrForm}
+ 			, V_CNTR_FORM_ETC = #{i_sCntrForm_etc}
+ 			, V_CNTR_MATR = #{i_sCntrMatr}
+ 			, V_CNTR_MATR_ETC = #{i_sCntrMatr_etc}
+ 			, V_FREE_GN = #{i_sSogugn}
+ 			, V_MUSOGU_CONT = #{i_sMusogucont}
+ 			, V_SOGU_CONT = #{i_sSogucont}
+ 			, V_PON_MSG = #{i_sPonMsg}
+ 			, V_LEAVEON_YN = #{i_sLeaveonYn}
+ 			, V_ORIGIN_DIV = #{i_sOriginDiv}
+			<if test="i_sFinalRst == null or i_sFinalRst == ''">
+			, V_FINAL_RST = #{i_sFinalRst}
+			</if>
+			, V_UPDATE_USER_ID	= #{i_sLoginUserId}                       
+			, V_UPDATE_DTM       = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, V_IF_YN            = 'N'
+		WHERE V_PRODUCT_CD = #{i_sProductCd}
+	</update>
+		<delete id="deleteBrPr010ProductFunc" parameterType="CmMap">
+		DELETE /* BrPr010Mapper.deleteBrPr010ProductFunc */ 
+			TSI_PDFC_L
+		WHERE V_PRODUCT_CD = #{i_sProductCd}
+	</delete>
+	
+	<update id="updateBrPr010ProdNation" parameterType="CmMap">
+		MERGE /* BrPr010Mapper.updateBrPr010ProdNation */ 
+			INTO TSI_PD_NA_L A
+		USING DUAL
+		ON (A.V_RECORD_ID = #{i_sRecordId} AND A.V_PRODUCT_CD = #{i_sProductCd} AND V_NATION_CD = #{i_sNationCd})
+<!-- 		ON (A.V_RECORD_ID = #{i_sRecordId} AND A.V_PRODUCT_CD = #{i_sProductCd} AND V_NATION_CD = #{i_sNationCd}) -->
+		WHEN MATCHED THEN
+<!-- 		  UPDATE SET  -->
+<!-- 		             A.V_UPDATE_USER_ID = #{i_sLoginUserId} -->
+<!-- 		            , A.V_UPDATE_DTM = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS') -->
+		  DELETE WHERE (A.V_RECORD_ID = #{i_sRecordId} AND A.V_NATION_CD = #{i_sNationCd} AND A.V_PRODUCT_CD = #{i_sProductCd})
+		WHEN NOT MATCHED THEN
+		  INSERT
+		  (
+			  A.V_RECORD_ID
+			  , A.V_PRODUCT_CD
+			  , A.V_NATION_CD
+			  , A.V_REG_USER_ID
+			  , A.V_REG_DTM
+			  , A.V_UPDATE_USER_ID
+			  , A.V_UPDATE_DTM
+			  )
+		  VALUES
+		 (
+			 #{i_sRecordId}
+			 ,#{i_sProductCd}
+			 ,#{i_sNationCd}
+			 ,#{i_sLoginUserId}
+			 ,TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			 ,#{i_sLoginUserId}
+			 ,TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		 )
+
+	</update>
+	
+<!-- 	<select id="getProdNationCount" parameterType="CmMap" resultType="CmMap">
+		SELECT
+			COUNT(*) as cnt
+		FROM TSI_PD_NA_L
+		WHERE V_RECORD_ID = #{i_sRecordId} 
+		AND V_NATION_CD = #{i_sExp} 
+		AND V_PRODUCT_CD = #{i_sProductCd}
+		AND V_REVIEW_STATUS IS NOT NULL
+		AND V_NATION_CD != 'KO'
+	</select>	 -->
+	<select id="getBrPr010RaNationUser" parameterType="CmMap" resultType="CmMap">
+		SELECT V_USER_ID FROM TSI_GLB_RA_L WHERE V_NATION_CD=#{i_sExp} AND V_BRAND_CD = #{i_sBrandCd}
+	</select>
+	<select id="getBrPr010EmailInfo" parameterType="CmMap" resultType="CmMap">   
+			SELECT A.V_RECORD_ID
+			, A.V_PRODUCT_NM_KO	
+			, A.V_PRODUCT_CD
+			, FN_SUB_CODENM('BRAND_CODE',A.V_BRAND_CD) V_BRAND_NM
+			, A.V_FUNC_YN
+			, C.EMAIL
+			, B.V_NATION_CD
+			, B.V_REVIWER_ID
+			, D.EMAIL AS loginUserEmail
+		FROM (
+			SELECT * 
+			FROM TSI_PD_D
+			WHERE V_PRODUCT_CD = #{i_sProductCd}
+		)A
+		LEFT JOIN TSI_PD_NA_L B 
+			ON A.V_RECORD_ID = B.V_RECORD_ID
+		LEFT JOIN TZF_USER_M C 
+			ON B.V_REVIWER_ID = C.USER_NO
+		LEFT JOIN TZF_USER_M D
+			ON B.V_REG_USER_ID = D.USER_NO
+	</select>
+
+	<update id="updateBrPr010BmId" parameterType="CmMap">
+		UPDATE /* BrPr010Mapper.updateBrPr010Mst */
+			TSI_PD_M	SET   
+			V_BM_ID            = #{i_sUserId}      
+			,V_UPDATE_USER_ID	= #{pUpdateUserId}                       
+			,V_UPDATE_DTM       = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			,V_IF_YN            = 'N'
+		WHERE V_RECORD_ID = #{i_sRecordId}
+	</update>
+</mapper>

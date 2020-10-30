@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<!-- <script type="text/javascript" src="/sitims/js/util/cm_function.js"></script> -->
+<script type='text/javascript'>
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage, nationCode;
+$(function(){
+
+	fn_initDS();
+	layoutMain = new dhx.Layout("layoutObj",{
+		css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form',height:'150px', resizable: false}//, header: "검색조건"
+// 			,{id:'toolbar', resizable: true}
+			,{id:'grid',height:'75%', resizable: true,header:"목록"}//, header: "성분DB 목록"
+			,{id:'page', resizable: true}
+		]
+	});
+
+	var frmSearchCell = layoutMain.getCell('form');
+
+	frmSearch = new dhx.Form(null,{
+//			css: "dhx_layout-cell--border_top",
+rows : [
+			{ cols:[{
+				type:"input" , name:"i_sEnConNm", id:"i_sEnConNm", label:"검색어" ,labelPosition: "left", labelWidth: "100", width: "480", gravity: false, placeholder: "성분 국문 OR 성분 영문 OR Cas No OR 성분코드",required: false
+				}
+				,{ type:"select" , name:"i_sAllergenYn", id:"i_sAllergenYn",width: "220", gravity: false,label:"알러젠여부" ,labelPosition: "left", labelWidth: "120"
+					,options:[
+						{value:'' , content:"선택"}
+						,{value:'Y' , content:"Y"}
+						,{value:'N' , content:"N"}
+					]
+				}
+				,{ type:"select" , name:"i_sConfirmYn", id:"i_sConfirmYn",width: "210", gravity: false,label:"확정여부" ,labelPosition: "left", labelWidth: "110"
+					,options:[
+						{value:'' , content:"선택"}
+						,{value:'Y' , content:"Y"}
+						,{value:'N' , content:"N"}
+					]
+				}
+				,{ type:"input" , name:"i_searchVerSeq", id:"i_searchVerSeq", width: "200",label:"버전" ,labelPosition: "left", labelWidth: "90", gravity: false, placeholder: "버전",required: false}
+			]}
+			, {cols : fn_checkbox('LIM')}
+			, {cols : fn_checkbox('BAN')}
+			, {type: "input", name: "LIM_LIST", hidden:true}
+			, {type: "input", name: "BAN_LIST", hidden:true}
+		//	, { type:"input" , name:"i_sEnConNm", id:"i_sEnConNm", label:"검색어" ,labelPosition: "left", labelWidth: "110", width: "480", gravity: false, placeholder: "성분 국문 OR 성분 영문 OR Cas No OR 성분코드",required: false}
+		//	, {css: "dhx_total_cnt"}
+	]});
+	frmSearchCell.attach(frmSearch);
+
+	var gridCell = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns:[
+		//	{ width: 70, id: "n_num"      , header: [{ text: "No.",align:"center" }] , sortable:false, align:"right", autoWidth: false}
+			 { width: 90, id: "v_con_cd"      , header: [{ text: "성분코드",align:"center" }], align:"center", autoWidth: false, mark: fn_dhxLinkCss }			 
+			,{ width: 140, id: "v_cas_no1"      , header: [{ text: "Cas No",align:"center" }], align:"left", autoWidth: false, template: function(text, row, col) {
+				return text + (row.n_cas_cnt > 1 ? '외' + (row.n_cas_cnt-1) + '개' : '');
+			} }
+			, { width: 220, id: "v_con_nm_en"      , header: [{ text: "성분 영문",align:"center" }], align:"left" }
+			, { width: 220, id: "v_con_nm_ko"      , header: [{ text: "성분 국문",align:"center" }], align:"left" }
+			, { width: 100, id: "v_allergen_yn"      , header: [{ text: "알러젠 여부",align:"center" }], align:"center", autoWidth: false }
+			, { width: 90, id: "n_max_allow_wt"      , header: [{ text: "배합한도",align:"center" }], align:"right", autoWidth: false }
+			, { width: 120, id: "v_ban_country"      , header: [{ text: "사용 금지",align:"center" }], align:"left", autoWidth: false }
+			, { width: 120, id: "v_permit_country"      , header: [{ text: "배합제한",align:"center" }], align:"left", autoWidth: false }
+			, { width: 70, id: "n_ver_seq"      , header: [{ text: "버전",align:"center" }], align:"right", autoWidth: false }
+			, { width: 70, id: "v_confirm_yn"      , header: [{ text: "확정여부",align:"center" }], align:"center", autoWidth: false }
+			
+			
+		//	, { width: 180, id: "v_reg_dtm"      , header: [{ text: "등록일",align:"center" }], align:"center" }
+		//	, { width: 180, id: "v_reg_user_nm"      , header: [{ text: "등록자",align:"center" }], align:"center" }
+		]
+		,autoWidth: true
+        ,headerRowHeight: 46
+		 ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	gridCell.attach(grdMain);
+
+	grdMain.events.on("CellClick", fn_view2);
+	grdMain.events.on("CellDblClick", fn_view);
+
+// 	 var gridMainToolbar = new dhx.Toolbar(null,{
+// 		data:[
+// 			{type: "spacer"},
+// 		 	{type:"button",value:"등록",id:'btnAdd'}
+// 			//,{type:"button",icon:"dxi-file-excel",value:"excel",id:'btnExcel'}
+// 	 	]
+// 	 });
+// 	 layoutMain.getCell('toolbar').attach(gridMainToolbar);
+    
+//     gridMainToolbar.events.on("Click", function(id){
+//     	if(id=='btnAdd'){
+//     		//parent.mdiObj.create_tab(parent.window.$('.dhxtabbar_tab').length, '제품등록', '/si/im/010/si_im_010_reg.do');
+//     		window.location.href='/si/im/010/si_im_010_reg.do';
+//     	}else if(id == 'btnExcel'){
+//     		fn_excel_download("/si/im/010/si_im_010_list_excel.do", mainPage.postParam);
+//     	}
+//     });
+
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/si/im/010/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    		, moveCallBack : fn_setFrmSearch
+    });
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	frmSearch.getItem('i_sEnConNm').setValue(param.i_sEnConNm);
+    	frmSearch.getItem('i_sAllergenYn').setValue(param.i_sAllergenYn);
+    	frmSearch.getItem('i_sConfirmYn').setValue(param.i_sConfirmYn);
+    	frmSearch.getItem('i_searchVerSeq').setValue(param.i_searchVerSeq);    	
+    	frmSearch.setValue({ "LIM_LIST": param.LIM_LIST, "BAN_LIST": param.BAN_LIST});
+    	frmSearch.setValue({ "i_sBanAE": param.i_sBanAE, "i_sBanCN": param.i_sBanCN, "i_sBanEU": param.i_sBanEU, "i_sBanGL": param.i_sBanGL, "i_sBanKO": param.i_sBanKO, "i_sBanUS": param.i_sBanUS});
+    	frmSearch.setValue({ "i_sLimAE": param.i_sLimAE, "i_sLimCN": param.i_sLimCN, "i_sLimEU": param.i_sLimEU, "i_sLimGL": param.i_sLimGL, "i_sLimKO": param.i_sLimKO, "i_sLimUS": param.i_sLimUS});
+
+    }
+
+});
+function fn_view(row,col,e) {
+	var data = grdMain.data.getItem(row.id);
+	window.location.href='/si/im/010/si_im_010_view.do?i_sConCd='+data.v_con_cd+'&i_nVerSeq='+data.n_ver_seq;
+}
+function fn_view2(row,col,e) {
+	if (col.id == 'v_con_cd')
+		fn_view(row,col,e);
+}
+function fn_excel() {
+	fn_excel_download("/si/im/010/si_im_010_list_excel.do", mainPage.postParam);
+}
+function fn_setFrmSearch(){
+	var labelRequired;
+	frmSearch.forEach(function(item, index, array) {
+		if(item.config.required && fn_isNull(item.config.value)){
+			labelRequired=item.config.label;
+			return; 
+		}		
+	});
+	if(!fn_isNull(labelRequired)){
+		fn_s_alertMsg(labelRequired + "을 입력 후 검색바랍니다.");
+		return;
+	}
+
+	var data = frmSearch.getValue();
+	var arrLim = [];
+	var arrBan = [];
+	var dataKeys =Object.keys(data);
+
+	for(var i=0 ; i<dataKeys.length;i++){
+		if(data[dataKeys[i]] == true){
+			if (-1 < dataKeys[i].indexOf('Lim'))
+				arrLim.push(dataKeys[i].replace("i_sLim", ""));
+			else if (-1 < dataKeys[i].indexOf('Ban'))
+				arrBan.push(dataKeys[i].replace("i_sBan", ""));
+		}
+	}
+
+	frmSearch.setValue({ "LIM_LIST": arrLim, "BAN_LIST": arrBan});	
+	
+}
+
+function fn_search() {
+	fn_setFrmSearch();
+	mainPage.search(1);
+}
+
+$(document).on('keyup','#i_sEnConNm',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+//Search NationData 초기화
+function fn_initDS() {
+	if (fn_isNull(nationCode)) {
+		var postParam = new Object();
+		postParam.i_sMstCode = "ODM_EXPORT";
+		fn_ajax({
+			url : "/am/um/030/CmCodeListForRaNation.do"
+			, postParam : postParam
+			, async:false
+			, success : function(responseData) {
+				nationCode	= responseData.result;
+			}
+		});
+	}
+}
+
+function fn_checkbox(flag) {
+	var dataArray = new Array();
+	if ('LIM' == flag) {
+		dataArray.push({type: "text", label : "배합제한",name:"i_sLim", labelPosition: "left", labelWidth:"100", width:"117", gravity:false, css : "mt_-07"});
+		for(var i=0;i<nationCode.length;i++){
+			dataArray.push({
+				type : "checkbox"
+					, label : nationCode[i].COMM_CD_NM
+					, name : 'i_sLim' + nationCode[i].COMM_CD
+					, labelWidth : "90"
+					, width : "110"
+					, labelPosition : "left"
+					, gravity : false
+			});
+		}
+	} else {
+		dataArray.push({type: "text", label : "사용금지",name:"i_sBan", labelPosition: "left", labelWidth:"100", width:"117", gravity:false, css : "mt_-07"});
+		for(var i=0;i<nationCode.length;i++){
+			dataArray.push({
+				type : "checkbox"
+					, label : nationCode[i].COMM_CD_NM
+					, name : 'i_sBan' + nationCode[i].COMM_CD
+					, labelWidth : "90"
+					, width : "110"
+					, labelPosition : "left"
+					, gravity : false
+			});
+		}
+	}
+
+	return dataArray;
+}
+//기타2 : 신규 페이지 이동
+function fn_etc2(){
+	window.location.href='/si/im/010/si_im_010_reg.do';	
+}
+$(document).on('keyup','#i_sEnConNm',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+$(document).on('keyup','#i_searchVerSeq',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+</script>
+</html>

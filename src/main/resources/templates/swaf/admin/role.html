@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout sub1 (layout b)
+var layoutSub1;
+
+//layout Sub2 (layout c)
+var layoutSub2;
+
+
+
+//layout sub1 - s1a
+var grdRole;//grdRole
+
+//layout sub1 - s1b
+var frmRole;//frmRole
+
+
+
+//layout sub2 - s2a
+var grdMenu;//grdMenu
+
+//layout sub2 - s2b
+var frmMenu;//frmMenu
+
+//layout sub2 - s2c
+var grdRoleMenu;//grdRoleMenu
+
+//layout sub2 - s2d
+var frmRoleMenu;//frmRoleMenu
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+var rowIndexSub = 0;
+var rowIndexSub2 = 0;
+
+//DataProcessor
+
+//DataStore
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/
+    // Layout
+    dhtmlx.image_path = dhtmlx_image_path;
+    layoutMain = new dhtmlXLayoutObject({
+        parent: "layoutObj",
+        pattern: "3E",
+        skin: dhtmlx_skin
+    });
+    
+    /* Form-조건 */
+    var a = layoutMain.cells('a');
+    a.setText('검색조건');
+    a.setHeight(SearchFormHeight[1]);
+    
+    var strLabel =  [{ type: "label", list:[
+						                	{ type:"combo" , name:"CO_CD" , label:"회사", readonly:true, required:"true" },
+						                    { type:"newcolumn"   },
+					                        { type:"combo" , name:"SYS_ID", label:"시스템", className:"offsetRight", required:"true"},
+						                	{ type:"newcolumn"   },
+						                	{ type:"input" , name:"ROLE_NO", label:"권한그룹코드", className:"offsetRight"},
+						                    { type:"newcolumn"   },
+						                	{ type:"input" , name:"ROLE_NM", label:"권한그룹명", className:"offsetRight"}
+						                    
+						                	/* { type:"newcolumn"   },
+						                    { type:"input" , name:"COMM_CD" , label:"회사", readonly:true, width:100 },
+						                    { type:"newcolumn"   },
+						                    { type:"input" , name:"COMM_CD_NM" , readonly:false },
+						                    { type:"newcolumn"   },
+						                    { type:"button",   		name:"searchCd",  value:"검색", width:40, height:10} */
+					 ]}
+                    ];
+    strLabel.unshift(SearchFormStyle4);
+    frmSearch = a.attachForm(strLabel);
+    
+	// Layout Sub1
+    layoutSub1 = new dhtmlXLayoutObject({
+        parent: layoutMain.cells('b'),
+        pattern: "2U",
+        skin: dhtmlx_skin
+    });
+    
+    /* Grid-Sub1 */
+    var s1a = layoutSub1.cells('a');
+    s1a.setText('권한그룹 목록');
+    grdRole = s1a.attachGrid();
+    grdRole.setHeader(["NO","회사","권한그룹코드","권한그룹명","설명","사용여부"]);
+    grdRole.setColumnIds("NO,CO_CD,ROLE_NO,ROLE_NM,ROLE_DESC,USE_YN");
+    grdRole.setColTypes("ro,ro,ro,ro,ro,ro");
+    grdRole.setInitWidths('40,100,100,100,*,80');
+    fn_initGrid(grdRole);
+    
+    
+    /* Form-Sub1 */
+    var s1b = layoutSub1.cells('b');
+    s1b.setText('권한그룹 등록');
+    s1b.setWidth(RegisterFormWidth[1]); 
+    
+    var strLabel = [{type: "label", list: [
+                    	{ type:"combo"  , name:"CO_CD" , label: "회사", readonly:true, validate: "NotEmpty", required:"true", className:"offsetRight" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"ROLE_NO"   , label: "권한그룹코드", maxLength:"8"   , validate: "NotEmpty", required:"true", readonly:true }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"ROLE_NM"   , label: "권한그룹명", maxLength:"20"  , validate: "NotEmpty", required:"true", className:"offsetRight" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"ROLE_DESC" , label: "설명", className:"offsetRight" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"combo"  , name:"USE_YN"    , label: "사용여부", readonly:true, className:"offsetRight" }
+	                ]}
+	               ];
+    strLabel.unshift(RegisterFormStyle1);
+    frmRole = s1b.attachForm(strLabel);
+    frmRole.getCombo("USE_YN"           ).load("/dhtmlx/data/comboYN.json");
+
+    s1b.attachToolbar({
+        icons_path: toolbar_icons_path,
+        items:[
+              {type:"button", id:"btnAdd", text:"신규", img:"new.gif", img_disabled:"new_dis.gif", action:"fn_new"},
+              {type: "separator", id: "sep1"},
+              {type:"button", id:"btnAdd", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_save"},
+              {type:"button", id:"btnAdd", text:"삭제", img:"delrow.gif", img_disabled:"delrow_dis.gif", action:"fn_del"}
+             ]
+    });
+    
+    frmRole.bind(grdRole);
+    
+	// Layout Sub2
+    layoutSub2 = new dhtmlXLayoutObject({
+        parent: layoutMain.cells('c'),
+        pattern: "4W",
+        skin: dhtmlx_skin
+    });
+    
+    /* Grid-Sub2 */
+    var s2a = layoutSub2.cells('a');
+    s2a.setText('전체프로그램');
+    s2a.setWidth(600); 
+    s2a.setHeight(360);
+    grdMenu = s2a.attachGrid();
+    grdMenu.setHeader(["LEVEL","시스템","메뉴ID","","메뉴명","순번","","","","","","",""]);
+    grdMenu.setColumnIds("DEPTH,SYS_ID,MENU_CD,PAR_MENU_CD,MENU_NM,SORT_SEQ,INQ_AUTH_YN,INS_AUTH_YN,XLS_AUTH_YN,PRT_AUTH_YN,ETC_BTN_1_AUTH_YN,ETC_BTN_2_AUTH_YN,ETC_BTN_3_AUTH_YN");
+    grdMenu.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+    grdMenu.setInitWidths('60,120,120,0,*,50,0,0,0,0,0,0,0');
+
+    fn_initGrid(grdMenu);
+    
+    /* Form-Sub2 */
+    var s2b = layoutSub2.cells('b');
+    s2b.setText('추가');
+    s2b.setWidth(80); 
+    
+    var strLabel = [{ type:"newcolumn", height:50 },
+                    {type: "label", list: [
+                        { type:"button",   name:"ADD_MENU",  value:"추가", width:30, height:10}
+	                ]},
+	                {type: "label", list: [
+                        { type:"button",   name:"DEL_MENU",  value:"제거", width:30, height:10}
+  	                ]},
+	                {type: "label", list: [
+                        { type:"input",   name:"SYS_ID", readonly: true, hidden: true}
+  	                ]},
+	                {type: "label", list: [
+                        { type:"input",   name:"MENU_CD", readonly: true, hidden: true}
+   	                ]}
+                    ,{ type:"input",   name:"INQ_AUTH_YN", readonly: true, hidden: true}
+                    ,{ type:"input",   name:"INS_AUTH_YN", readonly: true, hidden: true}
+                    ,{ type:"input",   name:"XLS_AUTH_YN", readonly: true, hidden: true}
+                    ,{ type:"input",   name:"PRT_AUTH_YN", readonly: true, hidden: true}
+                    ,{ type:"input",   name:"ETC_BTN_1_AUTH_YN", readonly: true, hidden: true}
+                    ,{ type:"input",   name:"ETC_BTN_2_AUTH_YN", readonly: true, hidden: true}
+                    ,{ type:"input",   name:"ETC_BTN_3_AUTH_YN", readonly: true, hidden: true}
+	               ];
+    frmMenu = s2b.attachForm(strLabel);
+    frmMenu.bind(grdMenu);
+    
+    
+    /* Grid-Sub2 */
+    var s2c = layoutSub2.cells('c');
+    s2c.setText('등록된프로그램');
+    grdRoleMenu = s2c.attachGrid();
+    grdRoleMenu.setHeader(["LEVEL","시스템","메뉴ID","","메뉴명","순번","","","","","","","","","","","","","",""]);
+    grdRoleMenu.setColumnIds("DEPTH,SYS_ID,MENU_CD,PAR_MENU_CD,MENU_NM,SORT_SEQ,INQ_AUTH_YN,INS_AUTH_YN,XLS_AUTH_YN,PRT_AUTH_YN,ETC_BTN_1_AUTH_YN,ETC_BTN_2_AUTH_YN,ETC_BTN_3_AUTH_YN,INQ_AUTH_USE,INS_AUTH_USE,XLS_AUTH_USE,PRT_AUTH_USE,ETC_BTN_1_AUTH_USE,ETC_BTN_2_AUTH_USE,ETC_BTN_3_AUTH_USE");
+    grdRoleMenu.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+    grdRoleMenu.setInitWidths('60,120,120,0,*,50,0,0,0,0,0,0,0,0,0,0,0,0,0,0');
+    fn_initGrid(grdRoleMenu);
+    
+    /* Form-Sub2 */
+    var s2d = layoutSub2.cells('d');
+    s2d.setText('메뉴 상세');
+    s2d.setWidth(RegisterFormWidth[1]); 
+    
+    var strLabel = [{type: "label", list: [
+                    	{ type:"input"  , name:"SYS_ID"   , label: "시스템", maxLength:"8"   , validate: "NotEmpty", required:"true", className:"offsetRight" }
+	                ]},
+                    {type: "label", list: [
+	                    { type:"input"  , name:"MENU_CD"   , label: "메뉴ID", maxLength:"8"   , validate: "NotEmpty", required:"true", className:"offsetRight" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"MENU_NM"   , label: "메뉴명", maxLength:"20"  , validate: "NotEmpty", required:"true", className:"offsetRight" }
+	                ]},
+                    {type: "label", list: [
+	                    { type:"checkbox"  , name:"INQ_AUTH_YN"    , label: "조회"},
+	                    { type:"newcolumn"   },
+	                    { type:"checkbox"  , name:"INS_AUTH_YN"    , label: "저장"}
+	                ]},
+	                {type: "label", list: [
+	                    { type:"checkbox"  , name:"XLS_AUTH_YN"    , label: "엑셀"},
+	                    { type:"newcolumn"   },
+	                    { type:"checkbox"  , name:"PRT_AUTH_YN"    , label: "인쇄"}
+	                ]},
+	                {type: "label", list: [
+	                    { type:"checkbox"  , name:"ETC_BTN_1_AUTH_YN"    , label: "기타1"},
+	                    { type:"newcolumn"   },
+	                    { type:"checkbox"  , name:"ETC_BTN_2_AUTH_YN"    , label: "기타2"}
+	                ]},
+	                {type: "label", list: [
+	                    { type:"checkbox"  , name:"ETC_BTN_3_AUTH_YN"    , label: "기타3"}
+	                ]},
+	                {type: "label", list: [
+	                    { type:"checkbox"  , name:"PINF_YN"    , label: "개인정보여부"}
+	                ]},
+	                {type: "label", list: [
+                        { type:"input",   name:"INQ_AUTH_USE", label: "조회사용여부", readonly: true, hidden: true}
+  	                ]},
+	                {type: "label", list: [
+                        { type:"input",   name:"INS_AUTH_USE", label: "저장사용여부",  readonly: true, hidden: true}
+  	                ]},
+ 	                {type: "label", list: [
+                        { type:"input",   name:"XLS_AUTH_USE", label: "엑셀사용여부",  readonly: true, hidden: true}
+  	                ]},
+ 	                {type: "label", list: [
+                        { type:"input",   name:"PRT_AUTH_USE", label: "인쇄사용여부",  readonly: true, hidden: true}
+  	                ]},
+ 	                {type: "label", list: [
+                        { type:"input",   name:"ETC_BTN_1_AUTH_USE", label: "기타1사용여부",  readonly: true, hidden: true}
+  	                ]},
+ 	                {type: "label", list: [
+                        { type:"input",   name:"ETC_BTN_2_AUTH_USE", label: "기타2사용여부",  readonly: true, hidden: true}
+  	                ]},
+  	                {type: "label", list: [
+                        { type:"input",   name:"ETC_BTN_3_AUTH_USE", label: "기타3사용여부",  readonly: true, hidden: true}
+  	                ]}
+	               ];
+    strLabel.unshift(RegisterFormStyle1);
+    frmRoleMenu = s2d.attachForm(strLabel);
+
+    s2d.attachToolbar({
+        icons_path: toolbar_icons_path,
+        items:[{type:"button", id:"fn_updateRoleMenu", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_updateRoleMenu"}
+             ]
+    });
+    
+    frmRoleMenu.bind(grdRoleMenu);
+    
+    
+    // DataStore 초기화
+    fn_initDS();
+    
+    // 나머지 초기화
+    //layoutMain.setAutoSize("a;b", "b;c");
+    fn_init();
+
+    /****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+    
+     frmSearch.getCombo("CO_CD").attachEvent("onChange",function(value, text) {
+ 		grdRole.clearAll();
+ 		frmRole.clear();
+
+ 		grdMenu.clearAll();
+ 		frmMenu.clear();
+ 		grdRoleMenu.clearAll();
+ 		frmRoleMenu.clear();
+ 	});
+     
+	frmSearch.getCombo("SYS_ID").attachEvent("onChange",function(value, text) {
+		grdRole.clearAll();
+		frmRole.clear();
+
+		grdMenu.clearAll();
+		frmMenu.clear();
+		grdRoleMenu.clearAll();
+		frmRoleMenu.clear();
+	});
+
+	// grdRole Row Change
+ 	grdRole.attachEvent("onSelectStateChanged",function(id) {
+     	var sRoleNo = grdRole.cells(id, grdRole.getColIndexById("ROLE_NO")).getValue();
+ 	    saveMode = 'U';
+ 	    frmRole.setReadonly("ROLE_NO", true);
+
+     	//frmSearch.setItemValue("ROW_ROLE_NO", sRoleNo);
+ 		fn_searchSub2();
+ 		fn_searchSub2_1();
+ 	});
+	
+ 	// grdMenu DBClick
+ 	grdMenu.attachEvent("onRowDblClicked",function(rId,cInd) {
+     	fn_saveRoleMenu();
+ 	});
+ 	
+	// grdRoleMenu DBClick
+ 	grdRoleMenu.attachEvent("onRowDblClicked",function(rId,cInd) {
+ 		fn_deleteRoleMenu();
+ 	});
+ 	
+ 	// frmMenu Button Click
+	frmMenu.attachEvent("onButtonClick", function(name){
+		// 추가버튼 클릭
+		if("ADD_MENU" == name){
+			fn_saveRoleMenu();
+	    }else if("DEL_MENU" == name){
+			fn_deleteRoleMenu();
+	    }
+		
+	});
+ 	
+ 	// 검색폼 버튼 클릭
+	/* frmSearch.attachEvent("onButtonClick", function(name){
+		// 검색버튼 클릭  SY001
+		if("searchCd" == name){
+			// 공통코드조회 팝업
+			fn_layerPopComCd('SY001', frmSearch, 'COMM_CD', 'COMM_CD_NM');
+	    }
+	}); */
+ 	
+	
+ 	
+	// grdRoleMenu Row Change
+ 	grdRoleMenu.attachEvent("onSelectStateChanged",function(id) {
+
+ 		// 버튼 사용여부에따른 체크박스 비활성화 처리 		
+     	var inqAuthUse 		= grdRoleMenu.cells(id, grdRoleMenu.getColIndexById("INQ_AUTH_USE")).getValue();
+     	var insAuthUse 		= grdRoleMenu.cells(id, grdRoleMenu.getColIndexById("INS_AUTH_USE")).getValue();
+     	var xlsAuthUse 		= grdRoleMenu.cells(id, grdRoleMenu.getColIndexById("XLS_AUTH_USE")).getValue();
+     	var prtAuthUse 		= grdRoleMenu.cells(id, grdRoleMenu.getColIndexById("PRT_AUTH_USE")).getValue();
+     	var etcBtn1AuthUse 	= grdRoleMenu.cells(id, grdRoleMenu.getColIndexById("ETC_BTN_1_AUTH_USE")).getValue();
+     	var etcBtn2AuthUse 	= grdRoleMenu.cells(id, grdRoleMenu.getColIndexById("ETC_BTN_2_AUTH_USE")).getValue();
+     	var etcBtn3AuthUse 	= grdRoleMenu.cells(id, grdRoleMenu.getColIndexById("ETC_BTN_3_AUTH_USE")).getValue();
+
+
+     	"1" == inqAuthUse 		? frmRoleMenu.enableItem("INQ_AUTH_YN") : frmRoleMenu.disableItem("INQ_AUTH_YN");
+     	"1" == insAuthUse 		? frmRoleMenu.enableItem("INS_AUTH_YN") : frmRoleMenu.disableItem("INS_AUTH_YN");
+     	"1" == xlsAuthUse 		? frmRoleMenu.enableItem("XLS_AUTH_YN") : frmRoleMenu.disableItem("XLS_AUTH_YN");
+     	"1" == prtAuthUse 		? frmRoleMenu.enableItem("PRT_AUTH_YN") : frmRoleMenu.disableItem("PRT_AUTH_YN");
+     	"1" == etcBtn1AuthUse 	? frmRoleMenu.enableItem("ETC_BTN_1_AUTH_YN") : frmRoleMenu.disableItem("ETC_BTN_1_AUTH_YN");
+     	"1" == etcBtn2AuthUse 	? frmRoleMenu.enableItem("ETC_BTN_2_AUTH_YN") : frmRoleMenu.disableItem("ETC_BTN_2_AUTH_YN");
+     	"1" == etcBtn3AuthUse 	? frmRoleMenu.enableItem("ETC_BTN_3_AUTH_YN") : frmRoleMenu.disableItem("ETC_BTN_3_AUTH_YN");
+     
+ 	});
+});
+
+// DataStore 초기화
+function fn_initDS() {
+
+    var postParam = new Object();
+    postParam.grpcd = "dsSysId:SY002:Y;dsCoCd:SY001:Y";
+
+    fn_ajaxGetDsForCombo({ postParam : postParam
+    	                 , async:false
+		                 , success : 
+		                	 function(responseData) { 
+							                            frmSearch.getCombo("SYS_ID").load(responseData.dsSysId); 
+								                	    frmSearch.getCombo("SYS_ID").setComboValue("SITIMS");
+							                            frmSearch.getCombo("CO_CD").load(responseData.dsCoCd); 
+								                	    frmSearch.getCombo("CO_CD").setComboValue("SINC");
+								                	    frmRole.getCombo("CO_CD").load(responseData.dsCoCd);
+								                	    
+								                	    fn_search();
+								                	 }
+	});
+}
+
+// 조회 - 권한그룹
+function fn_search() {
+    if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(frmSearch);
+		
+	    fn_ajaxGetGrid({ gridName         : grdRole
+	             , url                 : "/dhtmlx/admin/role/selectList.do"
+	             , postParam           : postParam
+	             , success             : function() {
+									                 grdRole.selectRow(rowIndex);
+									                 saveMode = 'U';
+									                }
+	    });
+    }
+}
+
+function fn_searchSub(){
+	fn_searchSub2();
+	fn_searchSub2_1();
+}
+
+// 조회 - 전체메뉴
+function fn_searchSub2() {
+    if(fn_validateForm(frmSearch)) {
+	    var postParam 		= fn_getPostParam(frmRole);
+		postParam.SYS_ID	= frmSearch.getItemValue("SYS_ID");
+		
+	    fn_ajaxGetGrid({ gridName         : grdMenu
+	             , url                 : "/dhtmlx/admin/role/selectMenuList.do"
+	             , postParam           : postParam
+	             , success             : function() {
+									                 grdMenu.selectRow(rowIndexSub);
+									                 saveMode = 'U';
+									                }
+	    });
+    }
+}
+
+// 조회 - 권한그룹메뉴
+function fn_searchSub2_1() {
+	//frmRoleMenu.clearAll();
+    if(fn_validateForm(frmSearch)) {
+	    var postParam 		= fn_getPostParam(frmRole);
+		postParam.SYS_ID	= frmSearch.getItemValue("SYS_ID");
+		
+	    fn_ajaxGetGrid({ gridName         : grdRoleMenu
+	             , url                 : "/dhtmlx/admin/role/selectRoleMenuList.do"
+	             , postParam           : postParam
+	             , success             : function() {
+									                 grdRoleMenu.selectRow(rowIndexSub2);
+									                 saveMode = 'U';
+									                }
+	    });
+    }
+}
+
+// 신규
+function fn_new() {
+    saveMode = 'I';
+    frmRole.clear();
+    frmRole.setItemFocus("MENU_CD");    
+    frmRole.setReadonly("ROLE_NO", false);
+    
+    grdMenu.clearAll();
+    frmMenu.clear();
+    grdRoleMenu.clearAll();
+    frmRoleMenu.clear();
+    
+    // 기본값 지정    
+    frmRole.getCombo("SYS_ID").setComboValue(frmSearch.getCombo("SYS_ID").getSelectedValue());
+    frmRole.setItemValue("SORT_SEQ",1);
+    frmRole.setItemValue("PAUS_YN","N");
+    frmRole.setItemValue("PAR_MENU_CD",fn_getGridValue(grdRole, "PAR_MENU_CD"));
+}
+
+// 저장 - 권한그룹
+function fn_save() {
+	var postParam = fn_getPostParam(frmRole);
+	
+	if (saveMode == 'I') {
+		rowIndex = 0;
+	} else {
+	    rowIndex = grdRole.getRowIndex(grdRole.getSelectedRowId());    
+	}
+	postParam.saveMode = saveMode;
+	
+	if (fn_validateForm(frmRole)) {
+	     fn_ajaxSaveForm({ url      : "/dhtmlx/admin/role/save.do"
+	              , postParam   : postParam
+	              , postType    : 'save'
+	              , success     : fn_saveSuccess
+	     });
+	 }
+}
+
+// 저장 - 권한그룹메뉴
+function fn_saveRoleMenu() {
+	
+	rowIndexSub2 = 0;
+	
+	// 추가하려는 메뉴가 루트 메뉴이거나 부모메뉴가 존재하면 추가 할 수 있다.
+	var sDepth 			= grdMenu.cells(grdMenu.getSelectedRowId(), grdMenu.getColIndexById("DEPTH")).getValue();
+	var sParMenuCd 		= grdMenu.cells(grdMenu.getSelectedRowId(), grdMenu.getColIndexById("PAR_MENU_CD")).getValue();
+	var nCnt 			= grdRoleMenu.getRowsNum();
+	var bSaveFlg		= false;
+	
+	if(1 < sDepth){
+		for(i=0 ; i < nCnt ; i++){
+			// 추가하려는 메뉴의 부모매뉴가 존재하면 저장한다.
+			if(sParMenuCd == grdRoleMenu.cells(i+1, grdRoleMenu.getColIndexById("MENU_CD")).getValue()){
+				bSaveFlg = true;
+			}
+		}
+	}else{
+		bSaveFlg = true;
+	}
+	if(!bSaveFlg){
+		alert("상위메뉴를 먼저 추가해 주세요.");
+		return;
+	}
+	
+	// 버튼사용여부는 메뉴상세영역에서 수정한다.(저장시점에는 빈값으로 초기화)
+	frmMenu.setItemValue("INQ_AUTH_YN", "0");
+	frmMenu.setItemValue("INS_AUTH_YN", "0");
+	frmMenu.setItemValue("XLS_AUTH_YN", "0");
+	frmMenu.setItemValue("PRT_AUTH_YN", "0");
+	frmMenu.setItemValue("ETC_BTN_1_AUTH_YN", "0");
+	frmMenu.setItemValue("ETC_BTN_2_AUTH_YN", "0");
+	frmMenu.setItemValue("ETC_BTN_3_AUTH_YN", "0");
+	
+	var postParam = fn_getPostParam(frmMenu);
+	
+	postParam.saveMode 	= "I";
+	postParam.ROLE_NO	= grdRole.cells(grdRole.getSelectedRowId(), grdRole.getColIndexById("ROLE_NO")).getValue();
+	
+	if (fn_validateForm(frmMenu)) {
+	     fn_ajaxSaveForm({ url      : "/dhtmlx/admin/role/saveMenu.do"
+	              , postParam   : postParam
+	              , postType    : 'save'
+		          , success     : fn_searchSub
+	     });
+	 }
+}
+
+// 수정- 권한그룹메뉴
+function fn_updateRoleMenu() {
+	
+	rowIndexSub2 = 0;
+	
+	var postParam = fn_getPostParam(frmRoleMenu);
+	
+	rowIndexSub2 = grdRoleMenu.getRowIndex(grdRoleMenu.getSelectedRowId());    
+	
+	postParam.saveMode 	= "U";
+	postParam.ROLE_NO	= grdRole.cells(grdRole.getSelectedRowId(), grdRole.getColIndexById("ROLE_NO")).getValue();
+	
+	if (fn_validateForm(frmRoleMenu)) {
+	     fn_ajaxSaveForm({ url      : "/dhtmlx/admin/role/saveMenu.do"
+	              , postParam   : postParam
+	              , postType    : 'save'
+		          , success     : fn_searchSub
+	     });
+	 }
+}
+
+function fn_saveSuccess() {
+	//fn_initDS();
+	fn_search();
+}
+
+// 삭제 - 권한그룹
+function fn_del() {	
+	var postParam = fn_getPostParam(frmRole);
+
+	rowIndex = 0;
+	if (saveMode == 'U') {
+		dhtmlx.confirm("삭제하시겠습니까?", function(result){
+			if (result) {
+			    fn_ajaxSaveForm({ url      : "/dhtmlx/admin/role/delete.do"
+			          , postParam   : postParam
+			          , postType    : 'save'
+			          , success     : fn_search
+			        });
+			}
+		});
+	}
+}
+
+// 삭제 - 권한그룹메뉴
+function fn_deleteRoleMenu() {
+	// 삭제하려는 메뉴의 하위메뉴가 존재하면 삭제할 수 없다.
+	var sMenuCd 		= grdRoleMenu.cells(grdRoleMenu.getSelectedRowId(), grdRoleMenu.getColIndexById("MENU_CD")).getValue();
+	var nCnt 			= grdRoleMenu.getRowsNum();
+	var bDelFlg			= true;
+
+	for(i=0 ; i < nCnt ; i++){
+		// 삭제하려는 메뉴의 하위매뉴가 존재하면 삭제불가.
+		if(sMenuCd == grdRoleMenu.cells(i+1, grdRoleMenu.getColIndexById("PAR_MENU_CD")).getValue()){
+			bDelFlg = false;
+		}
+	}
+	if(!bDelFlg){
+		alert("하위메뉴를 먼저 삭제해 주세요.");
+		return;
+	}
+	
+   var postParam = fn_getPostParam(frmRoleMenu);
+	
+   postParam.ROLE_NO	= grdRole.cells(grdRole.getSelectedRowId(), grdRole.getColIndexById("ROLE_NO")).getValue();
+   rowIndexSub = 0;
+   if (saveMode == 'U') {
+	   dhtmlx.confirm("삭제하시겠습니까?", function(result){
+		   if (result) {
+		       fn_ajaxSaveForm({ url      : "/dhtmlx/admin/role/deleteMenu.do"
+				           , postParam   : postParam
+				           , postType    : 'save'
+				           , success     : fn_searchSub
+		           });
+		   }
+	   });
+   }
+}
+
+</script>
+</html>

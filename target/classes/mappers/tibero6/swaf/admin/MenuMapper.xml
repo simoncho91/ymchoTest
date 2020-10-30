@@ -1,0 +1,925 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : MenuMapper.xml
+    Description   : Menu 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  손홍신       1.0        최초 생성
+-->
+<mapper namespace="Menu">
+	<!-- 1. 메인메뉴 조회 -->
+	<select id="selectMainMenuList" resultType="Map">
+		SELECT /* Menu.selectMainMenuList */
+			   LEVEL,
+			   CC.*
+		  FROM
+		    (
+		    SELECT BB.MENU_CD,
+		           BB.PAR_MENU_CD,
+		           BB.MENU_NM,
+		           BB.URL,
+		           BB.USE_YN,
+		           BB.SORT_SEQ
+		      FROM
+		        (
+		        SELECT A.MENU_CD
+		          FROM TZF_ROLEMENU_L A
+		         WHERE A.SYS_ID    	= #{SYS_ID}
+		           AND A.ROLE_NO  IN
+		            ( SELECT C.ROLE_NO 
+		                FROM TZF_USERROLE_L C, TZF_ROLE_M D
+		               WHERE C.ROLE_NO = D.ROLE_NO
+	                     AND C.USER_NO =  #{USER_NO}
+	                     AND D.USE_YN = 'Y'
+		            )
+		         UNION
+		        SELECT B.MENU_CD
+		          FROM TZF_USERMENU_L B
+		         WHERE B.SYS_ID    = #{SYS_ID}
+		           AND B.USER_NO = #{USER_NO}
+		        ) AA,
+		    	TZF_MENU_M BB
+		     WHERE AA.MENU_CD = BB.MENU_CD
+		       AND BB.USE_YN = 'Y'
+		       AND BB.PAUS_YN = 'N'
+		       AND BB.SYS_ID = #{SYS_ID}
+		    ) CC
+		 START WITH CC.PAR_MENU_CD IS NULL
+		CONNECT BY PRIOR CC.MENU_CD = CC.PAR_MENU_CD
+		 ORDER SIBLINGS BY CC.SORT_SEQ
+	</select>
+	
+	<!-- 1. 메인메뉴 조회 DHTMLX -->
+	<sql id="SQLselectMainMenuListDhtmlx">
+		SELECT LEVEL as LVL,
+			   CC.*
+		  FROM
+		    (
+		    SELECT BB.MENU_CD as ID,
+		           BB.PAR_MENU_CD,
+		           BB.MENU_NM as TEXT,
+		           BB.URL,
+		           BB.USE_YN,
+		           BB.SORT_SEQ
+		      FROM
+		        (
+		        SELECT A.MENU_CD
+		          FROM TZF_ROLEMENU_L A
+		         WHERE A.SYS_ID    	= #{session.SYS_ID}
+		           AND A.ROLE_NO  IN
+		            ( SELECT C.ROLE_NO 
+		                FROM TZF_USERROLE_L C, TZF_ROLE_M D
+		               WHERE C.ROLE_NO = D.ROLE_NO
+	                     AND C.USER_NO =  #{session.USER_NO}
+	                     AND D.USE_YN = 'Y'
+		            )
+		         UNION
+		        SELECT B.MENU_CD
+		          FROM TZF_USERMENU_L B
+		         WHERE B.SYS_ID    = #{session.SYS_ID}
+		           AND B.USER_NO = #{session.USER_NO}
+		        ) AA,
+		    	TZF_MENU_M BB
+		     WHERE AA.MENU_CD = BB.MENU_CD
+		       AND BB.USE_YN = 'Y'
+		       AND BB.PAUS_YN = 'N'
+		       AND BB.SYS_ID = #{session.SYS_ID}
+		    ) CC
+		    <choose>
+		    	<when test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(MENU_CD)">
+		 START WITH CC.PAR_MENU_CD = #{MENU_CD}
+		    	</when>
+		    	<otherwise>
+		 START WITH CC.PAR_MENU_CD IS NULL
+		    	</otherwise>
+		    </choose>
+		CONNECT BY PRIOR CC.ID = CC.PAR_MENU_CD
+		 ORDER SIBLINGS BY CC.SORT_SEQ
+	</sql>
+	
+	
+	<select id="selectMainMenuListDhtmlx" resultType="Map">
+	SELECT /* Menu.selectMainMenuListDhtmlx */
+		CCC.*
+	FROM(
+		<include refid="SQLselectMainMenuListDhtmlx"></include>
+		) CCC
+	</select>
+	
+	<!-- <select id="selectMainMenuList" resultType="Map">
+		SELECT /* Menu.selectMainMenuList */
+			   LEVEL,
+			   CC.*,
+         		(SELECT A.INQ_AUTH_YN ||''|| A.INS_AUTH_YN ||''|| A.XLS_AUTH_YN ||''|| A.PRT_AUTH_YN ||''|| 
+	               A.ETC_BTN_1_AUTH_YN ||''|| A.ETC_BTN_2_AUTH_YN ||''|| A.ETC_BTN_3_AUTH_YN
+		           FROM TZF_ROLEMENU_L A
+		          WHERE A.SYS_ID    	= #{SYS_ID}
+               		AND A.MENU_CD = CC.MENU_CD
+		            AND A.ROLE_NO  IN
+		            (SELECT C.ROLE_NO 
+		               FROM TZF_USERROLE_L C, TZF_ROLE_M D
+		              WHERE C.ROLE_NO = D.ROLE_NO
+	                    AND C.USER_NO = #{USER_NO}
+	                    AND D.USE_YN = 'Y'
+		            )
+          		) as ROLE_AUTH_YN,
+	            ( SELECT B.INQ_AUTH_YN ||''|| B.INS_AUTH_YN ||''|| B.XLS_AUTH_YN ||''|| B.PRT_AUTH_YN ||''|| 
+	               B.ETC_BTN_1_AUTH_YN ||''|| B.ETC_BTN_2_AUTH_YN ||''|| B.ETC_BTN_3_AUTH_YN
+			        FROM TZF_USERMENU_L B
+			       WHERE B.SYS_ID    = #{SYS_ID}
+	                 AND B.MENU_CD = CC.MENU_CD
+			         AND B.USER_NO = #{USER_NO}
+	          	 ) as USER_AUTH_YN
+		  FROM
+		    (
+		    SELECT BB.MENU_CD,
+		           BB.PAR_MENU_CD,
+		           BB.MENU_NM,
+		           BB.URL,
+		           BB.USE_YN,
+		           BB.SORT_SEQ,
+	               BB.INQ_AUTH_YN,
+	               BB.INS_AUTH_YN,
+	               BB.XLS_AUTH_YN,
+	               BB.PRT_AUTH_YN,
+	               BB.ETC_BTN_1_AUTH_YN,
+	               BB.ETC_BTN_2_AUTH_YN,
+	               BB.ETC_BTN_3_AUTH_YN,
+	               BB.INQ_AUTH_YN ||''|| BB.INS_AUTH_YN ||''|| BB.XLS_AUTH_YN ||''|| BB.PRT_AUTH_YN ||''|| 
+	               BB.ETC_BTN_1_AUTH_YN ||''|| BB.ETC_BTN_2_AUTH_YN ||''|| BB.ETC_BTN_3_AUTH_YN as MENU_AUTH_YN
+		      FROM
+		        (
+		        SELECT A.MENU_CD
+		          FROM TZF_ROLEMENU_L A
+		         WHERE A.SYS_ID    	= #{SYS_ID}
+		           AND A.ROLE_NO  IN
+		            ( SELECT C.ROLE_NO 
+		                FROM TZF_USERROLE_L C, TZF_ROLE_M D
+		               WHERE C.ROLE_NO = D.ROLE_NO
+	                     AND C.USER_NO =  #{USER_NO}
+	                     AND D.USE_YN = 'Y'
+		            )
+		         UNION
+		        SELECT B.MENU_CD
+		          FROM TZF_USERMENU_L B
+		         WHERE B.SYS_ID    = #{SYS_ID}
+		           AND B.USER_NO = #{USER_NO}
+		        ) AA,
+		    	TZF_MENU_M BB
+		     WHERE AA.MENU_CD = BB.MENU_CD
+		       AND BB.USE_YN = 'Y'
+		       AND BB.PAUS_YN = 'N'
+		    ) CC
+		 START WITH CC.PAR_MENU_CD IS NULL
+		CONNECT BY PRIOR CC.MENU_CD = CC.PAR_MENU_CD
+		 ORDER SIBLINGS BY CC.SORT_SEQ
+	</select> -->
+	
+	<!-- 1.1. 메뉴별 버튼 권한 조회 -->
+	<select id="selectBtnAuth" resultType="Map">
+		  SELECT /* Menu.selectBtnAuth */
+			   AA.MENU_CD as MENU_ROLE,
+         	   #{MENU_CD} AS MENU_CD,
+         	   (SELECT MENU_NM FROM TZF_MENU_M WHERE MENU_CD = #{MENU_CD} AND SYS_ID = #{SYS_ID}) AS MENU_NM,
+		       DECODE(AA.INQ_AUTH_YN, '2', '1', '0') as INQ_AUTH_YN,
+		       DECODE(AA.INS_AUTH_YN, '2', '1', '0') as INS_AUTH_YN,
+		       DECODE(AA.XLS_AUTH_YN, '2', '1', '0') as XLS_AUTH_YN,
+		       DECODE(AA.PRT_AUTH_YN, '2', '1', '0') as PRT_AUTH_YN,
+		       DECODE(AA.ETC_BTN_1_AUTH_YN, '2', '1', '0') as ETC_BTN_1_AUTH_YN,
+		       DECODE(AA.ETC_BTN_2_AUTH_YN, '2', '1', '0') as ETC_BTN_2_AUTH_YN,
+		       DECODE(AA.ETC_BTN_3_AUTH_YN, '2', '1', '0') as ETC_BTN_3_AUTH_YN,
+				NVL((SELECT OBJ_NM FROM TZF_MENUACTION_L WHERE MENU_CD = #{MENU_CD} AND OBJ_ID='btn_etc1'),'기타1') ETC_BTN_1_OBJ_NM,
+				NVL((SELECT OBJ_NM FROM TZF_MENUACTION_L WHERE MENU_CD = #{MENU_CD} AND OBJ_ID='btn_etc2'),'기타2') ETC_BTN_2_OBJ_NM,
+				NVL((SELECT OBJ_NM FROM TZF_MENUACTION_L WHERE MENU_CD = #{MENU_CD} AND OBJ_ID='btn_etc3'),'기타3') ETC_BTN_3_OBJ_NM
+		  FROM(
+		      SELECT NVL(MENU_CD, 'RESULT_ROLE') as MENU_CD,
+		             SUM(AB.INQ_AUTH_YN) as INQ_AUTH_YN,
+		             SUM(AB.INS_AUTH_YN) as INS_AUTH_YN,
+		             SUM(AB.XLS_AUTH_YN) as XLS_AUTH_YN,
+		             SUM(AB.PRT_AUTH_YN) as PRT_AUTH_YN,
+		             SUM(AB.ETC_BTN_1_AUTH_YN) as ETC_BTN_1_AUTH_YN,
+		             SUM(AB.ETC_BTN_2_AUTH_YN) as ETC_BTN_2_AUTH_YN,
+		             SUM(AB.ETC_BTN_3_AUTH_YN) as ETC_BTN_3_AUTH_YN
+		        FROM (
+		            SELECT A.MENU_CD,
+		                   A.INQ_AUTH_YN,
+		                   A.INS_AUTH_YN,
+		                   A.XLS_AUTH_YN,
+		                   A.PRT_AUTH_YN,
+		                   A.ETC_BTN_1_AUTH_YN,
+		                   A.ETC_BTN_2_AUTH_YN,
+		                   A.ETC_BTN_3_AUTH_YN
+		              FROM (SELECT NVL(MENU_CD, 'AUTH_ROLE')    as MENU_CD,
+		                           MAX(INQ_AUTH_YN)         as INQ_AUTH_YN,
+		                           MAX(INS_AUTH_YN)         as INS_AUTH_YN,
+		                           MAX(XLS_AUTH_YN)         as XLS_AUTH_YN,
+		                           MAX(PRT_AUTH_YN)         as PRT_AUTH_YN,
+		                           MAX(ETC_BTN_1_AUTH_YN)   as ETC_BTN_1_AUTH_YN,
+		                           MAX(ETC_BTN_2_AUTH_YN)   as ETC_BTN_2_AUTH_YN,
+		                           MAX(ETC_BTN_3_AUTH_YN)   as ETC_BTN_3_AUTH_YN
+		                    FROM TZF_ROLEMENU_L
+		                   WHERE SYS_ID = #{SYS_ID}
+		                     AND MENU_CD  = #{MENU_CD}
+		                     AND ROLE_NO IN
+		                        (SELECT C.ROLE_NO
+		                           FROM TZF_USERROLE_L C,
+		                                TZF_ROLE_M D
+		                          WHERE C.ROLE_NO = D.ROLE_NO
+		                            AND C.USER_NO   = #{USER_NO}
+		                            AND D.USE_YN    = 'Y'
+		                        )
+		                  GROUP BY ROLLUP (( MENU_CD, INQ_AUTH_YN, INS_AUTH_YN, XLS_AUTH_YN, PRT_AUTH_YN, ETC_BTN_1_AUTH_YN, ETC_BTN_2_AUTH_YN, ETC_BTN_3_AUTH_YN ))
+		                  ) A
+		             WHERE A.MENU_CD = 'AUTH_ROLE'
+		            UNION ALL
+		            SELECT 'MENU_ROLE' as MENU_CD,
+		                   B.INQ_AUTH_YN,
+		                   B.INS_AUTH_YN,
+		                   B.XLS_AUTH_YN,
+		                   B.PRT_AUTH_YN,
+		                   B.ETC_BTN_1_AUTH_YN,
+		                   B.ETC_BTN_2_AUTH_YN,
+		                   B.ETC_BTN_3_AUTH_YN
+		              FROM TZF_MENU_M B
+		             WHERE B.MENU_CD  = #{MENU_CD}
+		               AND B.SYS_ID	  = #{SYS_ID}
+		             ) AB
+		      GROUP BY ROLLUP (( MENU_CD, INQ_AUTH_YN, INS_AUTH_YN, XLS_AUTH_YN, PRT_AUTH_YN, ETC_BTN_1_AUTH_YN, ETC_BTN_2_AUTH_YN, ETC_BTN_3_AUTH_YN ))
+		      ) AA
+		  WHERE AA.MENU_CD  = 'RESULT_ROLE'
+	</select>
+	
+	<!-- 1.2. 메뉴명 조회 -->
+	<select id="selectMenuNm" resultType="String"	parameterType="Map">
+		SELECT /* Menu.selectMenuNm */ 
+		       LISTAGG(AA.MENU_NM, ' &gt; ') WITHIN GROUP (ORDER BY AA.DEPTH DESC) AS TITLE
+		  FROM
+		      (SELECT A.MENU_CD,
+		              A.MENU_NM,
+		              LEVEL AS DEPTH,
+		              '1' AS GROUP_CD
+		         FROM
+		              (SELECT
+		                      CASE WHEN MENU_CD = #{MENU_CD} THEN MENU_NM || ' [' || MENU_CD || ']' ELSE MENU_NM
+		                      END MENU_NM,
+		                      MENU_CD,
+		                      PAR_MENU_CD
+		                 FROM TZF_MENU_M
+		                WHERE SYS_ID = #{SYS_ID}
+		              ) A
+		        START WITH A.MENU_CD          = #{MENU_CD}
+		      CONNECT BY PRIOR A.PAR_MENU_CD  = A.MENU_CD
+		  ) AA
+		GROUP BY AA.GROUP_CD
+	</select>
+	
+	<!-- 2.1 메뉴 목록 조회 -->
+	<select id="selectMenuList" resultType="Map">
+		SELECT /* Menu.selectMenuList */
+		       *
+		  FROM (SELECT LEVEL DEPTH,
+					   A.*
+				  FROM (    SELECT '' AS COM_CD,
+						           A.SYS_ID,
+						           A.PAR_SYS_ID,
+						           A.MENU_CD,
+						           A.MENU_NM,
+						           A.PAR_MENU_CD,
+						           A.SORT_SEQ,
+						           A.URL,
+						           A.USE_YN,
+						           A.PAUS_YN,
+								   A.INQ_AUTH_YN,
+								   A.INS_AUTH_YN,
+								   A.XLS_AUTH_YN,
+								   A.PRT_AUTH_YN,
+								   A.ETC_BTN_1_AUTH_YN,
+								   A.ETC_BTN_2_AUTH_YN,
+								   A.ETC_BTN_3_AUTH_YN,
+								   A.MENU_DESC,
+						           A.PINF_YN,
+						           A.VDI_YN,
+						           B.MENU_NM PAR_MENU_NM,
+						           C.COMM_CD_NM AS SYS_NM,
+						           D.COMM_CD_NM AS PAR_SYS_NM
+							  FROM TZF_MENU_M A
+							     , (SELECT * 
+							          FROM TZF_MENU_M 
+							        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(SYS_ID)">
+							         WHERE SYS_ID     = #{SYS_ID}
+							        </if>
+							       ) B
+							     , (SELECT * FROM TZF_COMMCD_D WHERE GRP_CD = 'SY002') C
+							     , (SELECT * FROM TZF_COMMCD_D WHERE GRP_CD = 'SY002') D
+								<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(i_sBookMakrYn)">
+									,TZF_ROLEMENU_L E
+								</if>
+							 WHERE 1=1
+							 <!-- WHERE A.PAUS_YN 	= 'N' -->
+							<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(SYS_ID)">
+							   AND A.SYS_ID 	= #{SYS_ID}
+							</if>
+							<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(i_sBookMakrYn)">								
+								AND A.MENU_CD = E.MENU_CD
+								<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(s_groupid)">
+								AND E.ROLE_NO = #{s_groupid}
+								</if>
+							</if>
+		                       AND A.SYS_ID = B.SYS_ID(+)
+						       AND A.PAR_MENU_CD = B.MENU_CD(+)
+						       AND A.SYS_ID = C.COMM_CD(+)
+						       AND A.PAR_SYS_ID = D.COMM_CD(+)
+					 ) A
+				 START WITH A.PAR_MENU_CD IS NULL
+				CONNECT BY PRIOR A.MENU_CD = A.PAR_MENU_CD
+				ORDER SIBLINGS BY A.SYS_ID, A.SORT_SEQ
+			   ) A
+		   where 1 = 1
+          <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(MENU_CD)">
+             AND A.MENU_CD LIKE '%'||TRIM(#{MENU_CD})||'%'
+          </if>
+          <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(MENU_NM)">
+             AND A.MENU_NM LIKE '%'||TRIM(#{MENU_NM})||'%'
+          </if>
+          <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(PAR_MENU_CD)">
+              AND A.PAR_MENU_CD LIKE '%'||TRIM(#{PAR_MENU_CD})||'%'
+          </if>
+          <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USE_YN)">
+              AND A.USE_YN = #{USE_YN}
+          </if>
+          <if test='bookMarkUse == "Y"'>
+	          AND DEPTH = 1
+			  AND MENU_CD NOT in('SY', 'CO')
+          </if>
+	</select>
+	
+	<!-- 2.2 메뉴 상세조회 -->
+	<select id="selectMenu" resultType="Map">
+	SELECT /* Menu.selectMenu */
+			A.SYS_ID,
+			A.PAR_SYS_ID,
+			A.MENU_CD,
+			A.MENU_NM,
+			A.PAR_MENU_CD,
+			A.SORT_SEQ,
+			A.URL,
+			A.USE_YN,
+			A.PAUS_YN,
+			A.INQ_AUTH_YN,
+			A.INS_AUTH_YN,
+			A.XLS_AUTH_YN,
+			A.PRT_AUTH_YN,
+			A.ETC_BTN_1_AUTH_YN,
+			A.ETC_BTN_2_AUTH_YN,
+			A.ETC_BTN_3_AUTH_YN,
+			A.MENU_DESC,
+			A.PINF_YN
+	  FROM TZF_MENU_M A
+	 WHERE A.SYS_ID 	= #{SYS_ID}
+	   AND A.MENU_CD = #{MENU_CD}
+   </select>
+	
+	<!-- 3. 메뉴 조회 -->
+	<select id="selectMenuInfo" resultType="Map">
+		SELECT /* Menu.selectMenuInfo */
+			   LEVEL DEPTH,
+	           '' AS COM_CD,
+	           A.SYS_ID,
+	           A.PAR_SYS_ID,
+	           A.MENU_CD,
+	           A.MENU_NM,
+	           A.PAR_MENU_CD,
+	           A.SORT_SEQ,
+	           A.URL,
+	           A.USE_YN,
+	           A.PAUS_YN,
+			   A.INQ_AUTH_YN,
+			   A.INS_AUTH_YN,
+			   A.XLS_AUTH_YN,
+			   A.PRT_AUTH_YN,
+			   A.ETC_BTN_1_AUTH_YN,
+			   A.ETC_BTN_2_AUTH_YN,
+			   A.ETC_BTN_3_AUTH_YN,
+			   A.MENU_DESC,
+	           A.PINF_YN,
+	           B.MENU_NM PAR_MENU_NM,
+	           C.COMM_CD_NM AS SYS_NM,
+	           D.COMM_CD_NM AS PAR_SYS_NM
+		  FROM TZF_MENU_M A, TZF_MENU_M B, TZF_COMMCD_D C, TZF_COMMCD_D D
+		 WHERE A.PAUS_YN 	= 'N'
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(SYS_ID)">
+		   AND A.SYS_ID 	= #{SYS_ID}
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(MENU_CD)">
+		   AND A.MENU_CD LIKE '%'||TRIM(#{MENU_CD})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(MENU_NM)">
+		   AND A.MENU_NM LIKE '%'||TRIM(#{MENU_NM})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(PAR_MENU_CD)">
+			AND A.PAR_MENU_CD LIKE '%'||TRIM(#{PAR_MENU_CD})||'%'
+		</if>
+	       AND A.PAR_MENU_CD = B.MENU_CD(+)
+	       AND A.SYS_ID = C.COMM_CD(+)
+	       AND A.PAR_SYS_ID = D.COMM_CD(+)
+		 START WITH A.PAR_MENU_CD IS NULL
+		CONNECT BY PRIOR A.MENU_CD = A.PAR_MENU_CD
+		ORDER SIBLINGS BY A.SORT_SEQ
+	</select>
+	
+	<!-- 4. 메뉴 등록(배치) -->
+	<insert id="insertMenuBatch" parameterType="Map">
+		INSERT /* Menu.insertMenuBatch */
+			   ALL
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_MENU_M(
+		    MENU_CD,
+		    PAR_MENU_CD,
+		    MENU_NM,
+		    SORT_SEQ,
+		    USE_YN,
+		    PAUS_YN,
+		    URL,
+		    PAUS_YN,
+		    SYS_ID,
+		    PAR_SYS_ID,
+		    INQ_AUTH_YN,
+		    INS_AUTH_YN,
+		    XLS_AUTH_YN,
+		    PRT_AUTH_YN,
+		    ETC_BTN_1_AUTH_YN,
+		    ETC_BTN_2_AUTH_YN,
+		    ETC_BTN_3_AUTH_YN,
+		    MENU_DESC,
+		    PINF_YN,
+		    VDI_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{param.MENU_CD},
+			    #{param.PAR_MENU_CD},
+			    #{param.MENU_NM},
+			    #{param.SORT_SEQ},
+			    #{param.USE_YN},
+			    #{param.PAUS_YN},
+			    #{param.URL},
+			    'N',
+			    #{param.SYS_ID},
+			    #{param.PAR_SYS_ID},
+			    #{param.INQ_AUTH_YN},
+			    #{param.INS_AUTH_YN},
+			    #{param.XLS_AUTH_YN},
+			    #{param.PRT_AUTH_YN},
+			    #{param.ETC_BTN_1_AUTH_YN},
+			    #{param.ETC_BTN_2_AUTH_YN},
+			    #{param.ETC_BTN_3_AUTH_YN},
+			    #{param.MENU_DESC},
+			    'N',
+			    #{param.VDI_YN},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 4. 메뉴 등록 -->
+	<insert id="insertMenu" parameterType="Map">
+		INSERT /* Menu.insertMenu */
+		INTO TZF_MENU_M(
+		    MENU_CD,
+		    PAR_MENU_CD,
+		    MENU_NM,
+		    SORT_SEQ,
+		    USE_YN,
+		    PAUS_YN,
+		    URL,
+		    SYS_ID,
+		    PAR_SYS_ID,
+		    INQ_AUTH_YN,
+		    INS_AUTH_YN,
+		    XLS_AUTH_YN,
+		    PRT_AUTH_YN,
+		    ETC_BTN_1_AUTH_YN,
+		    ETC_BTN_2_AUTH_YN,
+		    ETC_BTN_3_AUTH_YN,
+		    MENU_DESC,
+		    PINF_YN,
+		    VDI_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{MENU_CD},
+                #{PAR_MENU_CD},
+                #{MENU_NM},
+                #{SORT_SEQ},
+                #{USE_YN},
+                #{PAUS_YN},
+                #{URL},
+                #{SYS_ID},
+                NVL(#{PAR_SYS_ID},#{SYS_ID}),
+                #{INQ_AUTH_YN},
+                #{INS_AUTH_YN},
+                #{XLS_AUTH_YN},
+                #{PRT_AUTH_YN},
+                #{ETC_BTN_1_AUTH_YN},
+                #{ETC_BTN_2_AUTH_YN},
+                #{ETC_BTN_3_AUTH_YN},
+                #{MENU_DESC},
+                NVL(#{PINF_YN},'N'),
+                NVL(#{VDI_YN},'N'),
+                #{REG_USER_NO},
+                SYSDATE,
+                #{REG_IP}
+			)
+	</insert>
+	
+	<!-- 5. 메뉴 수정 -->
+	<update id="updateMenu" parameterType="Map">
+		UPDATE /* Menu.updateMenu */
+			   TZF_MENU_M SET 
+		    MENU_NM     		= #{MENU_NM},
+		    SORT_SEQ    		= #{SORT_SEQ},
+		    USE_YN      		= #{USE_YN},
+		    PAUS_YN      		= #{PAUS_YN},
+		    URL         		= #{URL},
+		    PAR_SYS_ID  		= #{PAR_SYS_ID},
+		    PAR_MENU_CD  		= #{PAR_MENU_CD},
+		    INQ_AUTH_YN 		= #{INQ_AUTH_YN},
+		    INS_AUTH_YN 		= #{INS_AUTH_YN},
+		    XLS_AUTH_YN 		= #{XLS_AUTH_YN},
+		    PRT_AUTH_YN 		= #{PRT_AUTH_YN},
+		    ETC_BTN_1_AUTH_YN 	= #{ETC_BTN_1_AUTH_YN},
+		    ETC_BTN_2_AUTH_YN 	= #{ETC_BTN_2_AUTH_YN},
+		    ETC_BTN_3_AUTH_YN 	= #{ETC_BTN_3_AUTH_YN},
+		    MENU_DESC   		= #{MENU_DESC},
+		    PINF_YN   			= #{PINF_YN},
+		    VDI_YN   			= #{VDI_YN},
+		    MOD_USER_NO      		= #{MOD_USER_NO},
+		    MOD_DTM     		= SYSDATE,
+		    MOD_IP      		= #{MOD_IP}
+		WHERE SYS_ID            = #{SYS_ID}
+          AND MENU_CD   		= #{MENU_CD}
+	</update>
+	
+	<!-- 6. 메뉴 수정(배치) -->
+	<update id="updateMenuBatch" parameterType="Map">
+	/* Menu.updateMenuBatch */
+		<foreach item="param" collection="list" open="" separator=";" close="">
+			UPDATE TZF_MENU_M SET 
+				PAR_MENU_CD 		= #{param.PAR_MENU_CD},
+			    MENU_NM     		= #{param.MENU_NM},
+			    SORT_SEQ    		= #{param.SORT_SEQ},
+			    USE_YN      		= #{param.USE_YN},
+			    PAUS_YN      		= #{param.PAUS_YN},
+			    URL         		= #{param.URL},
+			    SYS_ID      		= #{param.SYS_ID},
+			    PAR_SYS_ID  		= #{param.PAR_SYS_ID},
+			    INQ_AUTH_YN 		= #{param.INQ_AUTH_YN},
+			    INS_AUTH_YN 		= #{param.INS_AUTH_YN},
+			    XLS_AUTH_YN 		= #{param.XLS_AUTH_YN},
+			    PRT_AUTH_YN 		= #{param.PRT_AUTH_YN},
+			    ETC_BTN_1_AUTH_YN 	= #{param.ETC_BTN_1_AUTH_YN},
+			    ETC_BTN_2_AUTH_YN 	= #{param.ETC_BTN_2_AUTH_YN},
+			    ETC_BTN_3_AUTH_YN 	= #{param.ETC_BTN_3_AUTH_YN},
+			    MENU_DESC   		= #{param.MENU_DESC},
+			    PINF_YN   			= #{param.PINF_YN},
+			    VDI_YN   			= #{param.VDI_YN},
+			    MOD_USER_NO      		= #{param.MOD_USER_NO},
+			    MOD_DTM     		= SYSDATE,
+			    MOD_IP      		= #{param.MOD_IP}
+			WHERE MENU_CD   		= #{param.MENU_CD}
+		</foreach>
+	</update>
+	
+	<!-- 7. 메뉴 삭제 -->
+	<delete id="deleteMenu" parameterType="Map">
+		DELETE /* Menu.deleteMenu */
+		  FROM TZF_MENU_M
+		 WHERE MENU_CD 	= #{MENU_CD}
+		   AND SYS_ID 	= #{SYS_ID}
+	</delete>
+	
+	<!-- 7. 메뉴 삭제(배치) -->
+	<delete id="deleteMenuBatch" parameterType="Map">
+		DELETE /* Menu.deleteMenuBatch */
+		  FROM TZF_MENU_M
+		 WHERE SYS_ID = #{SYS_ID}
+		   AND MENU_CD IN
+		<foreach item="param" collection="list" open="(" separator="," close=")">
+			#{param.MENU_CD}
+		</foreach>
+	</delete>
+	
+	<!-- 8. 개인정보대상 조회 -->
+	<select id="selectPinfList" resultType="Map">
+		SELECT /* Menu.selectPinfList */
+			   AA.PINF_NO,
+		       AA.PINF_NM,
+		       AA.ENC_BASI_TP_CD,
+		       AA.SORT_SEQ,
+		       DECODE(COUNT(*), 1, '0', '1') as USE_YN,
+		       #{MENU_CD} AS MENU_CD,
+		       #{SYS_ID} AS SYS_ID
+		  FROM
+		      ( 
+		      SELECT A.PINF_NO,
+		             A.PINF_NM,
+		             A.ENC_BASI_TP_CD,
+		             A.SORT_SEQ
+		        FROM TZF_PINF_M A
+		       UNION ALL
+		      SELECT A.PINF_NO,
+		             A.PINF_NM,
+		             A.ENC_BASI_TP_CD,
+		             A.SORT_SEQ
+		        FROM TZF_PINF_M A,TZF_MENUPINF_L B
+		       WHERE A.PINF_NO = B.PINF_NO
+		         AND B.MENU_CD   = #{MENU_CD}
+             	 AND B.SYS_ID = #{SYS_ID}
+		      ) AA
+		 GROUP 
+		    BY AA.PINF_NO,
+		       AA.PINF_NM,
+		       AA.ENC_BASI_TP_CD,
+		       AA.SORT_SEQ
+	</select>
+	
+	<!-- 9. 개인정보대상 수정 -->
+	<update id="updatePinfYn" parameterType="Map">
+		UPDATE TZF_MENU_M SET /* Menu.updatePinfList */
+				PINF_YN				= 'Y',
+			    MOD_USER_NO      		= #{MOD_USER_NO},
+			    MOD_DTM     		= SYSDATE,
+			    MOD_IP      		= #{MOD_IP}
+			WHERE SYS_ID 			= #{SYS_ID} 
+			  AND MENU_CD 			= #{MENU_CD}
+	</update>
+	
+	<!-- 10. 개인정보대상 저장 -->
+	<insert id="insertPinf" parameterType="Map">
+		INSERT /* Menu.insertPinf */
+		INTO TZF_MENUPINF_L(
+		    SYS_ID,
+		    MENU_CD,
+		    PINF_NO,
+		    REG_USER_NO,
+		    REG_DTM
+		  ) VALUES
+			(
+			#{SYS_ID},
+		   	#{MENU_CD},
+		   	#{PINF_NO},
+			#{REG_USER_NO},
+			 SYSDATE
+			)
+	</insert>
+	
+	<!-- 10. 개인정보대상 저장 -->
+	<insert id="insertPinfBatch" parameterType="Map">
+		  INSERT /* Menu.insertPinfBatch */
+			   ALL
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_MENUPINF_L(
+		    SYS_ID,
+		    MENU_CD,
+		    PINF_NO,
+		    REG_USER_NO,
+		    REG_DTM
+		  ) VALUES
+			(
+			#{param.SYS_ID},
+		   	#{param.MENU_CD},
+		   	#{param.PINF_NO},
+			#{param.REG_USER_NO},
+			 SYSDATE
+			)
+		</foreach>
+		SELECT * FROM DUAL
+		  
+	</insert>
+	
+	
+	<!-- 11. 개인정보대상 삭제 -->
+	<delete id="deletePinf" parameterType="Map">
+		DELETE /* Menu.deletePinf */
+		  FROM TZF_MENUPINF_L WHERE SYS_ID = #{SYS_ID} AND MENU_CD = #{MENU_CD}
+	</delete>
+	
+	<!-- 11. 개인정보대상 삭제 단건-->
+	<delete id="deletePinfOne" parameterType="Map">
+		DELETE /* Menu.deletePinf */
+		  FROM TZF_MENUPINF_L WHERE SYS_ID = #{SYS_ID} AND MENU_CD = #{MENU_CD} AND PINF_NO = #{PINF_NO}
+	</delete>
+	
+	<!-- 12. 메뉴 버튼 권한 조회 -->
+	<select id="selectBtnAuthList" resultType="Map">
+		SELECT /* Menu.selectBtnAuthList */
+			   'btn_search' as BTN_ID, '조회' as BTN_NM FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND INQ_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_save' as BTN_ID, '저장' as BTN_NM FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND INS_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_excel' as BTN_ID, '엑셀' as BTN_NM FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND XLS_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_print' as BTN_ID, '인쇄' as BTN_NM FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND PRT_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_etc1' as BTN_ID, '기타1' as BTN_NM FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND ETC_BTN_1_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_etc2' as BTN_ID, '기타2' as BTN_NM FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND ETC_BTN_2_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_etc3' as BTN_ID, '기타3' as BTN_NM FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND ETC_BTN_3_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+	</select>
+	
+	<!-- 12. 메뉴 버튼 권한 조회 (dhtmlx 콤보) -->
+	<select id="selectBtnAuthListCombo" resultType="Map">
+		SELECT /* Menu.selectBtnAuthListCombo */
+			    '' as value, '선택' as text FROM TZF_MENU_M WHERE SYS_ID = 'SWAF_DHTMLX' AND INQ_AUTH_YN = '1' AND MENU_CD = 'SYAU0010'
+		UNION ALL
+		SELECT 'btn_search' as value, '조회' as text FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND INQ_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_save' as value, '저장' as text FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND INS_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_excel' as value, '엑셀' as text FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND XLS_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_print' as value, '인쇄' as text FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND PRT_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_etc1' as value, '기타1' as text FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND ETC_BTN_1_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_etc2' as value, '기타2' as text FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND ETC_BTN_2_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+		UNION ALL
+		SELECT 'btn_etc3' as value, '기타3' as text FROM TZF_MENU_M WHERE SYS_ID = #{SYS_ID} AND ETC_BTN_3_AUTH_YN = '1' AND MENU_CD = #{MENU_CD}
+	</select>
+	
+	<!-- 13. Action URL (Base) 등록(배치) -->
+	<insert id="insertActionBaseBatch" parameterType="Map">
+		INSERT /* Menu.insertActionBaseBatch */
+			   ALL
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_MENUACTION_L(
+		    SYS_ID,
+		    MENU_CD,
+		    OBJ_ID,
+		    OBJ_NM,
+		    OBJ_CLS_CD,
+		    OBJ_ACTN_CLS_CD,
+		    OBJ_TP_CD,
+		    AC_URL,
+		    SORT_SEQ,
+		    LOG_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{param.SYS_ID},
+			    #{param.MENU_CD},
+			    #{param.OBJ_ID},
+			    #{param.OBJ_NM},
+			    #{param.OBJ_CLS_CD},
+			    #{param.OBJ_ACTN_CLS_CD},
+			    '10',
+			    #{param.AC_URL},
+			    #{param.SORT_SEQ},
+			    #{param.LOG_YN},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 14. Action URL (Base) 수정 -->
+	<update id="updateActionBase" parameterType="Map">
+		UPDATE /* Menu.updateActionBase */
+			   TZF_MENUACTION_L SET 
+		    OBJ_NM         		= #{OBJ_NM},
+		    OBJ_CLS_CD      	= #{OBJ_CLS_CD},
+		    OBJ_ACTN_CLS_CD 	= #{OBJ_ACTN_CLS_CD},
+		    OBJ_TP_CD 			= #{OBJ_TP_CD},
+		    AC_URL 				= #{AC_URL},
+		    SORT_SEQ 			= #{SORT_SEQ},
+		    LOG_YN 				= #{LOG_YN},
+		    MOD_USER_NO      		= #{MOD_USER_NO},
+		    MOD_DTM     		= SYSDATE,
+		    MOD_IP      		= #{MOD_IP}
+		WHERE MENU_CD   		= #{MENU_CD}
+		  AND SYS_ID			= #{SYS_ID}
+		  AND OBJ_ID			= #{OBJ_ID}
+	</update>
+	
+	<!-- 15. Action URL (Base) 삭제 -->
+	<delete id="deleteActionBase" parameterType="Map">
+		DELETE /* Menu.deleteActionBase */
+		  FROM TZF_MENUACTION_L
+		 WHERE SYS_ID			= #{SYS_ID}
+		   AND MENU_CD   		= #{MENU_CD}
+		   AND OBJ_ID 			= #{OBJ_ID}
+	</delete>
+	
+	<!-- 16. Action URL (Add) 등록(배치) -->
+	<insert id="insertActionAddBatch" parameterType="Map">
+		INSERT /* Menu.insertActionAddBatch */
+			   ALL
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_MENUACTION_L(
+		    SYS_ID,
+		    MENU_CD,
+		    OBJ_ID,
+		    OBJ_NM,
+		    OBJ_CLS_CD,
+		    OBJ_ACTN_CLS_CD,
+		    OBJ_TP_CD,
+		    AC_URL,
+		    SORT_SEQ,
+		    LOG_YN,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{param.SYS_ID},
+			    #{param.MENU_CD},
+			    #{param.OBJ_ID},
+			    #{param.OBJ_NM},
+			    #{param.OBJ_CLS_CD},
+			    #{param.OBJ_ACTN_CLS_CD},
+			    '20',
+			    #{param.AC_URL},
+			    #{param.SORT_SEQ},
+			    #{param.LOG_YN},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 17. Action URL (Base) 수정 -->
+	<update id="updateActionAdd" parameterType="Map">
+		UPDATE /* Menu.updateActionAdd */
+			   TZF_MENUACTION_L SET 
+		    OBJ_NM         		= #{OBJ_NM},
+		    OBJ_CLS_CD      	= #{OBJ_CLS_CD},
+		    OBJ_ACTN_CLS_CD 	= #{OBJ_ACTN_CLS_CD},
+		    OBJ_TP_CD 			= #{OBJ_TP_CD},
+		    AC_URL 				= #{AC_URL},
+		    SORT_SEQ 			= #{SORT_SEQ},
+		    LOG_YN 				= #{LOG_YN},
+		    MOD_USER_NO      		= #{MOD_USER_NO},
+		    MOD_DTM     		= SYSDATE,
+		    MOD_IP      		= #{MOD_IP}
+		WHERE MENU_CD   		= #{MENU_CD}
+		  AND SYS_ID			= #{SYS_ID}
+		  AND OBJ_TP_CD			= '20'
+		  AND OBJ_ID			= #{OBJ_ID}
+	</update>
+	
+	<!-- 18. Action URL (Add) 삭제 -->
+	<delete id="deleteActionAdd" parameterType="Map">
+		DELETE /* Menu.deleteActionAdd */
+		  FROM TZF_MENUACTION_L
+		 WHERE SYS_ID			= #{SYS_ID}
+		   AND MENU_CD   		= #{MENU_CD}
+		   AND OBJ_TP_CD 		= '20'
+		   AND OBJ_ID 			= #{OBJ_ID}
+	</delete>
+	
+    <!-- 18. 상위메뉴 조회 -->
+	<select id="selectParentMenu" resultType="Map">
+        SELECT /* Menu.selectParentMenu */ 
+               A.MENU_CD AS CD
+             ,  LPAD(' ', 2*(LEVEL-1)) || A.MENU_NM AS NM2
+             , SUBSTR(SYS_CONNECT_BY_PATH (A.MENU_NM, '-'), 2) AS NM
+          FROM (
+               SELECT MENU_CD, PAR_MENU_CD, MENU_NM, SORT_SEQ
+                 FROM TZF_MENU_M
+                WHERE USE_YN = 'Y'
+		        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(SYS_ID)">
+		           AND SYS_ID = #{SYS_ID}
+		        </if>
+               ) A
+        connect by prior A.MENU_CD = a.PAR_MENU_CD
+        start with a.PAR_MENU_CD is null
+        ORDER SIBLINGS BY SORT_SEQ
+    </select>
+    
+    
+    <select id="selectMainMenuListDhtmlxWithLvl" resultType="Map">
+    	SELECT CCC.*
+    	FROM (
+    	<include refid="SQLselectMainMenuListDhtmlx"></include>
+    	) CCC
+    	WHERE CCC.LVL = #{LVL}
+    </select>
+    
+</mapper>

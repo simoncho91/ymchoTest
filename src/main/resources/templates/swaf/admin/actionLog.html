@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var grdMain;
+
+//layout - c
+var grdDetail;
+
+//local variable
+var rowIndex = 0;
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/
+    // Layout
+    dhtmlx.image_path = dhtmlx_image_path;
+    layoutMain = new dhtmlXLayoutObject({
+        parent: "layoutObj",
+        pattern: "3E",
+        skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+    });
+    
+    /* Form-조건 */
+    var a = layoutMain.cells('a');
+    a.setText('검색조건');
+    a.setHeight(SearchFormHeight[2]);
+    
+    var strLabel =  [{ type:'settings', position:'label-left', labelWidth:'115', inputWidth:'172', offsetLeft:'10', offsetTop:'1'}
+                    ,{ type: "label", list:[
+											{ type:"combo" , name:"SYS_ID", label:"시스템", required:"true", readonly:true, className:"offsetRight"},
+											{ type:"newcolumn"   },
+											{ type:"calendar"  , name:"START_DT" , value:"", label: "시작일", dateFormat:"%Y-%m-%d", className:"offsetRight" },
+											{ type:"newcolumn"   },
+											{ type:"calendar"  , name:"END_DT" , value:"", label: "종료일", dateFormat:"%Y-%m-%d", className:"offsetRight" },
+											{ type:"newcolumn"},
+                                            { type:"input" , name:"CLNT_IP", label: "Request IP", className:"offsetRight"}
+                    ]}
+                    ,{ type: "label", list:[
+                                            { type: "input", name: "LOGIN_ID", label: "사용자ID", className:"offsetRight" },
+											{ type:"newcolumn"},
+											{ type:"input" , name:"USER_NM", label: "사용자명", className:"offsetRight"}
+					 ]}
+                    ];
+    frmSearch = a.attachForm(strLabel);
+
+	var today = new Date();
+	frmSearch.setItemValue("START_DT", today);
+	frmSearch.setItemValue("END_DT", today);
+    
+    /* Grid-메인 */
+    var b = layoutMain.cells('b');
+    b.setText('사용자 별 목록');
+    grdMain = b.attachGrid();
+    grdMain.setHeader(["NO","시스템ID","발생일자","사용자NO","로그인ID","사용자명","건수"]);
+    grdMain.setColumnIds("NO,SYS_ID,REG_DTM,USER_NO,LOGIN_ID,USER_NM,CNT");
+    grdMain.setColTypes("ro,ro,ro,ro,ro,ro,ro");
+    grdMain.setInitWidths('40,100,200,200,200,200,*');
+    fn_initGrid(grdMain);
+    
+    /* Grid-메인 */
+    var c = layoutMain.cells('c');
+    c.setText('상세내역');
+    grdDetail = c.attachGrid();
+    grdDetail.setHeader(["NO","발생일자","발생시각","종료일자","종료시각","","","클라이언트IP","서버IP","","","","메뉴코드","접속URL","접속파라미터"]);
+    grdDetail.setColumnIds("NO,OCCU_DT,OCCU_TM,END_DT,END_TM,ACTN_TP_CD,SYS_ID,CLNT_IP,SVR_IP,MOD_ID,REG_ID,REG_DTM,MENU_CD,AC_URL,AC_PARM");
+    grdDetail.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+    grdDetail.setInitWidths('40,100,100,100,100,0,0,120,120,0,0,0,100,200,*');
+
+    layoutMain.cells('c').attachStatusBar({
+        text: "<div><span id='pagingAreaC'></span>&nbsp;<span id='infoAreaC'></span></div>",
+        paging: true
+    });
+    grdDetail.enablePaging(true,100,10,"pagingAreaC",true,"infoAreaC");
+    
+    fn_initGrid(grdDetail);
+    
+    // DataStore 초기화
+    fn_initDS();
+    
+    // 나머지 초기화
+    layoutMain.setAutoSize("a;b", "b");
+    fn_init();
+
+    // 최초 조회
+    fn_search();
+
+    /****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+    // 그룹코드 그리드
+    grdMain.attachEvent("onSelectStateChanged", function(id, ind) {
+            fn_searchDetail();
+
+    });
+});
+
+// DataStore 초기화
+function fn_initDS() {
+
+    var postParam = new Object();
+    postParam.grpcd = "dsSysId:SY002:Y:S";
+
+    fn_ajaxGetDsForCombo({ postParam : postParam
+                         , async:false
+		                 , success : 
+		                	 function(responseData) { 
+		                	                            frmSearch.getCombo("SYS_ID").load(responseData.dsSysId); 
+								                	    frmSearch.getCombo("SYS_ID").setComboValue("SITIMS");
+								                	 }
+	});
+}
+
+// 조회
+function fn_search() {
+    if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(frmSearch);
+	    
+	    fn_ajaxGetGrid({ gridName         : grdMain
+	             , url                 : "/dhtmlx/admin/actionLog/selectList.do"
+	             , postParam           : postParam
+                 , async:false
+	             , success             : function(responseData) {
+	            	                         fn_searchDetail();
+							             }
+	    });
+    }
+}
+
+//상세 조회
+function fn_searchDetail() {
+    grdDetail.clearAll();
+    var postParam = fn_getSearchParamFromGrid(grdMain);
+
+	fn_ajaxGetGrid({
+				    gridName : grdDetail
+				  , url : "/dhtmlx/admin/actionLog/selectDetailList.do"
+				  , postParam : postParam
+				  , success : function() {}
+	});
+}
+
+</script>
+</html>

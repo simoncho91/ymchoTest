@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : SiCm030Mapper.xml
+    Description   : 성분배합 한도 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.08.18  kky       1.0        최초 생성
+-->
+<mapper namespace="SiCm030Mapper">
+	
+	<!--	성분배합 한도 관리 기본 SQL	-->
+	<sql id="SiCm030ListInclude">	
+		FROM TSI_CON_M MST
+		INNER JOIN ( 
+			SELECT V_CON_CD, MAX(N_VER_SEQ) N_VER_SEQ 
+			FROM TSI_CON_M GROUP BY V_CON_CD
+			) SUB ON MST.V_CON_CD = SUB.V_CON_CD
+			<if test="i_nVerSeq == null or i_nVerSeq == ''">
+				AND MST.N_VER_SEQ = SUB.N_VER_SEQ
+			</if>
+		AND MST.V_USE_YN ='Y'
+		<if test="i_sEnConNm != null and i_sEnConNm != ''">
+			AND (TRIM(UPPER(MST.V_CON_NM_EN)) || TRIM(UPPER(MST.V_CON_NM_KO)) || TRIM(UPPER(MST.V_CON_CD))) LIKE '%'|| TRIM(UPPER(#{i_sEnConNm})) ||'%'
+		</if>	
+	</sql>
+	
+	<!--	성분배합 한도 관리 목록 조회	-->
+	<select id="selectSiCm030List"  parameterType="CmMap" resultType="CmMap">
+	SELECT * FROM /* SiCm030Mapper.selectSiCm030List */
+		(SELECT ROW_NUMBER() OVER(ORDER BY
+			<choose> 
+				<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+					${i_sSortCol} ${i_sSortDir}
+				</when>	 
+				<otherwise>
+					V_REG_DTM DESC, V_CON_CD DESC
+				</otherwise>	
+			</choose>
+			) AS N_NUM
+			,T.* 
+		FROM
+			(
+			SELECT 
+					MST.V_CON_CD
+					,MST.V_CON_NM_EN
+					,MST.V_CON_NM_KO
+					,MST.N_MAX_ALLOW_WT
+					,MST.N_VER_SEQ
+					,NVL(MST.V_MAX_INPUT_APPLY_YN,'N') V_MAX_INPUT_APPLY_YN
+					,TO_CHAR(TO_DATE(MST.V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') V_REG_DTM
+					,MST.V_REG_DTM AS V_REG_DTM_EXCEL
+					,FN_GET_USERNM(MST.V_REG_USER_ID) V_REG_USER_NM		
+			<include refid="SiCm030ListInclude"/>
+			 ) T
+		 ) TEMP
+		 WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+	
+	<!--	성분배합 한도 관리목록 Count조회	-->
+	<select id="getSiCm030ListCount" parameterType="CmMap" resultType="java.lang.Integer">	
+		SELECT /* SiCm030Mapper.getSiCm030ListCount */ 
+			COUNT(*) AS CNT 
+		<include refid="SiCm030ListInclude"/>
+	</select>
+
+	<!-- 성분코드에 따른 분배합 한도 리스트(1차 카테고리 불러오기) -->
+	<select id="getSiCm030CategoryList" parameterType="CmMap" resultType="CmMap">
+	    SELECT /* SiCm030Mapper.getSiCm030CategoryList */
+	        M.*     
+	    FROM
+	        (SELECT
+	             LEVEL AS N_LEVEL        
+	            , V_CLASS_CD        
+	            , V_UCLASS_CD        
+	            , V_CLASS_NM        
+	        FROM
+	            TSI_PD_CL_L      
+	        WHERE
+	            V_USE_YN = 'Y'   
+	            AND V_DEL_YN = 'N'        
+	            AND N_SEQ_NO <![CDATA[ < ]]>  1000      
+	            START WITH V_CLASS_CD = #{i_sClassCd}    
+			CONNECT BY
+	            PRIOR  V_CLASS_CD = V_UCLASS_CD       
+	        ORDER SIBLINGS BY N_SEQ_NO ASC    
+	        ) M   
+	    WHERE 1=1
+		<choose>
+			<when test=' i_sFlagCategory == "Y" '>
+				AND	M.N_ISLEAF = 1
+			</when>
+			<otherwise>
+				AND	M.N_LEVEL = 2
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 성분코드에 따른 분배합 한도 리스트(전체 불러오기) -->
+	<select id="getSiCm030LimitCateList" parameterType="CmMap" resultType="CmMap">
+		SELECT * FROM /* SiCm030Mapper.getSiCm030LimitCateList */
+			(SELECT ROW_NUMBER() OVER(ORDER BY
+			<choose> 
+				<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+					${i_sSortCol} ${i_sSortDir}
+				</when>	 
+				<otherwise>
+					V_UCLASS_NM ASC
+				</otherwise>	
+			</choose>
+			) AS N_NUM_SUB
+			, LIM.N_LIMIT
+			, M.*
+		  FROM (
+		  <foreach collection="cateList1" item="arr" separator="UNION ALL">
+		  		SELECT   	
+		  				V_CLASS_CD
+		               , V_CLASS_NM
+		               , V_UCLASS_CD
+		               , V_UCLASS_NM
+		               , N_SEQ_NO
+		          FROM (
+		                SELECT   LEVEL AS N_LEVEL
+		                       , V_CLASS_CD
+		                       , V_CLASS_NM
+		                       , #{arr.v_class_cd} AS V_UCLASS_CD
+		                       , #{arr.v_class_nm} AS V_UCLASS_NM
+		                       , CONNECT_BY_ISLEAF AS N_ISLEAF
+		                       , N_SEQ_NO
+		                  FROM TSI_PD_CL_L
+		                 WHERE V_USE_YN = 'Y'
+	            		 AND V_DEL_YN = 'N'
+		                 START WITH V_CLASS_CD = #{arr.v_class_cd}
+		               CONNECT BY PRIOR V_CLASS_CD = V_UCLASS_CD
+		                 ORDER SIBLINGS BY N_SEQ_NO ASC
+		               ) M
+		         WHERE M.N_ISLEAF = 1
+		  </foreach>
+		       ) M
+		  LEFT OUTER JOIN TSI_CON_LT_D LIM
+		    ON M.V_UCLASS_CD = LIM.V_CATEGORY1
+		   AND M.V_CLASS_CD  = LIM.V_CATEGORY2
+		   AND LIM.V_CON_CD   = #{i_sConCd} 
+		  ) TEMP
+		 WHERE 1 = 1
+		  AND TEMP.N_SEQ_NO <![CDATA[ < ]]> 1000
+	</select>
+	<!-- 성분배합 한도관리 기본배합YN 수정 -->
+	<update id='updateSiCm030LimitYn' parameterType="CmMap">
+		UPDATE /* SiCm030Mapper.updateSiCm030LimitYn */ 
+		TSI_CON_M SET
+			 V_MAX_INPUT_APPLY_YN   =   #{i_sApplyYn}
+			, V_UPDATE_USER_ID		 =	 #{i_sUserId}
+			, V_UPDATE_DTM			 =	 TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, V_IF_YN = 'N'
+			, V_IF_CIIMS_YN = 'N'
+		WHERE V_CON_CD = #{i_sConCd}
+		AND N_VER_SEQ = #{i_nVerSeq}
+	</update>
+	<!-- 성분배합 한도관리  성분배합한도 수정 -->
+	<update id="insertSiCm030LimitConSub" parameterType="CmMap">
+		
+		  MERGE INTO TSI_CON_LT_D R1
+		  USING (
+			  <foreach collection="i_arrStr" item="arr" separator="UNION ALL">
+			  	 SELECT 	
+	  	 				#{arr.i_sConCd}  AS V_CON_CD
+                       , #{arr.i_sCateGory1} AS V_CATEGORY1
+                       , #{arr.i_sCateGory2} AS V_CATEGORY2
+                       , DECODE(#{arr.i_iLimit},null,0,#{arr.i_iLimit}) AS N_LIMIT
+                   FROM DUAL
+	             </foreach>
+		  ) T1
+		  	ON (
+			  	R1.V_CON_CD = T1.V_CON_CD
+			  	AND R1.V_CATEGORY1 = T1.V_CATEGORY1
+			  	AND R1.V_CATEGORY2 = T1.V_CATEGORY2
+		  	)
+		 WHEN MATCHED THEN
+		 	UPDATE 
+		 	<set> 
+			 	 R1.N_LIMIT = T1.N_LIMIT
+			 	, R1.V_UPDATE_USER_ID = #{i_sUserId}
+		        , R1.V_UPDATE_DTM =  TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+		        , R1.V_IF_YN = 'N'    
+		    </set>
+		 WHEN NOT MATCHED THEN
+			 INSERT 
+		 	  <trim prefix="(" suffix=")" suffixOverrides="," > 
+			         V_CON_CD 			
+		            , V_CATEGORY1            
+		            , V_CATEGORY2            
+		            , N_LIMIT      
+		            , V_REG_USER_ID
+		            , V_REG_DTM
+		            , V_UPDATE_USER_ID
+		            , V_UPDATE_DTM
+		            , V_IF_YN
+	           </trim>
+	            <trim  prefix="values (" suffix=")" suffixOverrides=",">
+		           	T1.V_CON_CD
+			   		, T1.V_CATEGORY1
+			   		, T1.V_CATEGORY2
+			   		, T1.N_LIMIT
+			   		, #{i_sUserId}
+			   		, TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS') 
+			   		, #{i_sUserId}
+			   		, TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+			   		, 'N'
+				</trim>
+	</update>
+
+</mapper>

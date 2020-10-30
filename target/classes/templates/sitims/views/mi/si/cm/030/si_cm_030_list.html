@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type="text/javascript" src="/sitims/js/util/cm_function.js"></script>
+<script type='text/javascript'>
+
+//layout
+var layoutMain;
+var frmSearch;
+var grdMain;
+var subGrid;
+var gridSubToolbar;
+var mainPage;
+var dcGrdMain;
+var dcGrdSub;
+
+// local variable
+var rowIndex = 0;
+var validId;
+var sub_limit;
+
+$(function(){
+	
+/****************************************************************************************************
+  * 초기화 
+  ****************************************************************************************************/ 
+	layoutMain = new dhx.Layout("layoutObj",{
+		css: "dhx_layout-cell--border_top",
+		rows: [
+	    	  {id: "form", gravity: false, height: "60px", css: "dhx_layout-cell--border_bottom"}
+              ,{cols:[
+               	 {rows:[
+               		 {id: "mainGrid", css: "layout_padding_right" ,height:"100%",gravity: false}
+               	 ],width: "70%",resizable: true}
+               	 ,{rows:[
+               		   {id: "subtoolbar", gravity: false}
+                	  ,{id: "subGrid", css: "layout_padding_right", height: "100%",gravity: false}
+                	 ],width: "30%",resizable: true}
+			  ],header:"목록", height: "90%"}
+             ,{id:'page'}
+	     	 ]
+	});
+	
+	frmSearch = new dhx.Form(null,{
+		rows : [
+			{ type:"input" , name:"i_sEnConNm", id:"i_sEnConNm", label:"성분" ,labelPosition: "left", labelWidth: "100", width: "480", gravity: false, placeholder: "성분코드 OR 성분 영문명 OR 성분 한글명",required: false}
+			
+	]});
+	layoutMain.getCell("form").attach(frmSearch);
+	
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+		columns:[
+			 { width: 150, id: "v_con_cd"      , header: [{ text: "성분코드",align:"center" }], align:"center" }
+			, { width: 150, id: "v_con_nm_en"      , header: [{ text: "성분 영문명",align:"center" }], align:"left" }
+			, { width: 150, id: "v_con_nm_ko"      , header: [{ text: "성분 한글명",align:"center" }], align:"left" }
+			, { width: 150, id: "n_max_allow_wt"      , header: [{ text: "기본 배합 한도 (%)",align:"center" }], align:"right" }
+			, { width: 170, id: "v_max_input_apply_yn"      , header: [{ text: "배합한도 여부",align:"center" }], align:"center" , autoWidth: false, htmlEnable: true,
+				template: function (text, row, col) {
+					if(row.v_max_input_apply_yn == 'Y'){
+						return "<select name=\"grdMain_select_"+row.n_num+"\" id=\"grdMain_select_"+row.n_num
+						   +"\" onchange=\"fn_grdMainSelected("+row.v_con_cd+","+row.n_ver_seq+","+row.n_num+")\" class=\"select_sty01\"><option value='Y' selected>설정</option><option value='N'>설정해제</option></select>";	
+					}else{
+						return "<select name=\"grdMain_select_"+row.n_num+"\" id=\"grdMain_select_"+row.n_num
+						   +"\" onchange=\"fn_grdMainSelected("+row.v_con_cd+","+row.n_ver_seq+","+row.n_num+")\" class=\"select_sty01\"><option value='Y'>설정</option><option value='N' selected>설정해제</option></select>";	
+					}
+				}
+			}
+			, { width: 150, id: "v_reg_user_nm"      , header: [{ text: "등록자",align:"center" }], align:"center" }
+			, { width: 150, id: "v_reg_dtm"      , header: [{ text: "등록일",align:"center" }], align:"center" }
+		]
+    	,fitToContainer: true
+    	,headerRowHeight: 46
+    	,autoWidth: true
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	layoutMain.getCell("mainGrid").attach(grdMain);
+	
+	dcGrdSub = new dhx.DataCollection();
+	subGrid = new dhx.Grid(null, {
+		columns:[
+			 { width: 100, id: "v_uclass_nm"      , header: [{ text: "제품유형1",align:"center"  }], align:"left" }
+			, { width: 100, id: "v_class_nm"      , header: [{ text: "제품유형2",align:"center"  }], align:"left" }
+			, { width: 100, id: "n_limit"      ,header: [{ text: "자사 배합한도 (%)",align:"center"  }], align:"right",editable: true}
+			, { id: "v_uclass_cd"      , header: [{ text: "제품유형1 cd"}], hidden: true }
+			, { id: "v_class_cd"      , header: [{ text: "제품유형2 cd"}], hidden: true }
+		]
+    	,fitToContainer: true
+    	,headerRowHeight: 46
+    	,autoWidth: true
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdSub
+	});
+	layoutMain.getCell("subGrid").attach(subGrid);
+    gridSubToolbar = new dhx.Toolbar(null,{
+      	 css: "dhx_widget--bordered dhx_widget--bg_gray",
+      	 data:[
+      		{icon:"dxi dxi-check",value:"저장",id:'btnModify'}
+       	  ]
+         });
+         layoutMain.getCell('subtoolbar').attach(gridSubToolbar);
+
+ /****************************************************************************************************
+  * 이벤트 생성 
+  ****************************************************************************************************/
+  
+    grdMain.events.on("CellClick", function(row,column,e){
+   	 	fn_searchDtl();
+    });
+    subGrid.events.on("CellClick", function(row,column,e){
+   	 	sub_limit = row.n_limit;
+    });
+    
+    subGrid.events.on("afterKeyDown", function(e){
+    	validId = e.target;
+        fn_submitValidate($(e.target).val());
+    }); 
+    subGrid.events.on("afterEditEnd", function(val,row,column){
+    	validId = row.id;
+        fn_submitValidate(val);
+    }); 
+    gridSubToolbar.events.on("Click", function(id){
+    	if(id == 'btnModify'){
+    		fn_save();
+    	}
+    });
+    
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/si/cm/030/si_cm_030_List.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    });
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	frmSearch.getItem('i_sEnConNm').setValue(param.i_sEnConNm);
+    }
+
+
+});
+/****************************************************************************************************
+ * 초기화 function 종료 
+ ****************************************************************************************************/
+
+	
+function fn_search() {
+    mainPage.search(1);
+    grdMain.selection.setCell(grdMain.data.getId(rowIndex), false);
+    fn_searchDtl();
+    
+ }
+ function fn_excel(){
+	fn_excel_download("/si/cm/030/si_cm_030_list_excel.do", mainPage.postParam);
+ }
+ // 배합 한도 상세 조회
+function fn_searchDtl() {
+	
+    var postParam  = grdMain.selection.getCell().row;
+    fn_ajaxGetGrid({
+        gridName : subGrid,
+        url : "/si/cm/030/si_cm_030_getConCdLimitList.do",
+        postParam : postParam,
+        success : function(responseData) {
+        }
+    }); 
+ }
+ $(document).on('keyup','#i_sEnConNm',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+ });
+
+ //grdMain - select selected
+ function fn_grdMainSelected(param1,param2,param3){
+	 // db에서 가져온 값을 그리드 컬럼에 id 선언하지 않아도 grid에 데이터가 뿌려짐 
+ 	var selected_result = $("#grdMain_select_"+param3+" option:selected").val();
+ 	var postParam = {
+ 			i_sConCd : param1,
+ 			i_nVerSeq : param2,
+ 			i_sApplyYn : selected_result
+ 	}
+  	$.ajax({
+ 		url : "/si/cm/030/si_cm_030_updateForDefaultLimit.do",
+ 		type : "POST",
+ 		data : postParam,
+ 		dataType : "json",
+ 		success : function(xhr){
+        	fn_s_alertMsg(xhr.message);
+ 		}, error : function(xhr){
+        	fn_s_alertMsg("배합한도 여부 수정 실패");
+		}
+ 	});
+ }
+ //유효성
+ function fn_submitValidate(val){
+	 
+	// NULL Return
+   	 if(fn_isNull(val)){
+			return false;
+ 	 }
+ 	// 문자 Return
+	if(isNaN(val)){
+    	fn_s_alertMsg("숫자만 입력가능합니다.");
+        subGrid.data.getItem(validId).n_limit = sub_limit;
+        $(validId).val(sub_limit);
+    	return false;
+	}
+ 	// 숫자 0 ~ 100
+	 if(val < 0 || val > 100){
+    	fn_s_alertMsg("0 ~ 100까지 입력가능합니다.");
+    	subGrid.data.getItem(validId).n_limit = sub_limit;
+        $(validId).val(sub_limit);
+    	return false;
+	}  
+	var rowToString = val.toString();
+ 	// 소수점 4자리
+ 	if(rowToString.indexOf('1e') > -1){
+     	fn_s_alertMsg('소수 넷째자리까지만 입력됩니다.');
+     	subGrid.data.getItem(validId).n_limit = sub_limit;
+        $(validId).val(sub_limit);
+     	return false;
+ 	}
+	 if(rowToString.indexOf('.') != -1){
+        var t_length = rowToString.substring(rowToString.indexOf('.') + 1);
+            if(t_length.length > 4){
+            	fn_s_alertMsg('소수 넷째자리까지만 입력됩니다.');
+            	subGrid.data.getItem(validId).n_limit = sub_limit;
+                $(validId).val(sub_limit);
+            	return false;
+            }
+	}
+	 return false;
+ }
+ function fn_save(){
+		var arr = subGrid.data._order;
+		
+		var jsonArr = new Array();
+		var con_cd = grdMain.selection.getCell().row.v_con_cd;
+		arr.forEach(function (item, index, array) {
+    		var json = new Object;
+    		
+    		for(key in item) {
+    			
+    			if(key == 'n_limit'){
+    				(item[key] == '') ? null : json.i_iLimit = item[key]; 
+    			}
+    			if(key == 'v_class_cd'){
+    				json.i_sCateGory2 = item[key];
+    			}
+    			if(key == 'v_uclass_cd'){
+    				json.i_sCateGory1 = item[key];
+    			}
+    		     json.i_sConCd = con_cd;
+    		}
+    		     jsonArr.push(json);
+		    
+		});
+		
+		var paramData = JSON.stringify(jsonArr); 
+    
+	  	$.ajax({
+	 		url : "/si/cm/030/si_cm_030_insertForLimitConSub.do",
+	 		type : "POST",
+	 		data : {'i_sJsonArr' : paramData},
+	 		dataType : "json",
+	 		success : function(xhr){
+	 			fn_s_alertMsg(xhr.message);
+	        	fn_searchDtl();
+	 		}, error : function(xhr){
+	        	fn_s_alertMsg("수정 실패");
+			}
+	 	});
+     	
+ }
+</script>
+</html>

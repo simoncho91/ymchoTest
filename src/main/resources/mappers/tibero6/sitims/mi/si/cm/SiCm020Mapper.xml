@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : SiCm020Mapper.xml
+    Description   :  제품유형
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.06.30  kykwak       1.0        최초 생성
+-->
+<mapper namespace="SiCm020Mapper">
+	<select id="selectSiCm020List"  parameterType="CmMap" resultType="CmMap">
+		SELECT	/* SiCm020Mapper.selectSiCm020List */
+				M.*
+		  FROM	(
+				SELECT V_CLASS_CD
+					, V_UCLASS_CD
+					, V_CLASS_NM
+					, N_SEQ_NO
+					, V_USE_YN
+					, FN_SUB_CODENM('SHELF_CD',N_LIFE) AS V_LIFE_NM
+					, FN_SUB_CODENM('PAO_CD',N_PAO) AS V_PAO_NM
+					, N_LIFE
+					, N_PAO
+					, V_PAO_YN
+					, V_IF_YN
+					, V_TOP_CD
+					, V_REG_USER_ID
+					, V_REG_DTM
+					, V_UPDATE_USER_ID
+					, V_UPDATE_DTM					
+					, ROW_NUMBER() OVER(ORDER BY
+						<choose> 
+							<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+								${i_sSortCol} ${i_sSortDir}
+							</when>	 
+							<otherwise>
+								N_SEQ_NO,V_REG_DTM
+							</otherwise>	
+						</choose>
+					) AS N_NO 
+				FROM TSI_PD_CL_L				
+				WHERE V_UCLASS_CD = #{i_sClassCd}
+				AND V_DEL_YN = 'N'
+		<if test="i_sUseYn != null and i_sUseYn != ''">
+				  AND V_USE_YN = #{i_sUseYn} 
+		</if>
+		<if test="i_sCategory != null and i_sCategory != ''">
+				  AND V_CLASS_NM LIKE '%'|| #{i_sCategory} ||'%'
+		</if>
+		<if test="i_sTopCd != null and i_sTopCd != ''">
+				  AND V_TOP_CD = #{i_sTopCd} 
+				  OR V_CLASS_CD = 'S000415'
+		</if>
+		  ) M 
+			
+	</select>
+	
+	<select id="selectCategoryInfo" parameterType="CmMap" resultType="CmMap">	
+		SELECT /* SiCm020Mapper.selectCategoryInfo */
+			V_CLASS_CD
+			, V_UCLASS_CD
+			, V_CLASS_NM
+			, N_SEQ_NO
+			, V_USE_YN
+			, N_LIFE
+			, N_PAO
+			, V_PAO_YN
+			, V_IF_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM 
+		FROM TSI_PD_CL_L
+		WHERE 1=1
+		AND	V_CLASS_CD = #{i_sClasscd}
+		AND V_DEL_YN = 'N'
+	</select>
+	
+	<insert id="insertCategoryInfo" parameterType="CmMap">
+		<selectKey keyProperty="i_sClasscd" resultType="java.lang.String" order="BEFORE">
+			SELECT	'S' || LPAD(NVL(SUBSTR(MAX(V_CLASS_CD), 5), 0) + 1, 6, '0')
+			  FROM	TSI_PD_CL_L
+			 WHERE	V_CLASS_CD LIKE 'S' || '%'
+		</selectKey>
+		INSERT INTO /* SiCm020Mapper.insertCategoryInfo */ 
+		TSI_PD_CL_L (
+			V_CLASS_CD
+			, V_UCLASS_CD
+			, V_CLASS_NM
+			, N_SEQ_NO
+			, V_USE_YN
+			, N_LIFE
+			, N_PAO
+			, V_PAO_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM
+			, V_DEL_YN
+			, V_IF_YN
+			, V_TOP_CD
+		) VALUES (
+			#{i_sClasscd}
+			, #{i_sUClasscd}
+			, #{i_sTitle}
+			, #{i_iSeqNo}
+			, #{i_sFlagUse}
+			, #{i_iLife}
+			, #{i_iPao}
+			, #{i_sFlagPao}
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, #{i_sUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, 'N'
+			, 'N'
+			, #{i_sTopCd}
+		)
+	</insert>
+	
+	<update id="updateCategoryInfo" parameterType="CmMap">
+		UPDATE /* SiCm020Mapper.updateCategoryInfo */	
+		TSI_PD_CL_L SET  
+			V_CLASS_NM         = #{i_sTitle}
+			, N_SEQ_NO             = #{i_iSeqNo}
+			, V_USE_YN             = #{i_sFlagUse}
+			, N_LIFE               = #{i_iLife}
+			, N_PAO                = #{i_iPao}
+			, V_PAO_YN             = #{i_sFlagPao}
+			, V_UPDATE_USER_ID     = #{i_sUserId}
+			, V_UPDATE_DTM         = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, V_IF_YN 			   = 'N'
+			, V_TOP_CD 			   = #{i_sTopCd}
+		 WHERE	V_CLASS_CD = #{i_sClasscd}
+	</update>
+	    <!-- 제품유형 이름  유효성  -->
+    <select id="getCountCategoryEqNm" parameterType="CmMap" resultType="Integer">
+    	SELECT  /* SiCm020Mapper.getCountCategoryEqNm */
+    		COUNT(*) AS RECORDCOUNT
+		  FROM TSI_PD_CL_L
+		 WHERE 1=1
+		AND V_DEL_YN = 'N'
+	    AND TRIM(UPPER(V_CLASS_NM))  = TRIM(UPPER(#{i_sTitle}))
+		    <choose>
+		    	<when test='i_sUClasscd eq "S000001"'>
+		    		AND V_UCLASS_CD = #{i_sUClasscd}
+		    	</when>
+		    	<otherwise>
+		    		AND V_UCLASS_CD = #{i_sUClasscd}
+		    	</otherwise>
+		    </choose>
+		    <if test='EqNmForUpdate == "Y"'>
+		     	AND V_CLASS_CD = #{i_sClasscd}
+		   </if>
+    </select>
+    
+	
+	<select id="selectSiCm020ListExcel" parameterType="CmMap" resultType="CmMap">	
+		SELECT /* SiCm020Mapper."selectSiCm020ListExcel" */
+			V_CLASS_CD
+			, V_UCLASS_CD
+			, V_CLASS_NM
+			, N_SEQ_NO
+			, V_USE_YN
+			, N_LIFE
+			, N_PAO
+			, V_PAO_YN
+			, V_IF_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM 
+			, LEVEL-1 V_LEVEL
+		FROM TSI_PD_CL_L M
+		WHERE 1=1
+		AND V_CLASS_CD != 'S000001'
+		AND V_DEL_YN = 'N'
+		START WITH V_CLASS_CD = 'S000001'
+		CONNECT BY PRIOR V_CLASS_CD = V_UCLASS_CD
+	</select>
+	
+	<update id="deleteSiCm020" parameterType="CmMap">
+		UPDATE /* SiCm020Mapper.updateCategoryInfo */	
+		TSI_PD_CL_L SET  
+			V_DEL_YN     		   = 'Y'
+			, V_IF_YN 			   = 'N'
+			, V_UPDATE_USER_ID     = #{pUpdateUserId}
+			, V_UPDATE_DTM         = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		 WHERE	V_CLASS_CD = #{i_sClasscd}
+	</update>
+</mapper>

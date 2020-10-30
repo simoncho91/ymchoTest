@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<html th:replace="~{layout/dhtmlxPopLayout :: layout(~{::script})}">
+<script th:inline="javascript">
+
+var layoutMain,grdMain,frmSearch,chkRowId;
+
+$(function(){
+	layoutMain = new dhx.Layout('layoutObj',{
+	     css: "dhx_layout-cell--border_top",
+			rows:[
+				{id:'form'}
+				,{id:'grid',height:'75%'}
+				,{id:'page'}
+			]		
+	});
+	var a = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		rows:[{type:'input',id:'i_sInput',name:'i_sInput',value:'[(${reqVo.i_sInput})]' ,label:'제품코드 / 제품명' ,labelPosition: "left", labelWidth: "120", width: "300", gravity: false,hidden: true}]
+	});
+	a.attach(frmSearch);
+
+	var	str	= '';
+	str	+= '<table class="sty_sort" id="tbl_search" style="border-top: 2px solid #191919;">';
+	str	+= '  <colgroup>';
+	str	+= '    <col style="width:95px;">';
+	str	+= '    <col style="">';
+	str	+= '  </colgroup>';
+	str	+= '  <tbody>';
+	str	+= '    <tr>';
+	str	+= '      <th>검색 조건</th>';
+	str	+= '      <td><input name="i_sInput" id="i_sInput" class="inp_sty01" type="text" value=\"[(${reqVo.i_sInput})]\" placeholder="제품코드 OR 제품명" style="margin-right:8px;width: 308px;"><a href="javascript:fn_search();" class="btnA bg_dark">조회</a></td>';
+	str	+= '    </tr>';
+	str	+= '  </tbody>';
+	str	+= '</table>';
+	a.attachHTML(str);
+
+    var b = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null,{
+		columns:[        
+			{ width: 250, id: "v_matnr" , header: [{ text: "제품코드",align:"center" }], align:"center",hidden: false}
+			,{ width: 400, id: "v_maktx" , header: [{ text: "제품명",align:"center" }], align:"left" }
+			,{ width: 0, id: "v_nation_cd" , header: [{ text: "제품명",align:"center" }], align:"left" ,hidden: true}
+			,{ width: 200, id: "v_nation_nm" , header: [{ text: "제품명",align:"center" }], align:"left" }
+		]
+		,fitToContainer: false
+		,headerRowHeight: 46
+	    ,resizable: true
+	    ,autoWidth: true
+	    ,selection: "row"
+        ,multiselection : false 
+		,data:dcGrdMain
+	});
+	b.attach(grdMain);
+
+    grdMain.events.on("CellDblClick", function(row,col,e){
+    	var data = grdMain.data.getItem(row.id);
+    	parent.[(${reqVo.i_sCmFunction})](data);
+    });
+	 grdMain.events.on("cellClick", function(r,c,e){
+		 chkRowId = r.id;
+		 $('#main_radio_'+r.n_num).prop('checked',true);
+	 });
+
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/br/pr/010/getProdPopList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['radio']
+       		, pageSize : 50
+       		, succSearchFunc : succFunc
+       		, postParam : {i_sReferYn:'Y'}
+    });
+    mainPage.initPaging();
+});
+$(document).on('keyup','#i_sInput',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+var succFunc = function(data){
+	if(data.length == 1){
+		parent.[(${reqVo.i_sCmFunction})](data[0]);
+	}
+}
+
+function fn_radioClick(rowId,obj){
+	chkRowId = rowId;
+}
+function fn_search() {	 
+	frmSearch.setValue({ "i_sInput": $('#i_sInput').val()});
+    mainPage.search(1);
+}
+function fn_close() {
+	fn_popClose();
+}
+</script>
+</html>

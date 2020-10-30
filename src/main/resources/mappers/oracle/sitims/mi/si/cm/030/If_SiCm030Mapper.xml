@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_SiCm030Mapper.xml
+    Description   : 성분배합 한도 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.11  kky       1.0        최초 생성
+-->
+<mapper namespace="If_SiCm030Mapper">
+
+	<!-- 성분배합 한도관리 기본배합YN 수정 -->
+	<update id='updateSiCm030LimitYn' parameterType="CmMap">
+		UPDATE /* If_SiCm030Mapper.updateSiCm030LimitYn */ 
+		TSI_CON_M SET
+			 V_MAX_INPUT_APPLY_YN   =   #{i_sApplyYn}
+			, V_UPDATE_USER_ID		 =	 #{i_sUserId}
+			, V_UPDATE_DTM			 =	 TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_CON_CD = #{i_sConCd}
+		AND N_VER_SEQ = #{i_nVerSeq}
+	</update>
+	<!-- 성분배합 한도관리  성분배합한도 수정 -->
+	<update id="insertSiCm030LimitConSub" parameterType="CmMap">
+		  MERGE INTO TSI_CON_LT_D R1 /* If_SiCm030Mapper.insertSiCm030LimitConSub */ 
+		  USING (
+			  <foreach collection="i_arrStr" item="arr" separator="UNION ALL">
+			  	 SELECT 	
+	  	 				#{arr.i_sConCd}  AS V_CON_CD
+                       , #{arr.i_sCateGory1} AS V_CATEGORY1
+                       , #{arr.i_sCateGory2} AS V_CATEGORY2
+                       , DECODE(#{arr.i_iLimit},null,0,#{arr.i_iLimit}) AS N_LIMIT
+                   FROM DUAL
+	             </foreach>
+		  ) T1
+		  	ON (
+			  	R1.V_CON_CD = T1.V_CON_CD
+			  	AND R1.V_CATEGORY1 = T1.V_CATEGORY1
+			  	AND R1.V_CATEGORY2 = T1.V_CATEGORY2
+		  	)
+		 WHEN MATCHED THEN
+		 	UPDATE 
+		 	<set> 
+			 	 R1.N_LIMIT = T1.N_LIMIT
+			 	, R1.V_UPDATE_USER_ID = #{i_sUserId}
+		        , R1.V_UPDATE_DTM =  TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')    
+		    </set>
+		 WHEN NOT MATCHED THEN
+			 INSERT 
+		 	  <trim prefix="(" suffix=")" suffixOverrides="," > 
+			         V_CON_CD 			
+		            , V_CATEGORY1            
+		            , V_CATEGORY2            
+		            , N_LIMIT      
+		            , V_REG_USER_ID
+		            , V_REG_DTM
+		            , V_UPDATE_USER_ID
+		            , V_UPDATE_DTM
+	           </trim>
+	            <trim  prefix="values (" suffix=")" suffixOverrides=",">
+		           	T1.V_CON_CD
+			   		, T1.V_CATEGORY1
+			   		, T1.V_CATEGORY2
+			   		, T1.N_LIMIT
+			   		, #{i_sUserId}
+			   		, TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS') 
+			   		, #{i_sUserId}
+			   		, TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+				</trim>
+	</update>
+
+</mapper>

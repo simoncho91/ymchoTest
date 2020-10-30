@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.14.0.final using JasperReports Library version 6.14.0-2ab0d8625be255bf609c78e1181801213e51db8f  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="pif_spec" language="groovy" pageWidth="595" pageHeight="842" columnWidth="511" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="008f693d-1f0f-4959-8790-a5b8fab17812">
+	<property name="ireport.zoom" value="1.1"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="JasperCustomSubReportDatasource" class="net.sf.jasperreports.engine.data.JRBeanCollectionDataSource"/>
+	<parameter name="JasperCustomSubReportLocation" class="net.sf.jasperreports.engine.JasperReport"/>
+	<field name="v_product_cd" class="java.lang.String"/>
+	<field name="v_product_nm_en" class="java.lang.String"/>
+	<field name="v_concd" class="java.lang.String"/>
+	<field name="now_date" class="java.lang.String"/>
+	<field name="v_logo" class="java.lang.String"/>
+	<field name="v_sign" class="java.lang.String"/>
+	<field name="v_usernm_en" class="java.lang.String"/>
+	<field name="v_deptnm" class="java.lang.String"/>
+	<field name="v_info_top" class="java.lang.String"/>
+	<field name="v_position" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="86">
+			<image>
+				<reportElement x="0" y="0" width="215" height="50" uuid="ed840050-fe17-44a5-9383-ffcb6069d5b7"/>
+				<imageExpression><![CDATA[$F{v_logo}]]></imageExpression>
+			</image>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="156" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="11" width="555" height="30" uuid="728c9667-896e-423e-9016-771a97d77503"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="20" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Product Specification]]></text>
+			</staticText>
+			<image>
+				<reportElement x="0" y="41" width="555" height="11" uuid="3d9649fe-1817-4084-8a77-a4836751e929"/>
+				<imageExpression><![CDATA["jasper/images/line2.png"]]></imageExpression>
+			</image>
+			<image>
+				<reportElement x="0" y="0" width="555" height="11" uuid="bac6b558-f1d3-4f25-9d7a-40632ac89588"/>
+				<imageExpression><![CDATA["jasper/images/line2.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement x="23" y="81" width="100" height="20" uuid="9b626b52-a8f2-49c2-b5ca-11dacc90af35"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PRODUCT NAME  :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="23" y="101" width="100" height="20" uuid="d597f705-00f0-458d-ac31-fef28e5f9a31"/>
+				<textElement verticalAlignment="Middle">
+					<font size="11" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PRODUCT CODE  :]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="123" y="81" width="388" height="20" uuid="b1d53a21-71f4-414f-8955-b7258b60a1f0"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{v_product_nm_en}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="123" y="101" width="388" height="20" uuid="061ef3eb-732b-4509-a542-45d6a07f92eb"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{v_product_cd}]]></textFieldExpression>
+			</textField>
+		</band>
+		<band height="72">
+			<subreport>
+				<reportElement x="0" y="0" width="555" height="72" uuid="efe269db-7b08-45bc-ac6e-e7989c999030"/>
+				<subreportParameter name="JasperCustomSubReportDatasource">
+					<subreportParameterExpression><![CDATA[$P{JasperCustomSubReportDatasource}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource ($P{JasperCustomSubReportDatasource}.getData())]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{JasperCustomSubReportLocation}]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<lastPageFooter>
+		<band height="200">
+			<staticText>
+				<reportElement x="283" y="179" width="100" height="20" uuid="73a100d2-3ced-44eb-8b01-d6066017da17"/>
+				<textElement textAlignment="Right">
+					<font size="11"/>
+				</textElement>
+				<text><![CDATA[Signature : ]]></text>
+			</staticText>
+			<image>
+				<reportElement x="396" y="139" width="159" height="60" uuid="a97e6851-9267-4377-aaf0-cc32a7bec211"/>
+				<imageExpression><![CDATA[$F{v_sign}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="281" y="119" width="275" height="20" forecolor="#323232" uuid="87ddacad-adbf-4d30-953a-9453fa6803f2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{now_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</lastPageFooter>
+</jasperReport>

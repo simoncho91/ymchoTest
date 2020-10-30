@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : IsAs010Mapper.xml
+    Description   : CIIMS 제품검색화면
+
+    ==개정이력========================================
+    구분               					 파일명       					ID			사용자		날짜
+    ========== ======= =========   ===================
+    Batch Coding System  111988214A_.pdf       1111		 관리자        최초 생성
+-->
+
+<mapper namespace="IsAs010Mapper">
+
+	<!--	CIIMS 제품검색화면 기본 SQL	-->
+	<sql id="IsAs010ListInclude">	
+		FROM TSI_PD_SE_L TPSL
+<!-- 		LEFT OUTER JOIN TZF_USER_M TUM ON TUM.USER_NO = TFDL.V_REG_USER_ID -->
+		WHERE 1=1
+<!-- 			AND TUM.USER_NO = TPSL.V_REG_USER_ID -->
+         <if test="i_sSearchNm != null and i_sSearchNm != ''">
+         	AND (UPPER(TPSL.V_CON_NM_EN) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+         	OR UPPER(TPSL.V_CON_CASNO) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%'
+<!--          	OR UPPER(FN_GET_USERNM(TFDL.V_USER_ID)) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%' -->
+         	OR UPPER(TPSL.V_CON_CD) LIKE '%'|| UPPER(#{i_sSearchNm}) ||'%')
+         </if>
+	</sql>
+	
+	<!--	CIIMS 제품검색화면 내역 조회	-->
+	<select id="selectIsAs010List"  parameterType="CmMap" resultType="CmMap">
+	SELECT * FROM /* IsAs010Mapper.selectIsAs010List */
+		(SELECT ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_REG_DTM DESC
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+					
+					,T.*
+		FROM (
+			SELECT
+<!-- 				FN_GET_USERNM(V_USER_ID) V_USER_ID, -->
+	 			DECODE(V_FLAG, 'T', 'TIIMS', 'C', 'CIITIMS') AS V_FLAG,
+	 			V_PRODUCT_CD,
+	 			N_PART_NO,
+	 			V_CON_CD,
+	 			V_TYPE_NM,
+				V_BRAND_NM,
+				V_PRODUCT_NM_KO,
+				V_PRODUCT_NM_EN,
+				V_FUNC_YN,
+				V_CON_NM_EN,
+				V_FUNC_NM_EN,
+				V_CON_CASNO,
+				N_CON_IN_PER,
+				V_REG_USERID,
+				V_REG_DTM,
+<!-- 				TUM.LOGIN_ID AS V_REG_USER_ID, -->
+<!-- 				V_REG_DTM, -->
+				TO_DATE(SUBSTRING(V_REG_DTM,'1','8'), 'yyyy/mm/dd') AS N_V_REG_DTM
+			<include refid="IsAs010ListInclude"/>
+			) T
+		) TEMP
+		 WHERE 1=1
+		 <if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		 </if>
+	</select>
+	
+	<!--	CIIMS 제품검색화면 Count조회	-->
+	<select id="getIsAs010ListCount" parameterType="CmMap" resultType="java.lang.Integer">	
+		SELECT /* IsAs010Mapper.getIsAs010ListCount */ 
+			COUNT(*) AS CNT
+		<include refid="IsAs010ListInclude"/>
+	</select>
+    
+</mapper>

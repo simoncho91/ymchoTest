@@ -1,0 +1,120 @@
+@charset "UTF-8";
+/*
+ * jQuery File Upload Plugin CSS 1.3.0
+ * https://github.com/blueimp/jQuery-File-Upload
+ *
+ * Copyright 2013, Sebastian Tschan
+ * https://blueimp.net
+ *
+ * Licensed under the MIT license:
+ * http://www.opensource.org/licenses/MIT
+ */
+
+.fileinput-button {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+.fileinput-button input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  opacity: 0;
+  -ms-filter: 'alpha(opacity=0)';
+  font-size: 200px !important;
+  direction: ltr;
+  cursor: pointer;
+  height: 38px !important;
+}
+
+.fileinput-button .btn_jfupload{
+	height: 26px;
+	line-height: 26px;
+	min-width: 60px;
+	padding-left: 10px; padding-right: 10px;
+	display: inline-block;
+	border : 1px soild #000000;
+	background-color: #000000;
+	color: #ffffff;
+	text-align: center;
+	border-radius: 3px;
+}
+
+.fileinput-button2 {
+  position: absolute;
+  display:inline-block;
+  overflow: hidden;
+  top: 12px;
+  left : 10px;
+  width : 37px;
+  height : 36px;
+}
+.fileinput-button2 input {
+  position : absolute;
+  top : 0px;
+  left : 0px;
+  opacity: 0;
+  -ms-filter: 'alpha(opacity=0)';
+  font-size: 200px;
+  direction: ltr;
+  cursor: pointer;
+}
+
+/* Fixes for IE < 8 */
+@media screen\9 {
+  .fileinput-button input {
+    filter: alpha(opacity=0);
+    font-size: 100%;
+    height: 100%;
+  }
+}
+
+@media screen\9 {
+  .fileinput-button2 input {
+    filter: alpha(opacity=0);
+    font-size: 100%;
+    height: 100%;
+  }
+}
+
+.jfupload_progress {display: none; width:100%; height: 5px; margin-top:5px; margin-bottom:5px;}
+.jfupload_progress .ifupload_progress_bar {display: inline-block;height:5px; background-color:#000000;}
+
+.ul_jfupload_box {list-style:none; padding-top:5px;}
+.ul_jfupload_box .li_left {float:left;min-width:200px; height:30px; line-height:30px;border: 1px solid #999999; border-radius:3px; padding-left:10px; margin-right:5px;}
+.ul_jfupload_box .li_img_left {float:left;min-width:50px; padding-right:10px; margin-right:5px;}
+
+.ul_jfupload_box .li_left dt { float: left; max-width: 80%; overflow: hidden; height:30px; }
+.ul_jfupload_box .li_left dd { float: right; padding: 5px; height:30px; }
+
+a.jfupload_icon_btn {
+	display:inline-block;  
+	width: 20px; 
+	height: 20px; 
+	text-align: center; 
+	vertical-align:middle; 
+	border: 1px solid #d8d8d8 !important; 
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	background-color: #fff;
+}
+
+a.jfupload_icon_btn span {
+	display:inline-block;  
+	width: 16px; 
+	height: 16px; 
+	line-height:16px; 
+	background-image: url(/images/2013/KO/common/jquery_ui_icon.png); 
+	margin-top:2px;
+}
+a.jfupload_icon_btn span.jfupload_icon_btn_up {background-position: -160px -192px;}
+a.jfupload_icon_btn span.jfupload_icon_btn_down {background-position: -128px -192px;}
+a.jfupload_icon_btn span.jfupload_icon_btn_plus {background-position: 0 -192px;}
+a.jfupload_icon_btn span.jfupload_icon_btn_delete {background-position: -176px -96px;}
+a.jfupload_icon_btn span.jfupload_icon_btn_modify {background-position: -64px -112px;}
+a.jfupload_icon_btn span.jfupload_icon_btn_old_car { background-position: 0 -128px; }
+a.jfupload_icon_btn span.jfupload_icon_btn_left {background-position: -144px -192px;}
+a.jfupload_icon_btn span.jfupload_icon_btn_right {background-position: -112px -192px;}
+

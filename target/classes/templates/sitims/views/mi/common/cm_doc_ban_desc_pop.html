@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+
+<script type='text/javascript'>
+var layoutMain,grdMain,frmDetail,frmDetailDs={},chkRowId;
+$(function(){
+	fn_init();
+});
+
+function fn_init() {
+	fn_ajax({
+		 url            : "/cm/pop/getConCdBanDescList.do"
+		, postParam      : JSON.parse('[(${reqVo.param})]')
+		, async:false
+		, success             : function(responseData) {
+			console.log(responseData);
+			if (responseData.result) {
+				var data = responseData.result.data;
+				frmDetailDs.rows=[];
+				data.forEach(function(obj,i){
+					var _tr = $('<tr></tr>');
+					var _td1 = $('<td class="txt_c"></td>');
+					var _td2 = $('<td class="last"></td>');
+					_td1.append('<span>'+obj.v_gl_nm+'</span>');
+					_td2.append('<span><pre style="white-space: pre-wrap;">'+obj.v_comment+'</pre></span>');
+					_tr.append(_td1);
+					_tr.append(_td2);
+					$('#tbody_row').append(_tr);
+				})
+			}
+		}
+	});
+}
+function fn_close() {
+	fn_popClose();
+}
+</script>
+<html>
+	<form id="frm" name="frm" method="post">
+		<table class='table_view sty_03' style="width:400px;">
+			<colgroup>
+				<col width="100"/>
+				<col width="300"/>
+			</colgroup>
+			<thead>
+				<tr class="start">
+					<th>국가명</th>
+					<th>상세</th>
+				</tr>
+			</thead>
+			<tbody id="tbody_row">
+			</tbody>
+		</table>
+	</form>
+
+</html>

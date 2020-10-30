@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : ErrorLogMapper.xml
+    Description   : Error Log 기록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  김태형       1.0        최초 생성
+-->
+<mapper namespace="ErrorLog">
+	
+	<!--  1. 오류 로그 조회  -->
+	<select id="selectList" resultType="Map">
+		SELECT /* ErrorLog.selectList */
+			   A.ERR_LOG_NO
+		     , A.OCCU_DT
+		     , A.OCCU_TM
+		     , A.ERR_CNTS
+		     , SUBSTR(A.ERR_CNTS,0,INSTR( A.ERR_CNTS,':',1)-1) AS ERR_TITLE
+		     , A.DB_ERR_CD
+		     , A.ERR_TP_CD
+             , CC.COMM_CD_NM  as ERR_TP_NM
+		     , A.JV_PKG_NM
+		     , A.SYS_ID
+             , B.LOGIN_ID
+             , B.USER_NM
+             , TO_CHAR(A.REG_DTM, 'YYYY-MM-DD HH24:MI:SS') as REG_DTM
+		  FROM TZF_ERRORLOG_L A
+		  LEFT OUTER JOIN (SELECT * FROM TZF_COMMCD_D WHERE GRP_CD = 'SY006') CC ON A.ERR_TP_CD = CC.COMM_CD
+		  , TZF_USER_M B
+		 WHERE 1=1
+		 	AND A.REG_USER_NO = B.USER_NO
+		<if test="SYS_ID != null and !SYS_ID.equals('all')">
+		   AND A.SYS_ID = #{SYS_ID}
+		</if>
+		<if test="START_DT != null and !START_DT.equals('') and END_DT != null and !END_DT.equals('')">
+		   AND A.OCCU_DT BETWEEN #{START_DT} AND #{END_DT}
+		</if>   
+		 ORDER BY A.ERR_LOG_NO DESC
+	</select>
+	
+	<!--  2. 등록  -->
+    <!--  2.1. 프로그램 오류 로그 등록  -->
+    <insert id="insertLog"  parameterType="com.shinsegae_inc.core.vo.ErrorLogVO">
+    	<selectKey keyProperty="errorLogNo" resultType="int" order="BEFORE">
+    	  <![CDATA[
+    	  	SELECT NVL(MAX(ERR_LOG_NO), 0) + 1 AS errLogNo
+    	  	FROM (
+	            SELECT /*+ INDEX_DESC(A TZF_ERRORLOG_L_PK)*/ ERR_LOG_NO
+	              FROM TZF_ERRORLOG_L A
+	              WHERE ROWNUM < 2
+              )
+          ]]>
+        </selectKey>
+        INSERT /* ErrorLog.insertLog */
+          INTO TZF_ERRORLOG_L
+             (
+               ERR_LOG_NO
+		     , OCCU_DT
+		     , OCCU_TM
+		     , ERR_CNTS
+		     
+		     , DB_ERR_CD
+		     , ERR_TP_CD
+		     , JV_PKG_NM
+		     , SYS_ID
+		     
+		     , REG_USER_NO
+		     , REG_DTM
+             )  
+	    VALUES
+	         (
+	            #{errorLogNo}
+	          , TO_CHAR(SYSDATE, 'YYYYMMDD')
+	          , TO_CHAR(SYSDATE, 'HH24MISS')
+	          , #{errCnts} 
+	          
+	          , #{dbDrrCd} 
+	          , #{errTpCd} 
+	          , #{packageNm}
+	          , #{sysId}
+	          
+	          , #{regUserNo}
+	          , SYSDATE
+	         )
+    </insert>
+    
+    <!--  3. 조회  -->
+    <select id="selectErrorLogList"  parameterType="hashMap" resultType="hashMap">
+      <![CDATA[
+        SELECT /* ErrorLog.selectErrorLogList */
+		       ERR_LOG_NO
+             , OCCU_DT
+             , OCCU_TM
+		     , ERR_TP_CD
+		     , JV_PKG_NM
+		      /* , US_STRADM.FN_CM_COMNM('1002', 'W904',  PGM_ERR_TP_CD) AS PGM_ERR_TP_NM */
+		     , '코드명' AS ERR_TP_NM		/* 수정 필요 */
+		     , DB_ERR_CD
+		     , SYS_ID
+		     , REG_USER_NO
+		     , CASE WHEN INSTR(ERR_CNTS, chr(10)) > 0 THEN
+                         SUBSTR(ERR_CNTS, 0, INSTR(ERR_CNTS, chr(10))-1)
+                     ELSE  ERR_CNTS 
+                     END AS ERR_TITLE
+		     , ERR_CNTS
+         FROM TZF_ERRORLOG_L
+        ]]>
+		 WHERE 1=1
+		<if test="START_DT != null and !START_DT.equals('') and END_DT != null and !END_DT.equals('')">
+		   AND OCCU_DT BETWEEN TO_DATE(#{START_DT}, 'YYYY-MM-DD') AND TO_DATE(#{END_DT}, 'YYYY-MM-DD')
+        </if>
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_ID)">
+           AND REG_USER_NO LIKE #{USER_ID}
+        </if>
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(ERR_TP_CD) and !ERR_TP_CD.equals('all') ">
+           AND ERR_TP_CD = #{ERR_TP_CD}
+        </if>
+          ORDER BY ERR_LOG_NO DESC
+    </select>
+	
+</mapper>

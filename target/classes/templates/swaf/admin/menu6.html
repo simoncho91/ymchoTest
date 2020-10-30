@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<title id="title" th:if="${programInfo.get('TITLE') != null}" th:text="${programInfo.get('TITLE')}"></title>
+
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+
+<script type="text/javascript" th:inline="javascript">
+
+// layout
+var layoutMain;
+
+var searchForm;
+var mainGrid;
+var mainForm;
+
+//toolbar
+var toolbar;
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+
+var dcGrdMain;
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/    
+    layoutMain = new dhx.Layout("layoutObj", {
+        css: "dhx_layout-cell--bordered",
+        rows: [
+            {
+                id: "search",
+                header: "검색조건",
+                css: "dhx_layout-cell--border_bottom",
+                gravity: false,
+                height: SearchFormHeight[1],
+                collapsable: true
+            },
+            {
+                cols: [
+                    {
+                        id: "grid",
+                        header: "메뉴 목록",
+                        width: "1180px",
+                        resizable: true
+                    },
+                    {
+                    	
+                        rows: [
+                            {
+                                id: "toolbar",
+                                header: "등록"
+                            },
+                            {
+                                id: "form",
+                                gravity:true,
+                                css: "dhx_layout-cell--border_left"
+                            }
+                        ],
+                        width: RegisterFormWidth[1],
+                        resizable:true
+                    }
+                ]
+            }
+        ]
+    });
+     
+    
+    // Form-검색조건
+    searchForm = new dhx.Form(null, {
+        cols: [
+			{type: "select", id: "SYS_ID", name: "SYS_ID",  label: "업무",        labelPosition: "left", labelWidth: "110", width: "250", gravity: false, options: [{}] },
+			{type: "input", id: "MENU_CD", name: "MENU_CD", label: "메뉴ID",    labelPosition: "left", labelWidth: "110", width: "250", gravity: false},
+			{type: "input", id: "MENU_NM", name: "MENU_NM", label: "메뉴명",    labelPosition: "left", labelWidth: "110", width: "250", gravity: false},
+			{type: "select", id: "USE_YN",  name: "USE_YN",  label: "사용여부",  labelPosition: "left", labelWidth: "110", width: "250", gravity: false, options: [{}] }
+		]
+    });
+    layoutMain.getCell("search").attach(searchForm);
+    
+    
+    
+    dcGrdMain = new dhx.DataCollection();
+    
+    // Grid-메인    
+    mainGrid = new dhx.Grid(null, {
+        columns: [
+            { width: 40,  id: "NO",                header: [{ text: "NO" }] },
+            { width: 60,  id: "DEPTH",             header: [{ text: "DEPTH" }] },
+            { width: 50,  id: "COMP_CD",           header: [{ text: "" }], hidden: true },
+            { width: 100, id: "SYS_ID",            header: [{ text: "시스템" }] },
+            { width: 120, id: "SYS_NM",            header: [{ text: "NO" }] },
+            { width: 140, id: "MENU_CD",           header: [{ text: "메뉴ID" }] },
+            { width: 50,  id: "MENU_NM",           header: [{ text: "메뉴" }] },
+            { width: 50,  id: "PAR_MENU_CD",       header: [{ text: "Address" }], hidden: true },
+            { width: 120, id: "PAR_MENU_NM",       header: [{ text: "상위메뉴" }] },
+            { width: 70,  id: "USE_YN",            header: [{ text: "사용여부" }] },
+            { width: 50,  id: "SORT_SEQ",          header: [{ text: "정렬" }] },
+            { width: 400, id: "URL",               header: [{ text: "전체경로" }] },
+            { width: 50,  id: "PAUS_YN",           header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "INQ_AUTH_YN",       header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "INS_AUTH_YN",       header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "XLS_AUTH_YN",       header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "PRT_AUTH_YN",       header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "ETC_BTN_1_AUTH_YN", header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "ETC_BTN_2_AUTH_YN", header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "ETC_BTN_3_AUTH_YN", header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "PINF_YN",           header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "VDI_YN",            header: [{ text: "" }], hidden: true },
+            { width: 50,  id: "MENU_DESC",         header: [{ text: "" }], hidden: true }
+        ],
+        headerRowHeight: 30,
+        autoWidth: true,
+        resizable: true,
+        selection: "row",
+        fitToContainer: true,
+        data: dcGrdMain
+    });
+    layoutMain.getCell("grid").attach(mainGrid);
+    
+    
+    // Form-툴바    
+    toolbar = new dhx.Toolbar(null, {
+        css: "dhx_widget--bordered dhx_widget--bg_gray",
+        data: [
+            {
+                id: "new",
+                icon:"dxi dxi-plus",
+                value: "신규"
+            },
+            {
+                type: "separator"
+            },
+            {
+                id: "save",
+                icon: "dxi dxi-check",
+                value: "저장"
+            },
+            {
+                id: "del",
+                icon: "dxi dxi-delete",
+                value: "삭제"
+            }
+        ]
+    });    
+    layoutMain.getCell("toolbar").attach(toolbar);
+     
+    
+    mainForm = new dhx.Form(null, {
+        rows: [
+           { type:"select",   id: "SYS_ID",			name:"SYS_ID" ,     label: "시스템",       labelPosition: "left", labelWidth: "110", width: "380", gravity: false, options: [{}], required: true },
+           { type:"input",    id: "MENU_CD",		name:"MENU_CD",     label: "메뉴ID",       labelPosition: "left", labelWidth: "110", width: "380", gravity: false, maxLength: "20", required: true },
+           { type:"input",    id: "MENU_NM",		name:"MENU_NM",     label: "메뉴명",       labelPosition: "left", labelWidth: "110", width: "380", gravity: false, maxLength: "20", required: true },           
+           { type:"select",   id: "PAR_MENU_CD",	name:"PAR_MENU_CD", label: "상위메뉴",     labelPosition: "left", labelWidth: "110", width: "380", gravity: false, readonly:true, options: [{}], required: true },
+           { type:"select",   id: "USE_YN",			name:"USE_YN",      label: "사용여부",     labelPosition: "left", labelWidth: "110", width: "380", gravity: false, options: [{}], required: true },
+           { type:"input",    id: "SORT_SEQ",		name:"SORT_SEQ",    label: "정렬",         labelPosition: "left", labelWidth: "110", width: "380", gravity: false, maxLength: "2" },
+           { type:"input",    id: "URL",			name:"URL",         label: "전체경로",     labelPosition: "left", labelWidth: "110", width: "380", gravity: false, required: true },
+           { type:"select",   id: "PAUS_YN",		name:"PAUS_YN",     label: "중지여부",     labelPosition: "left", labelWidth: "110", width: "380", gravity: false, options: [{}], required: true },
+           { type:"select",   id: "VDI_YN",			name:"VDI_YN",      label: "VDI사용",      labelPosition: "left", labelWidth: "110", width: "380", gravity: false, options: [{}], required: true },
+           { type:"select",   id: "PINF_YN",		name:"PINF_YN",     label: "개인정보여부", labelPosition: "left", labelWidth: "110", width: "380", gravity: false, options: [{}], required: true },
+           { type:"textarea", id: "MENU_DESC",		name:"MENU_DESC",   label: "메뉴정보",     labelPosition: "left", labelWidth: "110", width: "380", gravity: false },
+           { type:"button",   id: "PINF_BTN",		name:"PINF_BTN",    value: "개인정보선택", gravity: false },
+           { type:"button",   id: "URL_BTN",		name:"URL_BTN",     value: "URL상세", gravity: false, required: true },
+           { cols: [ 
+               { type:"checkbox", id: "INQ_AUTH_YN",	name:"INQ_AUTH_YN", label: "조회", labelPosition: "right"},
+               { type:"checkbox", id: "INS_AUTH_YN",	name:"INS_AUTH_YN", label: "저장", labelPosition: "right"}
+           ], gravity: false },
+           { cols: [ 
+                { type:"checkbox", id: "XLS_AUTH_YN",	name:"XLS_AUTH_YN", label: "엑셀", labelPosition: "right"},
+                { type:"checkbox", id: "PRT_AUTH_YN",	name:"PRT_AUTH_YN", label: "인쇄", labelPosition: "right"}
+           ], gravity: false },
+           { cols: [ 
+                { type:"checkbox", id: "ETC_BTN_1_AUTH_YN",	name:"ETC_BTN_1_AUTH_YN", label: "기타1", labelPosition: "right"},
+                { type:"checkbox", id: "ETC_BTN_2_AUTH_YN",	name:"ETC_BTN_2_AUTH_YN", label: "기타2", labelPosition: "right"}
+           ], gravity: false },
+           { cols: [ 
+                { type:"checkbox", id: "ETC_BTN_3_AUTH_YN",	name:"ETC_BTN_3_AUTH_YN", label: "기타3", labelPosition: "right"}
+           ], gravity: false }
+        ]
+    });
+    layoutMain.getCell("form").attach(mainForm);
+    
+    
+    // 초기화
+    fn_s_init();
+    fn_initDS();
+    
+    fn_search();
+    
+    
+    
+    
+	/****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+	toolbar.events.on("Click", function(id, e){
+		if(id == "new"){
+            fn_add();
+        }else if(id == "save"){
+            fn_save();
+        }else if(id == "del"){
+            fn_del();
+        }
+	});
+    
+	mainGrid.events.on("CellClick", function(row,column,e){
+		saveMode = "U";
+	    fn_s_gridToForm(mainGrid, mainForm);
+        
+    }); 
+    
+});
+
+
+//DataStore 초기화
+function fn_initDS() {
+
+    var postParam = new Object();
+    postParam.grpcd = "dsSysId:SY002:Y:S;dsUseYn:SY003:Y:S";
+
+    
+    
+   
+    fn_s_ajaxGetDsForCombo({ postParam : postParam
+                         , async:false
+		                 , success : 
+		                	 function(responseData) { 
+		                	 							
+							 							fn_s_selectboxPaint(searchForm, ["SYS_ID"], responseData.dsSysId);
+							 						    searchForm.getItem("SYS_ID").setValue("SITIMS");
+							 							fn_s_selectboxPaint(mainForm, ["SYS_ID"], responseData.dsSysId);
+
+							 							fn_s_selectboxPaint(searchForm, ["USE_YN"], responseData.dsUseYn);
+							 							fn_s_selectboxPaint(mainForm, ["USE_YN", "PAUS_YN", "VDI_YN", "PINF_YN"], responseData.dsUseYn);
+								                	    fn_getParentMenu();
+		                	 							
+								                	 }
+    
+    
+	});
+}
+
+
+//DataStore 초기화
+function fn_getParentMenu() {
+
+  var postParam = new Object();
+  postParam.sqlid = "dsParentMenu:Menu.selectParentMenu:S";
+  postParam.SYS_ID = searchForm.getItem("SYS_ID").getValue();
+
+  fn_s_ajaxGetDsForCombo({ postParam : postParam
+                       , async:false
+	                     , success : 
+	                         function(responseData) {
+
+	 													fn_s_selectboxPaint(mainForm, ["PAR_MENU_CD"], responseData.dsParentMenu);
+							                    	    mainForm.getItem("PAR_MENU_CD").config.options = responseData.dsParentMenu.options;
+	                                                    //fn_search();
+	                                                 }
+  });
+}
+
+
+// 신규
+function fn_add(){
+    
+    saveMode = "I";
+    mainGrid.selection.setCell(mainGrid.data.getId(-1), false);
+
+    mainForm.clear();
+}
+
+
+// 조회
+function fn_search() {
+	
+
+    //if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(searchForm);
+
+	    dcGrdMain.removeAll();
+	    fn_ajax({ gridName         : mainGrid
+	             , url                 : "/dhtmlx/admin/menu/selectList.do"
+	             , postParam           : postParam
+                 , async:false
+	             , success             : function(responseData) {
+	            	 	dcGrdMain.parse(responseData.result.data);
+                		mainGrid.selection.setCell(mainGrid.data.getId(rowIndex), false);
+                		saveMode = "U";
+                	    fn_s_gridToForm(mainGrid, mainForm);
+									      }
+	    });
+    //}
+    
+}
+
+//저장
+function fn_save() {
+	var postParam = fn_getPostParam(mainForm);
+	
+	if (saveMode == 'I') {
+		rowIndex = 0;
+	} else {
+	    rowIndex = mainGrid.data.getIndex(mainGrid.selection.getCell().row.id);
+	}
+	postParam.saveMode = saveMode;
+	if (fn_s_validateForm(mainForm)) {
+	     fn_s_ajaxSaveForm({ url      : "/dhtmlx/admin/menu/save.do"
+	              , postParam   : postParam
+	              , postType    : 'save'
+	              , success     : fn_saveSuccess
+	     });
+	}
+}
+
+function fn_saveSuccess() {
+	fn_initDS();
+	fn_search();
+}
+
+
+</script>
+<body style="overflow:auto">
+    <div id="wrapper">
+        <div id="centerWrap">
+            <div id="appAreaWrap">
+                <div id="appRoleArea">
+                    <div class="title_area_wrap">
+                        <div th:replace="fragments/roleFragment :: role_title"></div>
+                        <div th:replace="fragments/roleFragment :: role_btn_area"></div>
+                    </div>
+                </div>
+                <div id="appArea">
+                    <div id="layoutObj"></div>
+                </div>
+            </div>
+        </div>
+     </div>
+</body>
+</html>

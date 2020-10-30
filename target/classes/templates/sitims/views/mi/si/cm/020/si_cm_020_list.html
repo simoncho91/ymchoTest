@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript' src='/sitims/js/util/cm_function.js'></script> 
+<script type='text/javascript'>
+var layoutMain;
+var grdMain,dcGrdMain;
+var grdSub,dcGrdSub;
+var detailForm,detailSubForm;
+var toolbarMain,toolbarSub;
+var frmSearch;
+var chkRowId;
+var chkSubRowId;
+
+$(function() {
+	
+	layoutMain = new dhx.Layout("layoutObj",{
+		css: "dhx_layout-cell--border_top",
+		rows:[
+
+			{cols:[{id:"form",height:'60px'}],resizable: true}
+			,{
+				cols:[
+					{rows:[{id:"grdMain",height:'80%'}],width:'60%',resizable: true}
+					,{rows:[{id:"toolbarMain", gravity: false},{id:'detailForm'}],resizable: true}
+				] 
+				,gravity: false	
+				,height:'50%'	
+			 	,header: "제품유형"
+			 	,collapsable: false
+			 	,resizable: true
+			},{
+			cols:[
+				{rows:[{id:"grdSub",height:'80%'}],width:'60%',resizable: true}
+				,{rows:[{id:"toolbarSub", gravity: false},{id:'detailSubForm', gravity: false}],resizable: true,css: "div_scroll"}
+			] 
+			,gravity: false		
+			,height:'50%'
+			,header: "제품유형 상세"
+			,collapsable: false
+			,resizable: true
+		}]
+	});
+	
+	
+ /****************************************************************************************************
+  * layout - a
+  ****************************************************************************************************/ 
+
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		css: "formSearch--border_bottom",
+		rows:[			
+			{cols:[
+				{ type:"input" , name:"i_sCategory", id:"i_sCategory", width: "300",label:"Category" ,labelPosition: "left", labelWidth: "100", gravity: false, placeholder: "Category 명",required: false}
+				,{ type:"select" , name:"i_sUseYn", id:"i_sUseYn",width: "200", gravity: false,label:"사용 여부" ,labelPosition: "left", labelWidth: "100"
+					,options:[
+						{value:'' , content:"선택"}
+						,{value:'Y' , content:"Y"}
+						,{value:'N' , content:"N"}
+					]
+				}
+			]}
+		]
+	});
+	frmSearchCell.attach(frmSearch);
+ 
+ 
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	     columns: [	          
+	          { width: 100, id: "n_no"      , header: [{ text: "No",align:"center" }] ,sortable: true,align:"right" ,autoWidth:false}
+	          ,{ width: 300, id: "v_class_nm"      , header: [{ text: "Category 1" ,align:"center"}] ,align:"left"}
+	          ,{ width: 100, id: "v_use_yn"      , header: [{ text: "사용여부",align:"center" }] ,align:"center",autoWidth:false}
+	          ,{hidden:true, id: "v_class_cd"      , header: [{ text: "v_class_cd"}]}
+	          ,{hidden:true, id: "v_uclass_cd"      , header: [{ text: "v_uclass_cd"}] }
+	          ,{hidden:true, id: "n_seq_no"      , header: [{ text: "n_seq_no"}] }
+	     ]
+	    ,headerRowHeight: 46
+	    ,autoWidth: true
+	    ,resizable: true
+	    ,selection: "row"
+		,multiselection : false 
+		,data: dcGrdMain
+	 });
+	 layoutMain.getCell("grdMain").attach(grdMain);
+	 
+	 detailForm = new dhx.Form(null, {
+		rows:[
+			{id:'v_class_nm',name:'v_class_nm',type:'input',label:'Category 1', value:"",labelPosition: "left", labelWidth: "110px", gravity: false, required: true}
+			,{type: "select", id: "v_top_cd", name: "v_top_cd",  label: "대유형", labelPosition: "left", labelWidth: "110px", gravity: false, options:[{}]}
+			,{id:'n_seq_no',name:'n_seq_no',type:'input',label:'조회순서', value:"" ,labelPosition: "left", labelWidth: "110px", gravity: false}
+			,{id:'v_use_yn',name:'v_use_yn',type:'checkbox',label:'사용 여부', value: "checkboxvalue" ,labelPosition: "right", labelWidth: "110px", gravity: false}
+			,{id:'v_class_cd',name:'v_class_cd',type:'input',label:'class_id', value:"" ,hidden:true}
+			,{id:'v_uclass_cd',name:'v_uclass_cd',type:'input',label:'uclass_id', value:"" ,hidden:true}
+		]
+	});
+	 layoutMain.getCell("detailForm").attach(detailForm);
+	 
+ 	toolbarMain = new dhx.Toolbar(null,{
+		 css: "dhx_widget--bordered dhx_widget--bg_gray",
+		 data:[
+		 {icon:"dxi dxi-plus",value:"신규",id:'btnAdd'}
+ 		 ,{icon:"dxi dxi-check",value:"저장",id:'btnModify'}
+		 ,{icon:"dxi dxi-delete",value:"삭제",id:'btnDelete'}
+ 		 ]
+	 });
+ 	layoutMain.getCell("toolbarMain").attach(toolbarMain);
+	 
+	 
+ /****************************************************************************************************
+  * layout - b
+  ****************************************************************************************************/ 
+	 
+	 dcGrdSub = new dhx.DataCollection();
+	 grdSub = new dhx.Grid('grid_container2', {
+	     columns: [
+	          {hidden:true, id: "v_class_cd"      , header: [{ text: "v_class_cd" }] }
+	          ,{hidden:true, id: "v_uclass_cd"      , header: [{ text: "v_uclass_cd" }] }
+	          ,{hidden:true, id: "v_pao_yn"      , header: [{ text: "v_pao_yn" }] }
+	          ,{hidden:true, id: "n_seq_no"      , header: [{ text: "n_seq_no" }] }
+	          ,{ width: 100, id: "n_no"      , header: [{ text: "No" ,align:"center"}] ,autoWidth:false, align:"right"}
+	          ,{ width: 300, id: "v_class_nm"      , header: [{ text: "Category 2" ,align:"center"}] , align:"left"}
+	          ,{ width: 100, id: "v_pao_nm"      , header: [{ text: "PAO" ,align:"center"}] , align:"center"}
+	          ,{ width: 100, id: "v_life_nm"      , header: [{ text: "SHELF LIFE",align:"center" }] , align:"center"}
+	          ,{ width: 80, id: "v_use_yn"      , header: [{ text: "사용여부" ,align:"center"}] ,autoWidth:false, align:"center"}
+	     ]
+	    ,headerRowHeight: 46
+	    ,autoWidth: true
+	    ,resizable: true
+	    ,selection: "row"
+	    ,fitToContainer: true
+		,multiselection : false 
+         ,data: dcGrdSub
+	 });
+	 layoutMain.getCell("grdSub").attach(grdSub);
+	 
+	 
+	detailSubForm = new dhx.Form(null, {
+		rows:[
+			{id:'v_class_nm',name:'v_class_nm',type:'input',label:'Category 2', value:"" ,labelPosition: "left", labelWidth: "110px", gravity: false, required: true}
+			,{id:'n_seq_no',name:'n_seq_no',type:'input',label:'조회순서', value:"" ,labelPosition: "left", labelWidth: "110px", gravity: false}
+			,{id:'n_life',name:'n_life',type:'select',label:'SHELF LIFE', value:"" ,labelPosition: "left", labelWidth: "110px", gravity: false, options: [{}]}
+			,{id:'n_pao',name:'n_pao',type:'select',label:'PAO', value:"" ,labelPosition: "left", labelWidth: "110px", gravity: false, options: [{}]}
+			,{ cols: [ 
+				{id:'v_pao_yn',name:'v_pao_yn',type:'checkbox',label:'PAO 여부', value: "checkboxvalue",labelPosition: "right", labelWidth: "110px"}
+				,{id:'v_use_yn',name:'v_use_yn',type:'checkbox',label:'사용 여부', value: "checkboxvalue",labelPosition: "right"}  
+	        ], gravity: false }
+			,{id:'v_class_cd',name:'v_class_cd',type:'input',label:'class_id', value:"",hidden:true}
+			,{id:'v_uclass_cd',name:'v_uclass_cd',type:'input',label:'uclass_id', value:"" ,hidden:true}
+		]			
+	});
+	layoutMain.getCell("detailSubForm").attach(detailSubForm);
+	 
+
+	 toolbarSub = new dhx.Toolbar(null,{
+ 		css: "dhx_widget--bordered dhx_widget--bg_gray",
+ 		 data:[
+ 		{icon:"dxi dxi-plus",value:"신규",id:'btnAdd'}
+		 ,{icon:"dxi dxi-check",value:"저장",id:'btnModify'}
+		 ,{icon:"dxi dxi-delete",value:"삭제",id:'btnDelete'}
+		 ]
+ 	 });
+	 layoutMain.getCell("toolbarSub").attach(toolbarSub);
+ 	
+ 	 
+ /****************************************************************************************************
+  * 이벤트 생성 
+  ****************************************************************************************************/
+   
+ 	 grdMain.events.on("cellClick", fn_cellClickMain);
+ 	
+ 	toolbarMain.events.on("Click", function(id,e){
+  		if(id=='btnAdd'){  			
+  			fn_mainAdd();  			
+   		}else if(id=='btnModify'){   			
+   			fn_mainFormSave(detailForm);
+   		}else if(id=='btnDelete'){   			
+   			fn_delete({form:detailForm,grid:grdMain});
+   		}
+  	});
+ 	grdSub.events.on("cellClick", fn_cellClickSub);
+ 	 
+ 	toolbarSub.events.on("Click", function(id,e){
+      	if(id=='btnAdd'){ 	 		
+ 	 		fn_subAdd();	
+ 	 	}else if(id=='btnModify'){
+ 	 		fn_subFormSave(detailSubForm);
+ 	 	}else if(id=='btnDelete'){   			
+   			fn_delete({form:detailSubForm,grid:grdSub},{form:detailForm,grid:grdMain});
+   		}
+ 	});
+    
+    fn_search();
+    fn_initSelectBox();
+});
+
+/****************************************************************************************************
+ * 초기화 function 종료 
+ ****************************************************************************************************/
+function fn_delete(obj,parentObj){
+	var data = obj.form.getValue();	
+	
+	var postParam = {
+		i_sClasscd : data.v_class_cd
+	};
+	function callBack(){
+		if((typeof parentObj == 'undefined')){
+			fn_search(function(){
+				detailForm.clear();
+				grdMain.selection.setCell('');
+				grdSub.data.removeAll();
+			});			
+		}else{
+			fn_subSearch(function(){
+				detailSubForm.clear();
+				grdSub.selection.setCell('');
+			});
+		}		
+	}
+	function vaildFunc(){
+		if(!(typeof parentObj == 'undefined') && (typeof parentObj =='object')){
+			if(fn_isNull(parentObj.grid.selection.getCell())){
+				fn_s_alertMsg("상위 카테고리를 클릭해주세요.");
+				return true;
+			}
+		}else{
+			if(grdSub.data.getLength()>0){
+				fn_s_alertMsg("하위 카테고리를 먼저 모두 삭제해주세요.");
+				return true;
+			}
+		}
+		if(fn_isNull(obj.grid.selection.getCell())){
+			fn_s_alertMsg("카테고리를 클릭해주세요.");
+			return true;
+		}
+	}
+	fn_s_saveMessage('제품유형 삭제','제품유형을 삭제하시겠습니까?','/si/cm/020/si_cm_020_delete.do',postParam,callBack,vaildFunc)
+}
+function fn_subSearch(callback,data){
+	var postParam = {};
+	postParam.i_sClassCd = grdMain.data.getItem(chkRowId).v_class_cd;
+	fn_ajaxGetGrid({
+		gridName   : grdSub
+		, postParam  : postParam
+	 	, url        : "/si/cm/020/selectSubList.do"         
+	 	, success    : function(responseData) {
+			detailSubForm.clear();
+			if(typeof callback == 'function') callback(data);
+		}
+ 	});	
+}
+
+ function fn_search(callback,data){	
+	fn_ajaxGetGrid({ 
+	   gridName   : grdMain
+	   ,postParam : {
+		   i_sCategory : frmSearch.getItem('i_sCategory').getValue()
+		   , i_sUseYn : frmSearch.getItem('i_sUseYn').getValue()
+	   }
+		, url        : "/si/cm/020/selectMainList.do"         
+		, success    : function(responseData) {
+		 detailForm.clear();
+		 detailSubForm.clear();
+		 detailSubForm.disable();
+		 if(typeof callback == 'function') callback(data);
+	 }
+	});	
+}
+
+function fn_excel() {
+	fn_s_confirmMessage("Excel 다운로드","다운로드 하시겠습니까?",function(){
+		var jsonParams = {};
+		jsonParams.i_sFlagExcelAll	= 'Y';
+		fn_excel_download_exe('/si/cm/020/si_cm_020_list_excel.do', jsonParams);		
+	});
+}
+
+function fn_mainAdd(){
+	 grdMain.selection.setCell(grdMain.data.getId(-1), false);
+	 detailForm.clear();
+}
+function fn_subAdd(){
+	 grdSub.selection.setCell(grdSub.data.getId(-1), false);
+	 detailSubForm.clear();
+	 var udata = grdMain.data.getItem(chkRowId);
+	 detailSubForm.getItem("v_uclass_cd").setValue(udata.v_class_cd);
+}
+
+
+function fn_mainFormSave(mainForm){
+	
+	var data = mainForm.getValue();
+
+	if(!fn_SiCm020ValidationChk(mainForm)) return;
+	
+ 	var use_yn = data.v_use_yn ? 'Y' : 'N';
+ 	var uClass = data.v_uclass_cd;
+	var postParam = {
+			i_sTitle : data.v_class_nm,
+			i_sTopCd : data.v_top_cd,
+			i_iSeqNo : data.n_seq_no,
+			i_sFlagUse : use_yn,
+			i_sClasscd : data.v_class_cd,
+			i_sUClasscd : "S000001"
+	}
+	dhx.confirm({
+		header : "알림",
+		text : "저장 하시겠습니까?",
+		buttons : ["예","아니오"],
+		buttonsAlignment: "center"
+	}).then( function (result) {
+		if(result){
+			fn_s_ajaxSaveForm({ 
+				url      : "/si/cm/020/si_cm_020_pop_save.do"
+		        , postParam   : postParam
+		        , success : function(xhr){
+		        	fn_s_alertMsg(xhr.msgCode,function(){
+		        		var data = xhr.result.data;
+		        		function callback(data){
+	    	        	 	var findId = grdMain.data.find(function(item){if(item.v_class_cd == data.i_sClasscd) return item.id});
+	    	        	 	chkRowId=findId;
+	    	        	 	grdMain.selection.setCell(findId);
+	    	        	 	fn_cellClickMain(grdMain.selection.getCell().row);		        			
+		        		};		     
+		        		fn_search(callback,data);
+		        	});
+		        	
+		        }
+		     });
+		}
+		else{
+			return;
+		}
+	});
+}
+function fn_subFormSave(subForm){
+
+	var data = subForm.getValue();
+
+	if(!fn_SiCm020ValidationChk(subForm)) return;
+
+	var use_yn = data.v_use_yn ? 'Y' : 'N';
+	var pao_yn = data.v_pao_yn ? 'Y' : 'N';
+	var uClassCd = data.v_uclass_cd;
+	if(fn_isNull(grdMain.selection.getCell())){
+		fn_s_alertMsg("상위 카테고리를 클릭해 주세요.");
+		return;
+	}else{		
+		uClassCd = grdMain.selection.getCell().row.v_class_cd 
+	}
+	var postParam = {
+			i_sTitle : data.v_class_nm,
+			i_iSeqNo : data.n_seq_no,
+			i_sFlagUse : use_yn,
+			i_sFlagPao : pao_yn,
+			i_iPao : data.n_pao,
+			i_iLife : data.n_life,
+			i_sClasscd : data.v_class_cd,
+			i_sUClasscd : uClassCd 
+	}
+	dhx.confirm({
+		header : "알림",
+		text : "저장 하시겠습니까?",
+		buttons : ["예","아니오"],
+		buttonsAlignment: "center"
+	}).then( function (result) {
+		if(result){
+			
+			fn_s_ajaxSaveForm({ 
+				url      : "/si/cm/020/si_cm_020_pop_save.do"
+		        , postParam   : postParam
+		        , success : function(xhr){
+		        	fn_s_alertMsg(xhr.msgCode,function(){
+		        		var data = xhr.result.data;
+			        	 var postParam = new Object();
+			    		 postParam.i_sClassCd = grdMain.data.getItem(chkRowId).v_class_cd;
+			    	     fn_ajaxGetGrid({
+			    	   		gridName   : grdSub
+			    	        , url        : "/si/cm/020/selectSubList.do"
+			    	        , postParam  : postParam
+			    	        , success    : function(responseData) {
+			    		    	detailSubForm.clear();
+			    	        	
+			    		    	grdMain.selection.setCell(chkRowId);
+			    	        	fn_cellClickMain(grdMain.selection.getCell().row);
+			    	        	
+			    	        	var findId = grdSub.data.find(function(item){if(item.v_class_cd == data.i_sClasscd) return item.id});
+			    	        	chkSubRowId=findId;
+			    	        	grdSub.selection.setCell(findId);
+			    	        	fn_cellClickSub(grdSub.selection.getCell().row);
+			    	        }
+			    	   	}); 
+		        	});
+		        }
+		     });
+		}
+		else{
+			return;
+		}
+	});
+	
+}
+ function fn_initSelectBox() {
+
+	 var postParam = new Object();
+	 postParam.grpcd = "dsShelfCd:SHELF_CD:Y:S;dsPaoCd:PAO_CD:Y:S;dsTopCd:ODM_PRODUCT_TYPE:Y:S";
+
+	 fn_s_ajaxGetDsForCombo({ 
+		 postParam : postParam
+	   , async:false
+	   , success : 
+	     function(responseData) { 
+		   // pao 셀렉트 박스
+		   var tmpPaojson = responseData.dsPaoCd.options;
+		   var tmpPaoArray = new Array();
+		   for(var i=0;i<tmpPaojson.length;i++){
+		  	 var tmpPaoObject = new Object();
+			   if(tmpPaojson[i].value == "ETC" || tmpPaojson[i].content == "ETC" || tmpPaojson[i].CDNM == "ETC:ETC"){
+				   continue;
+			   }
+			   tmpPaoObject.value =  tmpPaojson[i].value
+			   tmpPaoObject.content = tmpPaojson[i].content
+			   tmpPaoObject.CDNM = tmpPaojson[i].CDNM
+			   tmpPaoArray.push(tmpPaoObject);
+		   }
+		   
+		   var PaoOptions = new Object();
+		   PaoOptions.options = tmpPaoArray;
+		   fn_s_selectboxPaint(detailSubForm, ["n_pao"], PaoOptions);
+		   
+		   
+		   // shel_life 셀렉트 박스
+		   var tmpSheljson = responseData.dsShelfCd.options;
+		   var tmpShelArray = new Array();
+		   for(var i=0;i<tmpSheljson.length;i++){
+		  	 var tmpShelObject = new Object();
+			   if(tmpSheljson[i].value == "ETC" || tmpSheljson[i].content == "ETC" || tmpSheljson[i].CDNM == "ETC:ETC"){
+				   continue;
+			   }
+			   tmpShelObject.value =  tmpSheljson[i].value
+			   tmpShelObject.content = tmpSheljson[i].content
+			   tmpShelObject.CDNM = tmpSheljson[i].CDNM
+			   tmpShelArray.push(tmpShelObject);
+		   }
+		   
+		   var shelOptions = new Object();
+		   shelOptions.options = tmpShelArray;
+		   fn_s_selectboxPaint(detailSubForm, ["n_life"], shelOptions);
+		   fn_s_selectboxPaint(detailForm, ["v_top_cd"], responseData.dsTopCd);
+		   
+
+		}
+	 });
+} 
+ function fn_SiCm020ValidationChk(form){
+		var postParam = form.getValue();
+		var regex= /^[0-9]{1,2}$/g;
+	 	if (!form.validate()) {
+			fn_s_alertMsg('필수항목이 있습니다.');
+			return false;
+		}
+		if(!fn_isNull(postParam.n_seq_no)){
+			if(isNaN(postParam.n_seq_no)){
+				fn_s_alertMsg("조회순서는 숫자만 입력가능합니다.");
+				return false;
+			}
+			if(!regex.test(postParam.n_seq_no)){
+				fn_s_alertMsg("조회순서는 0~99까지 숫자만 입력해 주세요.");
+				return false;
+			}
+		}
+		if(!fn_isNull(postParam.v_class_nm)){
+			if(!check_length(postParam.v_class_nm,100)){
+				fn_s_alertMsg("category 이름이 최대 제한 입력값를 초과 했습니다.");
+				return false;
+			}
+			
+		}
+		return true;
+	}
+	function fn_cellClickMain(r){
+		 chkRowId = r.id;
+		 
+		 var postParam = new Object();
+		 postParam.i_sClassCd = r.v_class_cd;
+		 fn_s_gridToForm_bool(grdMain, detailForm);
+		 
+	    fn_ajaxGetGrid({ 
+ 		   gridName   : grdSub
+          , url        : "/si/cm/020/selectSubList.do"
+          , postParam  : postParam
+          , success    : function(responseData) {}
+ 		});
+		 detailSubForm.clear();
+		 detailSubForm.enable();
+	}
+
+ 	function fn_cellClickSub(r,c,e){
+		chkSubRowId = r.id;
+		fn_s_gridToForm_bool(grdSub, detailSubForm);		
+	}
+ 	$(document).on('keyup','#i_sCategory',function(e){
+ 		if(e.keyCode == 13){
+ 			fn_search();
+ 		}
+ 	});
+</script>
+</html>

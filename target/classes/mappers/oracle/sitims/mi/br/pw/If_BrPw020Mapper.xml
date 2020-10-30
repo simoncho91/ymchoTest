@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_BrPw020Mapper.xml
+    Description   : 제품 등록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.11  jjw       1.0        최초 생성
+-->
+<mapper namespace="If_BrPw020Mapper">
+	
+	<update id="updateCaNo" parameterType="CmMap">		
+ 		MERGE INTO /* If_BrPw020Mapper.updateCaNo */ 
+ 			TODM_PDCP_D OTC 
+ 		USING ( 
+ 			SELECT	TMP.V_ODMDB_ID 
+ 					, TMP.V_CON_CD 
+ 					, TMP.V_CON_CAS_NO 
+ 					, #{i_sProductCd} AS V_PRODUCT_CD 
+ 					, #{i_iVerSeq} AS N_VER_SEQ  
+ 					--, TMP.V_SUB_RAW_CD AS V_SUB_RAW_CD 
+ 			FROM TODM_RTCON_M TMP 
+ 			INNER JOIN ( 
+ 				SELECT V_ODMDB_ID 
+ 				FROM TODM_PDCP_D 
+ 				WHERE V_PRODUCT_CD = #{i_sProductCd} 
+ 				  AND N_VER_SEQ = #{i_iVerSeq} 
+ 				GROUP BY  V_ODMDB_ID 
+ 			)OTC 
+ 			ON(TMP.V_ODMDB_ID = OTC.V_ODMDB_ID) 
+ 			UNION ALL 
+ 			SELECT	TMP.V_ODMDB_ID 
+ 					, TMP.V_CON_CD 
+ 					, TMP.V_CON_CAS_NO 
+ 					, #{i_sProductCd} AS V_PRODUCT_CD 
+ 					, #{i_iVerSeq} AS N_VER_SEQ 
+ 					--, TMP.V_SUB_RAW_CD 
+ 			FROM TODM_RTCON_AL_D TMP 
+ 			INNER JOIN ( 
+ 				SELECT V_ODMDB_ID 
+ 				FROM TODM_PDCP_D 
+ 				WHERE V_PRODUCT_CD = #{i_sProductCd} 
+ 				  AND N_VER_SEQ = #{i_iVerSeq} 
+ 				GROUP BY  V_ODMDB_ID 
+ 			)OTC 
+ 			ON(TMP.V_ODMDB_ID = OTC.V_ODMDB_ID) 
+ 		)MT 
+ 		ON ( 
+ 			OTC.V_PRODUCT_CD = MT.V_PRODUCT_CD 
+ 			  AND OTC.N_VER_SEQ = MT.N_VER_SEQ 
+ 			  AND OTC.V_ODMDB_ID = MT.V_ODMDB_ID 
+ 			  AND OTC.V_CON_CD = MT.V_CON_CD 
+ 			 /* AND ( 
+ 			  	MT.V_SUB_RAW_CD = OTC.V_SUB_RAW_CD 
+ 			  	  OR OTC.V_SUB_RAW_CD IS NULL 
+ 			  ) */
+ 		) 
+ 		WHEN MATCHED THEN 
+ 		UPDATE 
+ 		SET	OTC.V_COMP_CAS_NO = MT.V_CON_CAS_NO
+	</update>
+	
+	
+	<update id="updateRawFunction" parameterType="CmMap">
+		UPDATE /* If_BrPw020Mapper.updateRawFunction */ 
+			TODM_PDCP_D
+		<choose>
+			<when test="i_sModiFuncNm == &quot;ETC&quot;">
+				SET	V_COMP_ORIGIN_FC = #{i_sModiFuncNm_etc}
+					, V_ETC_YN = 'N'
+			</when>
+			<otherwise>
+				SET	V_COMP_ORIGIN_FC = #{i_sModiFuncNm}
+					, V_ETC_YN = 'Y'
+			</otherwise>
+		</choose>
+		WHERE V_PRODUCT_CD = #{i_sProductCd}
+		  AND N_PART_NO = #{i_sPartNo}
+		  AND N_VER_SEQ = (SELECT MAX(N_VER_SEQ) FROM TODM_PDCP_D WHERE V_PRODUCT_CD = #{i_sProductCd})
+		  AND V_RAW_CD = #{i_sRawcd}
+	</update>
+	
+	
+	<update id="updateConcdFunction" parameterType="CmMap">
+		UPDATE /* If_BrPw020Mapper.updateConcdFunction */ 
+			TODM_PDCP_D
+		<choose>
+			<when test="i_sModiFuncNm == &quot;ETC&quot;">
+				SET	V_COMP_ORIGIN_FC = #{i_sModiFuncNm_etc}
+					, V_ALLERGEN_FUNC = #{i_sModiFuncNm_etc}
+			</when>
+			<otherwise>
+				SET	V_COMP_ORIGIN_FC = #{i_sModiFuncNm}
+					, V_ALLERGEN_FUNC = #{i_sModiFuncNm}
+			</otherwise>
+		</choose>
+		WHERE V_PRODUCT_CD = #{i_sProductCd}
+		  AND N_PART_NO = #{i_sPartNo}
+		  AND N_VER_SEQ = (SELECT MAX(N_VER_SEQ) FROM TODM_PDCP_D WHERE V_PRODUCT_CD = #{i_sProductCd})
+		  AND V_CON_CD = #{i_sConcd}
+	</update>
+		
+	
+	<update id="updateReview" parameterType="CmMap">
+		UPDATE /*If_BrPw020Mapper.updateReview */
+			TSI_PD_NA_L SET 
+			V_REVIWER_ID	     =	#{pRegUserId}
+			, V_REVIEW_DTM       =  TO_CHAR(SYSTIMESTAMP,'YYYYMMDD')
+			, V_REVIEW_OP        =  #{i_sReveiwOp}
+			, V_REVIEW_STATUS    =  #{i_sReveiwStatus}
+			, V_UPDATE_USER_ID   =	#{pUpdateUserId}
+			, V_UPDATE_DTM 		 =  TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		AND V_PRODUCT_CD = #{i_sProductCd}
+		AND V_NATION_CD = #{i_sNationCd}
+	</update>
+	<insert id="insertReviewMessage" parameterType="CmMap">
+		INSERT /*If_BrPw020Mapper.insertReviewMessage */
+		INTO TSI_SM_MG_L(
+			V_MESSAGE_NO
+			, V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_MESSAGE
+			, V_DEL_YN
+			, V_REG_USERID
+			, V_REG_DTM
+			, V_NATION_CD
+			, V_FLAG_TYPE
+			, V_MENU_TYPE
+		)VALUES(		
+			(SELECT 'MG' || LPAD(TO_NUMBER(NVL(SUBSTR(MAX(V_MESSAGE_NO),3,11),'0'))+1,10,0) FROM TSI_SM_MG_L WHERE V_MESSAGE_NO LIKE 'MG' || '%')
+			,#{i_sRecordId}
+			,#{i_sProductCd}
+			,#{i_sReveiwOp}
+			,'N'
+			,#{pRegUserId}
+			,TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			,#{i_sNationCd}
+			,'T'
+			,'DOC'
+		)
+	</insert>
+	
+	
+	<update id="updateProdReveiwCompl" parameterType="CmMap">
+		UPDATE /* BrPw020Mapper.updateProdReveiwCompl */
+			TSI_PD_D SET
+			V_FINAL_RST = #{i_sFinalRst}
+			<if test='i_sCkDomesticYn == "Y"'>
+				, V_CK_DOMESTIC_YN = #{i_sCkDomesticYn}
+				, V_CK_DOMESTIC_DTM = TO_CHAR(SYSTIMESTAMP,'YYYYMMDD')
+			</if>
+			<if test='i_sCkOverseasYn == "Y"'>
+				, V_CK_OVERSEAS_YN = #{i_sCkOverseasYn}
+				, V_CK_OVERSEAS_DTM = TO_CHAR(SYSTIMESTAMP,'YYYYMMDD')
+			</if>
+			, V_UPDATE_USER_ID   =	#{pUpdateUserId}
+			, V_UPDATE_DTM 		 =  TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')			
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		AND V_PRODUCT_CD = #{i_sProductCd}
+	</update>
+	
+	<update id="updateProdFinalRst" parameterType="CmMap">
+		UPDATE /* If_BrPw020Mapper.updateProdFinalRst */
+			TSI_PD_D SET
+			V_FINAL_RST = #{i_sFinalRst}
+			, V_UPDATE_USER_ID   =	#{pUpdateUserId}
+			, V_UPDATE_DTM 		 =  TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')			
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		AND V_PRODUCT_CD = #{i_sProductCd}
+	</update>
+		
+	<update id="updateAlreadyProcessProd" parameterType="CmMap">
+		UPDATE /* If_BrPw020Mapper.updateAlreadyProcessProd */
+			TSI_PD_D SET
+			V_FINAL_RST = #{i_sFinalRst}
+			, V_CK_DOMESTIC_YN 	= #{i_sCkDomesticYn}
+			, V_CK_OVERSEAS_YN  = #{i_sCkOverseasYn}
+			, V_CK_DOMESTIC_DTM = TO_CHAR(SYSTIMESTAMP,'YYYYMMDD')
+			, V_CK_OVERSEAS_DTM = TO_CHAR(SYSTIMESTAMP,'YYYYMMDD')
+			, V_FAST_TRACK_YN = 'Y'
+			, V_UPDATE_USER_ID   =	#{pUpdateUserId}
+			, V_UPDATE_DTM 		 =  TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')			
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		AND V_PRODUCT_CD = #{i_sProductCd}
+	</update>
+	
+	<insert id="insertProdMyRqM" parameterType="CmMap">
+		INSERT /* If_BrPw020Mapper.insertProdMyRqM */ 
+		INTO TSI_PDMY_RQ_M (
+			V_MODY_REQ_CD
+			, V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_NATION_CD
+			, V_REVIWER_ID
+			, V_COMMENT
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sModyReqId}
+			, #{i_sRecordId}
+			, #{i_sProductCd}
+			, #{i_sNationCd}
+			, #{pRegUserId}
+			, #{i_sReveiwOp}
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)	
+	</insert>
+	
+	<update id="updateProdMyRqM" parameterType="CmMap">
+		UPDATE /* If_BrPw020Mapper.updateProdMyRqM */ 
+			TSI_PDMY_RQ_M SET
+				V_COMMENT = #{i_sReveiwOp}
+				, V_UPDATE_USER_ID   =	#{pUpdateUserId}
+				, V_UPDATE_DTM 		 =  TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_MODY_REQ_CD	= #{i_sModyReqId}	
+	</update>
+	
+	<delete id="deleteProdMyRqD" parameterType="CmMap">
+		DELETE /* If_BrPw020Mapper.deleteProdMyRqD */ 
+			TSI_PDMY_RQ_D 
+		WHERE 1=1
+		AND V_MODY_REQ_CD = (
+			SELECT V_MODY_REQ_CD FROM TSI_PDMY_RQ_M
+			WHERE V_RECORD_ID	= #{i_sRecordId}
+			AND V_PRODUCT_CD    = #{i_sProductCd}
+			AND V_NATION_CD     = #{i_sNationCd}
+		)		
+	</delete>
+	
+	<insert id="insertProdMyRqD" parameterType="CmMap">
+		INSERT /* If_BrPw020Mapper.insertProdMyRqD */
+		INTO TSI_PDMY_RQ_D
+		(
+			V_MODY_REQ_CD
+			, V_REQ_ITEM_CD
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			(SELECT V_MODY_REQ_CD FROM TSI_PDMY_RQ_M WHERE V_RECORD_ID	= #{i_sRecordId} AND V_PRODUCT_CD    = #{i_sProductCd} AND V_NATION_CD     = #{i_sNationCd} )
+			,#{i_sReqItemCd}
+			,#{pRegUserId}
+			,TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<update id="updateChinaOpReview" parameterType="CmMap">
+		UPDATE /* If_BrPw020Mapper.updateChinaOpReview */
+		TSI_PD_D SET		
+			V_SPECIAL_YN		= #{i_sSpecialYn}
+			, V_COLOR_STATE     = #{i_sColorState}
+			, V_PHYSICAL_STATE  = #{i_sPhysicalState}
+			, V_ODOR_STATE      = #{i_sOdorState}
+			, V_CHINA_RA_AGENT  = #{i_sChinaRaAgent}
+			, V_CHINA_FIN_DTM   = REPLACE(#{i_sChinaFinDtm},'-','')
+			, V_CHINA_SP_DTM    = REPLACE(#{i_sChinaSpDtm},'-','')
+			, V_UPDATE_USER_ID  = #{pRegUserId}
+			, V_UPDATE_DTM      = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		AND V_PRODUCT_CD = #{i_sProductCd}
+	</update>
+	<insert id="insertModiRawFuncLog" parameterType="CmMap">
+		INSERT /* BrPw020Mapper.insertModiRawFuncLog */ 
+		INTO TSI_FCLOG_L(
+			V_RECORD_ID
+			, V_PRODUCT_CD
+			, N_PART_NO
+			, V_DIV
+			, V_BEFORE_FUNC
+			, V_AFTER_FUNC
+			<if test="i_sRawcd != null and i_sRawcd != ''">
+				, V_RAW_CD
+			</if>
+			<if test="i_sConcd != null and i_sConcd != ''">
+				, V_CON_CD
+			</if>
+			, V_REG_USERID
+			, V_REG_DTM
+		) VALUES(
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, #{i_sPartNo}
+			, #{i_sDivision}
+			, #{i_sBeforeFuncNm}				
+			<choose>
+				<when test="i_sModiFuncNm == &quot;ETC&quot;">
+					#{i_sModiFuncNm_etc}					
+				</when>
+				<otherwise>
+					#{i_sModiFuncNm}
+				</otherwise>
+			</choose>
+			<if test="i_sRawcd != null and i_sRawcd != ''">
+				, #{i_sRawcd}
+			</if>
+			<if test="i_sConcd != null and i_sConcd != ''">
+				, #{i_sConcd}
+			</if>
+			, #{s_userid}
+			, TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<update id="updateIfSivanTrans" parameterType="CmMap">
+		UPDATE /* BrPw020Mapper.updateIfSivanTrans */
+		TSI_PD_D SET		
+			V_ASNCRT_YN		= 'Y'
+			, V_ASNCRT_DTM     = #{i_sErDat}
+			, V_UPDATE_USER_ID  = #{pRegUserId}
+			, V_UPDATE_DTM      = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		AND V_PRODUCT_CD = #{i_sProductCd}
+	</update>
+</mapper>

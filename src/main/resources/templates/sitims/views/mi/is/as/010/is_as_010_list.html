@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type="text/javascript" src="/sitims/js/util/cm_function.js"></script>
+<script type='text/javascript'>
+
+// 레이아웃 변수 설정
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage;
+var	i_iNowPageNo	= 1;
+var	i_iPageSize		= 50;
+
+// 레이아웃 초기화   
+$(function(){
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form', height:'50px'}
+			,{id:'grid', height:'75%',header:"목록"}
+			,{id:'page', resizable: true}
+		]
+	});
+
+// 폼 설정 - 검색조건
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		css: "formSearch--border_bottom",
+		cols:[
+			,{type: "input" , id:"i_sSearchNm", name:"i_sSearchNm", label:"검색명", labelPosition: "left", labelWidth: "100", width: "600px", gravity: false, icon: "dxi dxi-magnify", placeholder:"성분(영문명) or Cas No or 성분코드", required: true}
+			]
+		});
+	frmSearchCell.attach(frmSearch);
+		
+	var gridCell = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns:[
+			{ width: 80, id: "v_flag", align:"center"      , header: [{ text: "구분",align:"center" }],autoWidth: false}
+			, { width: 80, id: "v_type_nm", align:"center"      , header: [{ text: "유형",align:"center" }],autoWidth: false}
+			, { width: 100, id: "v_product_nm_ko", align:"center"      , header: [{ text: "한글제품명",align:"center"}]}
+			, { width: 100, id: "v_con_cd", align:"center"      , header: [{ text: "성분코드",align:"center"}],autoWidth: false}
+			, { width: 100, id: "v_con_nm_en", align:"center"      , header: [{ text: "성분명(영어)",align:"center"}]}
+			, { width: 100, id: "v_con_casno", align:"center"      , header: [{ text: "Cas No",align:"center"}]}
+			, { width: 100, id: "n_con_in_per", align:"center"      , header: [{ text: "성분 함량",align:"center"}]}
+			, { width: 100, id: "v_func_yn", align:"center"      , header: [{ text: "기능성여부",align:"center"}],autoWidth: false}
+			, { width: 100, id: "v_func_nm_en", align:"center"      , header: [{ text: "배합목적",align:"center"}]}
+			, { width: 100, id: "n_part_no", align:"center"      , header: [{ text: "내용물 번호",align:"center"}],autoWidth: false}
+			, { width: 100, id: "v_product_nm_en", align:"center"      , header: [{ text: "영문제품명",align:"center"}]}
+// 			, { width: 100, id: "v_brand_nm", align:"center"      , header: [{ text: "브랜드",align:"center"}]}
+		]
+    	,autoWidth: true
+    	,headerRowHeight: 46
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	
+	gridCell.attach(grdMain);
+ 	 
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/is/as/010/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    });
+//     mainPage.initPaging();
+
+});
+
+function fn_search() {
+	var labelRequired;
+	frmSearch.forEach(function(item, index, array) {
+		
+		console.log(item.config);
+		
+		if(item.config.required && fn_isNull(item.config.value)){
+			labelRequired=item.config.label;
+			return; 
+		}		
+	});
+	if(!fn_isNull(labelRequired)){
+		fn_s_alertMsg(labelRequired + "을 입력 후 검색바랍니다.");
+		return;
+	}
+    mainPage.search(1);
+}
+
+function fn_excel() {
+	fn_excel_download("/is/as/010/is_as_010_list_excel.do", mainPage.postParam);
+}
+
+$(document).on('keyup','#i_sSearchNm',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+$(document).on('click','#i_sSearch',function(e){
+		fn_search();
+});
+
+</script>
+</html>

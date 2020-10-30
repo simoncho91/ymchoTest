@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript'>
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage;
+$(function(){
+
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form'}
+			,{id:'toolbar', /* resizable: true */}
+			,{id:'grid',height:'85%',width:'100%', resizable: true,header:"목록"}
+			,{id:'page', resizable: true}
+		]
+	});
+
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		//css: "formSearch--border_bottom",
+		rows:[			
+			{cols:[
+				{ type:"input" , name:"i_sSearchStatusInput", id:"i_sSearchStatusInput", width: "500",label:"검색어" ,labelPosition: "left", labelWidth: "100", gravity: false, placeholder: "한글 제품명 OR 영문 제품명 OR 중문 제품명 OR 제품코드",required: false},
+				{ type:"select" , name:"i_sSearchStatus", id:"i_sSearchStatus",width: "300", gravity: false,label:"진행상황" ,labelPosition: "left", labelWidth: "100"
+					,options:[
+						{value:'' , content:"선택"}
+						,{value:'domestic' , content:"국내검토"}
+						,{value:'overseas' , content:"글로벌검토"}
+						,{value:'advertise' , content:"문안검토"}
+					]},
+					{ type:"select" , name:"i_sSearchStatusVal", id:"i_sSearchStatusVal",width: "150", gravity: false,label:"" ,labelPosition: "left", labelWidth: "0"
+						,options:[
+							{value:'' , content:"선택"}
+						]
+					},
+					{ type:"select" , name:"i_sFunc", id:"i_sFunc",width: "200", gravity: false,label:"기능성여부" ,labelPosition: "left", labelWidth: "100"
+						,options:[
+					    	{value:'' , content:"선택"}
+							,{value:'N' , content:"N"}
+							,{value:'Y' , content:"Y"}
+							]
+					}
+			]}
+		]
+	});
+	frmSearchCell.attach(frmSearch);
+	frmSearch.events.on("Change",function(name, new_value){
+	    if(name=='i_sSearchStatus'){
+		    var arr=[{value:'' , content:"선택"}];
+		    switch(new_value){
+			    case 'product' : 
+			    	arr =[
+			    	{value:'' , content:"선택"}
+					,{value:'0' , content:"작성중"}
+					,{value:'1' , content:"등록완료"}]
+			    break;
+			    case 'advertise' : 
+			    	arr =[
+			    	{value:'' , content:"선택"}
+					,{value:'N' , content:"검토중"}
+					,{value:'Y' , content:"검토완료"}]
+			    break;
+			    case '' : 
+			    	arr =[
+			    	{value:'' , content:"선택"}]
+			    break;
+			    default :
+			    	arr =[
+				    	{value:'' , content:"선택"}
+						,{value:'N' , content:"검토중"}
+						,{value:'Y' , content:"검토완료"}]
+			    break;
+		    }
+		    frmSearch.getItem('i_sSearchStatusVal').config.options=arr;
+		    frmSearch.getItem('i_sSearchStatusVal').paint();
+		    frmSearch.getItem('i_sSearchStatusVal').clear();
+	    }
+	});
+		
+	var gridCell = layoutMain.getCell('grid');    
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns:[
+			//{ width: 100, id: "n_num",align:"right"      , header: [{ text: "No.",align:"center" }] , autoWidth: false}
+			 { width: 80, id: "v_record_id"      , header: [{ text: "문서코드",align:"center" }],hidden:true }
+			, { width: 120, id: "v_product_cd"	, header: [{ text: "제품코드" ,align:"center"}], align:"center" , autoWidth: false, mark: fn_dhxLinkCss}
+			, { width: 300, id: "v_product_nm_ko"      , header: [{ text: "한글 제품명" ,align:"center" }], align:"left", hidden:true}
+			, { width: 300, id: "v_product_nm_fast"      , header: [{ text: "한글 제품명" ,align:"center" }], align:"left", autoWidth: false }
+			, { width: 300, id: "v_product_nm_en",align:"left"      , header: [{ text: "영문 제품명",align:"center" }] , autoWidth: false}
+			, { width: 100, id: "v_receip_status_nm",align:"center"      , header: [{ text: "제품 진행현황",align:"center" }] }
+			, { width: 100, id: "v_ck_domestic_yn_nm",align:"center"      , header: [{ text: "국내검토",align:"center" }] }
+			, { width: 100, id: "v_ck_advertise_yn_nm",align:"center"      , header: [{ text: "문안 검토",align:"center" }] }
+			, { width: 100, id: "v_ck_overseas_yn_nm",align:"center"      , header: [{ text: "글로벌검토",align:"center" }] }
+			, { width: 100, id: "v_func_yn",align:"center"      , header: [{ text: "기능성 여부" ,align:"center"}] }
+		]
+		,headerRowHeight: 46
+		,autoWidth:true
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	gridCell.attach(grdMain);
+	
+	grdMain.events.on("CellClick", fn_view2);
+	grdMain.events.on("CellDblClick", fn_view);
+
+	//var gridMainToolbar = new dhx.Toolbar(null,{
+	//data:[
+	// 	{type:"button",icon:"dxi-plus",value:"등록",id:'btnAdd'}
+	//	]
+	//});
+	//layoutMain.getCell('toolbar').attach(gridMainToolbar);
+	  
+	//  gridMainToolbar.events.on("Click", function(id){
+	//  	if(id=='btnAdd'){
+	//  		window.location.href='/br/pr/010/br_pr_010_reg.do?i_sActionFlag=R';
+	//  	}
+	//  });
+    
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/br/pr/010/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    		, postParam : {i_sComplProdYn : "RS050"}
+    });
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	frmSearch.getItem('i_sSearchStatusInput').setValue(param.i_sSearchStatusInput);
+    	frmSearch.getItem('i_sSearchStatus').setValue(param.i_sSearchStatus);
+    	frmSearch.getItem('i_sSearchStatusVal').setValue(param.i_sSearchStatusVal);
+    	frmSearch.getItem('i_sFunc').setValue(param.i_sFunc);
+    }
+
+});
+function fn_view(row,col,e) {
+	var data = grdMain.data.getItem(row.id);
+	window.location.href='/br/pr/012/br_pr_012_t1_view.do?i_sRecordId='+data.v_record_id+'&i_sProductCd='+data.v_product_cd;
+}
+function fn_view2(row,col,e) {
+	if (col.id == 'v_product_cd')
+		fn_view(row,col,e);
+}
+function fn_search() {
+    mainPage.search();
+}
+
+function fn_excel() {
+	var param = mainPage.postParam;
+	param.i_sExcelFileNm="완료제품 리스트";
+	fn_excel_download("/br/pr/010/br_pr_010_list_excel.do", param);
+}
+
+$(document).on('keyup','#i_sSearchStatusInput',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+</script>
+</html>

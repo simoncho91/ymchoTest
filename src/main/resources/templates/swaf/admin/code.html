@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var layoutSub1;
+
+//layout - c
+var grdDetail;
+
+//layoutSub1 - a
+var grdMain;
+
+//layoutSub1 - b
+var frmMain;
+
+//local variable
+var curGrpCd;
+
+var saveMode = 'I';
+
+//DataProcessor
+var dpDetail;
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/
+	// Layout
+    dhtmlx.image_path = dhtmlx_image_path;
+    layoutMain = new dhtmlXLayoutObject({
+        parent: "layoutObj",
+        pattern: "3E",
+        skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+    });
+    
+    /* Form-조건 */
+    var a = layoutMain.cells('a');
+    a.setText('검색조건');
+    a.setHeight(SearchFormHeight[1]);
+    
+    var strLabel =  [{type: "label", list: [
+		                { type:"input" , name:"GRP_CD", label:"그룹코드", className:"offsetRight" },
+				        { type:"newcolumn"   },
+				        { type:"input" , name:"GRP_CD_NM", label:"그룹코드명", className:"offsetRight"  },
+	                    { type:"newcolumn"   },
+	                    { type: "combo", label: "사용여부", name: "USE_YN"}
+	    			 ]}
+			        ];
+    strLabel.unshift(SearchFormStyle3);
+    frmSearch = a.attachForm(strLabel);
+    frmSearch.getCombo("USE_YN").load("/dhtmlx/data/comboYNa.json");
+    
+	// layoutSub1
+	layoutSub1 = new dhtmlXLayoutObject({
+	    parent: layoutMain.cells('b'),
+	    pattern: "2U",
+	    skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+	});
+	
+	// layoutSub1_1 - 그룹코드 grid
+    var sub1a = layoutSub1.cells('a');
+    sub1a.setText('그룹코드 목록');
+    grdMain = sub1a.attachGrid();
+    grdMain.setHeader(["NO","그룹코드","그룹코드명","설명","사용여부"]
+					   ,null
+					   ,["",hStyleR,hStyleR,hStyleE,hStyleR]
+    );
+    grdMain.setColumnIds("NO,GRP_CD,GRP_CD_NM,GRP_CD_DESC,USE_YN");
+    grdMain.setColTypes("ro,ro,ro,ro,ro");
+    grdMain.setInitWidths('40,200,200,200,*');
+    fn_initGrid(grdMain);
+
+    //grdMain.getColumnCombo(4).load("/dhtmlx/data/comboYN.json");
+    
+	// layoutSub1_2 - 그룹코드 form
+    var sub1b = layoutSub1.cells('b');
+    sub1b.setText('그룹코드');
+    
+    var strLabel = [
+	                {type: "label", list: [
+	                    { type:"input"  , name:"GRP_CD" , label: "그룹코드", readonly:true, required:"true" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"GRP_CD_NM" , label: "그룹코드명", required:"true" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"GRP_CD_DESC" , label: "설명" }
+	                ]},
+	                {type: "label", list: [
+   	                    { type:"combo"  , name:"USE_YN" , label: "사용여부" }
+   	                ]}
+	               ];
+    strLabel.unshift(RegisterFormStyle1);
+    frmMain = sub1b.attachForm(strLabel);
+    frmMain.getCombo("USE_YN"  ).load("/dhtmlx/data/comboYN.json");
+
+    sub1b.attachToolbar({
+        icons_path: toolbar_icons_path,
+        items:[
+              {type:"button", text:"신규", img:"new.gif", img_disabled:"new_dis.gif", action:"fn_new"},
+              {type: "separator", id: "sep1"},
+              {type:"button", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_save"},
+              {type:"button", text:"삭제", img:"delrow.gif", img_disabled:"delrow_dis.gif", action:"fn_del"}
+             ]
+    });
+    frmMain.bind(grdMain);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+	// 공통코드 목록
+    layoutMain.cells('c').setText('공통코드 목록');
+    grdDetail = layoutMain.cells('c').attachGrid();
+    grdDetail.setHeader( ["NO","코드","코드명","설명","정렬","기타1","기타2","기타3","사용여부",""]
+	    ,null
+	    ,["",hStyleR,hStyleR,hStyleE,hStyleE,"","","",hStyleR,""]
+	);
+	grdDetail.setColumnIds("NO,COMM_CD,COMM_CD_NM,COMM_CD_DESC,SORT_SEQ,BUFFER1,BUFFER2,BUFFER3,USE_YN,GRP_CD");
+	grdDetail.setColTypes("ro,ed,ed,txt,ed,txt,txt,txt,combo,ro");
+	grdDetail.setInitWidths('40,200,200,*,80,100,100,100,100,0');
+	grdDetail.colMaxLength = ",20,300";
+    fn_initGrid(grdDetail);
+    
+    grdDetail.getColumnCombo(5).load("/dhtmlx/data/comboYN.json");
+
+    // dataProcessor
+    dpDetail = new dataProcessor("");
+    dpDetail.setVerificator(1,fn_dpValidNotEmpty);
+    dpDetail.setVerificator(2,fn_dpValidNotEmpty);
+    fn_initDP(dpDetail, grdDetail);
+    
+    layoutMain.cells('c').attachToolbar({
+        icons_path: toolbar_icons_path,
+        items:[
+              {type:"button", text:"추가", img:"addrow.gif", img_disabled:"addrow_dis.gif", action:"fn_add_detail"},
+              {type:"button", text:"삭제", img:"delrow.gif", img_disabled:"delrow_dis.gif", action:"fn_del_detail"},
+              {type: "separator", id: "sep1"},
+              {type:"button", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_save_detail"}
+             ]
+    });
+
+    // 나머지 초기화
+    layoutMain.setAutoSize("a;b;c", "b");
+    fn_init();
+
+    // 최초 조회
+    fn_search();
+
+	/****************************************************************************************************
+	 * 이벤트 생성
+	 ****************************************************************************************************/
+	// 그룹코드 그리드
+	grdMain.attachEvent("onSelectStateChanged", function(id, ind) {
+		saveMode = 'U';
+		frmMain.setReadonly("GRP_CD", true);
+
+		if (curGrpCd != grdMain
+				.cells(id, grdMain.getColIndexById("GRP_CD")).getValue()) {
+			curGrpCd = grdMain.cells(id, grdMain.getColIndexById("GRP_CD"))
+					.getValue();
+			fn_searchDetail(curGrpCd);
+		}
+
+	});
+});
+
+// 그룹코드 조회
+function fn_search() {
+	var postParam = fn_getPostParam(frmSearch);
+	//postParam.test = '잘되네';
+
+	grdDetail.clearAll();
+
+	fn_ajaxGetGrid({
+		gridName : grdMain,
+		url : "/dhtmlx/admin/code/selectGrpCodeList.do",
+		postParam : postParam,
+		success : function() {
+			if (grdMain.getRowsNum() > 0) {
+				grdMain.selectRow(0);
+			}
+		}
+	});
+}
+
+//공통코드 조회
+function fn_searchDetail(GRP_CD) {
+	if (fn_isNull(GRP_CD)) {
+		grdDetail.clearAll();
+		return;
+	}
+
+	var postParam = fn_getPostParam(frmSearch);
+	postParam.GRP_CD = GRP_CD;
+
+	fn_ajaxGetGrid({
+		gridName : grdDetail,
+		url : "/dhtmlx/admin/code/selectCodeList.do",
+		postParam : postParam,
+		success : function() {
+		}
+	});
+}
+
+// 그룹코드 신규
+function fn_new() {
+	saveMode = 'I';
+	frmMain.clear();
+	frmMain.setItemFocus("GRP_CD");
+	frmMain.setReadonly("GRP_CD", false);
+}
+
+// 그룹코드 저장
+function fn_save() {
+	var postParam = new Object();
+	// 멀티 update/insert시 core에서 파라미터를 파싱하는 기능이 추가되어야함. 우선 1row씩 저장하도록 처리
+	postParam = fn_getPostParam(frmMain);
+	postParam.saveMode = saveMode;
+
+	if (fn_validateForm(frmMain)) {
+		fn_ajaxSaveForm({
+			url : "/dhtmlx/admin/code/saveGrpCd.do",
+			postParam : postParam,
+			postType : 'save',
+			success : function() {
+				fn_search();
+			}
+		});
+	}
+}
+
+//그룹코드 삭제
+function fn_del() {
+
+	postParam = grdMain.getRowData(grdMain.getSelectedRowId());
+
+	rowIndex = 0;
+	if (saveMode == 'U') {
+		dhtmlx.confirm("삭제하시겠습니까?", function(result) {
+			if (result) {
+				fn_ajaxSaveForm({
+					url : "/dhtmlx/admin/code/deleteGrpCd.do",
+					postParam : postParam,
+					postType : 'save',
+					success : fn_search
+				});
+			}
+		});
+	}
+}
+
+//공통코드 화면에 추가
+function fn_add_detail() {
+
+	// "NO,COMM_CD,COMM_CD_NM,COMM_CD_DESC,SORT_SEQ,USE_YN,GRP_CD"
+	if (grdMain.getRowsNum() > 0) {
+		if (fn_isNull(grdMain.getSelectedRowId())) {
+			vGRP_CD = grdMain.cells(1, grdMain.getColIndexById("GRP_CD"))
+					.getValue();
+		} else {
+			vGRP_CD = grdMain.cells(grdMain.getSelectedRowId(),
+					grdMain.getColIndexById("GRP_CD")).getValue();
+		}
+		//grdMain.cells(1, grdMain.getColIndexById("COMM_CLS_CD")).getValue()
+		//grdDetail.setColumnIds("NO,COMM_CD,COMM_CD_NM,EXT_CD1,EXT_CD2,EXT_CD3,SORT_SN,USE_YN,COMM_CLS_CD");
+		grdDetail
+				.addRow((new Date()).valueOf(), [ '', '', '', '', '', '', '', '', 'Y',
+						vGRP_CD ], grdDetail.getRowIndex(grdDetail
+						.getSelectedId()));
+	}
+}
+
+//공통코드 화면에 삭제
+function fn_del_detail() {
+	fn_deleteRow(dpDetail, grdDetail);
+}
+
+//공통코드 저장
+function fn_save_detail() {
+
+	var postParam = new Object();
+	postParam.grdDetail = fn_getPostParamFromGrid(grdDetail, dpDetail);
+
+	console.log(postParam.grdDetail);
+
+	if (fn_validateGrid(dpDetail)) {
+		//fn_ajaxSaveGrid({ url      : "/testRequestJson.do"
+		fn_ajaxSaveGrid({
+			url : "/dhtmlx/admin/code/saveDetails.do",
+			postParam : postParam,
+			postType : 'save',
+			success : function() {
+				fn_searchDetail(curGrpCd);
+			}
+		});
+	}
+}
+</script>
+</html>

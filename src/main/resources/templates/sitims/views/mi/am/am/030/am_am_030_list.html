@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type="text/javascript" src="/sitims/js/util/cm_function.js"></script>
+<script type='text/javascript'>
+
+//layout
+var layoutMain;
+var searchForm;
+var mainGrid;
+var subForm;
+
+//toolbar
+var gridSubToolbar;
+
+//tree
+var mainTree;
+var subTree;
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+var dcGrdMain;
+
+//paging
+var mainPage;
+var	i_iNowPageNo= 1;
+var	i_iPageSize= 50;
+
+$(function(){
+/****************************************************************************************************
+  * 초기화 
+  ****************************************************************************************************/    
+	
+	  layoutMain = new dhx.Layout("layoutObj", {
+		     css: "dhx_layout-cell--border_top",
+		     rows: [
+		    	  {id: "searchForm", gravity: false,height: "60px", css: "dhx_layout-cell--border_bottom"}
+	               ,{rows: [
+                           {cols:[
+	                        	 {id: "mainGrid", width: "600px",css: "layout_padding_right"}
+	                        	 ,{rows:[
+	                        		  {id: "toolbarSub", gravity:false}
+	                        		 ,{id: "subForm", gravity:false}
+	                        	 ],width: "100px",resizable: true}
+        	 				],header:"목록", height: "90%"}
+	                      ]
+	                 }
+	               ,{id:'page'}
+		     	 ]
+		 });
+	  
+	  // Form-검색조건
+	  searchForm = new dhx.Form(null, {
+		  rows: [
+    	  		{cols:[
+	 				{type: "select", id: "i_sBrand", name: "i_sBrand",  label: "브랜드", labelPosition: "left", labelWidth: "100", width: "300", gravity: false, options: [{}] }
+	 				,{type: "input", id: "i_sDept_nm", name: "i_sDept_nm",  readOnly:true, label: "부서", labelPosition: "left", labelWidth: "100", width: "400", gravity: false, placeholder: "부서 검색"}
+	 				,{type: "input", id: "i_sDept", name: "i_sDept",  hidden:true}
+	 			]}
+	 		]
+	  });
+	  
+	  layoutMain.getCell("searchForm").attach(searchForm);
+
+	  
+	  // sub-툴바    
+	  gridSubToolbar = new dhx.Toolbar(null, {
+	      css: "dhx_widget--bordered dhx_widget--bg_gray",
+	      data: [
+	           {id: "btnAdd",icon:"dxi dxi-plus",value: "신규"}
+	          ,{type: "separator"}
+	          ,{id: "btnSave",icon: "dxi dxi-check",value: "저장"}
+	          ,{type: "separator"}
+	          ,{id: "btnDel",icon: "dxi dxi-delete",value: "삭제"	}
+	      ]
+	  });    
+	  layoutMain.getCell("toolbarSub").attach(gridSubToolbar);
+	  
+	  // Grid-메인    
+	  dcGrdMain = new dhx.DataCollection();
+	  mainGrid = new dhx.Grid(null, {
+	      columns: [
+	         // { width: 80,  id: "n_num",               header: [{ text: "NO.",align:"center" }], align:"right" },
+	          { width: 180, id: "v_brand_nm",            header: [{ text: "브랜드",align:"center" }], align:"left" },
+	          { width: 180, id: "v_dept_nm",            header: [{ text: "부서",align:"center" }], align:"left" },
+	          { width: 180, id: "v_reg_user_id",           header: [{ text: "등록자",align:"center" }], align:"center" },
+	          { width: 180,  id: "v_reg_dtm",           header: [{ text: "등록일",align:"center" }], align:"center" },
+	          { width: 180, id: "v_update_user_id",       header: [{ text: "수정자",align:"center" }], align:"center" },
+	          { width: 180,  id: "v_update_dtm",            header: [{ text: "수정일",align:"center" }], align:"center" }
+	      ],
+	      headerRowHeight: 46,
+	      autoWidth: true,
+	      resizable: true,
+	      selection: "row",
+	      fitToContainer: true,
+	      data: dcGrdMain
+	  });
+	  layoutMain.getCell("mainGrid").attach(mainGrid);
+	  
+	  // Form-서브  
+	  subForm = new dhx.Form(null, {
+	      rows: [
+ 				{type: "select", id: "v_brand_cd", name: "v_brand_cd",  label: "브랜드", labelPosition: "left", labelWidth: "60", width: "300", gravity: false, options: [{}] , required: true }
+	 			,{type: "input", id: "v_dept_nm", name: "v_dept_nm",  readOnly:true, label: "부서", labelPosition: "left", labelWidth: "60", width: "300", gravity: false, required: true, placeholder: "부서 검색"}
+	 			,{type: "input", id: "v_dept_cd", name: "v_dept_cd",  hidden:true}
+	 		]
+	  });
+	  layoutMain.getCell("subForm").attach(subForm);
+	  
+	  
+/****************************************************************************************************
+ * 이벤트 생성 
+ ****************************************************************************************************/
+ 		
+ 		gridSubToolbar.events.on("Click", function(id, e){
+	    	if(id=='btnAdd'){
+	    		fn_add();
+	    	}
+	    	else if(id=='btnSave'){
+	    		fn_save();
+	    	}
+	    	else if(id=='btnDel'){
+	    		fn_del();
+	    	}
+	    });
+ 			 
+		 mainGrid.events.on("CellClick", function(row,column,e){
+		  	saveMode = "U";
+		    subForm.getItem("v_dept_cd").enable();
+		  	fn_s_gridToForm(mainGrid, subForm);
+		    setDisabled();
+		 }); 
+		 
+		  $(document).on('click','#i_sDept_nm',function(e){
+				var config = {
+						centering: true,
+						mode: "right",
+						indent: 10
+					};
+			  // Tree- 상위부서 선택 
+			  $.getJSON("/am/um/010/am_um_010_list_ajax.do",function(data){
+					popup = new dhx.Popup({
+						css: "dhx_widget--border-shadow custom-treepopup-class"
+					});
+					  var treeData = getTreeData(data.data);
+					  mainTree = new dhx.Tree();
+					  mainTree.data.parse(treeData);
+					  mainTree.expandAll();
+					  
+					  popup.attach(mainTree);
+					  
+					  mainTree.events.on("ItemClick", function(id, e){
+							var	obj		= mainTree.data.getItem(id);
+							var	selId	= obj.id;
+							var	selVal	= obj.value;
+							searchForm.setValue({
+								"i_sDept" : selId,
+								"i_sDept_nm" : selVal
+							});
+							popup.hide();
+						});
+					  popup.show('i_sDept_nm', config);
+				});
+		  });
+		  $(document).on('click','#v_dept_nm',function(e){
+				var config = {
+						centering: true,
+						mode: "bottom"
+					};
+			  // Tree- 부서 선택 
+			  $.getJSON("/am/um/010/am_um_010_list_ajax.do",function(data){
+					popup = new dhx.Popup({
+						css: "dhx_widget--border-shadow custom-treepopup-class"
+					});
+					  var treeData = getTreeData(data.data);
+					  subTree = new dhx.Tree();
+					  subTree.data.parse(treeData);
+					  subTree.expandAll();
+					  
+					  popup.attach(subTree);
+					  
+					  subTree.events.on("ItemClick", function(id, e){
+							var	obj		= subTree.data.getItem(id);
+							var	selId	= obj.id;
+							var	selVal	= obj.value;
+							subForm.setValue({
+								"v_dept_cd" : selId,
+								"v_dept_nm" : selVal
+							});
+							popup.hide();
+						});
+					  popup.show('v_dept_nm', config);
+				});
+		  });
+		 
+
+	    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : mainGrid
+    		, url : "/am/am/030/am_am_030_list.do"
+    		, frmSearch: searchForm
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    });
+	    
+    fn_initDS();
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	searchForm.getItem('i_sDept_nm').setValue(param.i_sDept_nm);    	
+    	searchForm.getItem('i_sDept').setValue(param.i_sDept);    	
+    	searchForm.setValue({ "i_sBrand": param.i_sBrand});
+
+    }
+});
+/****************************************************************************************************
+ * 초기화 function 종료 
+ ****************************************************************************************************/
+
+ //리스트 조회
+function fn_search() {
+
+    mainPage.search(1);
+    mainGrid.selection.setCell(mainGrid.data.getId(rowIndex), false);
+    setDisabled();
+    saveMode = "U";
+    fn_s_gridToForm(mainGrid, subForm);
+
+}
+function fn_excel(){
+	fn_excel_download("/am/am/030/am_am_030_list_excel.do", mainPage.postParam);
+}
+//SearchForm BrandData초기화  :: SubForm BrandData 초기화
+function fn_initDS() {
+
+ var postParam = new Object();
+ postParam.grpcd = "dsBrandId:BRAND_CODE:Y:S";
+
+ fn_s_ajaxGetDsForCombo({ 
+	 postParam : postParam
+   , async:false
+   , success : 
+     function(responseData) { 
+		fn_s_selectboxPaint(searchForm, ["i_sBrand"], responseData.dsBrandId);
+		fn_s_selectboxPaint(subForm, ["v_brand_cd"], responseData.dsBrandId);
+		
+	}
+ });
+ 
+}
+
+//신규 init function
+function fn_add(){
+ saveMode = "I";
+ mainGrid.selection.setCell(mainGrid.data.getId(-1), false);
+ $("#v_brand_cd").removeAttr("disabled");
+ $("#v_dept_nm").removeAttr("disabled");
+ subForm.getItem("v_brand_cd").enable();
+ subForm.getItem("v_dept_nm").enable();
+ subForm.clear();
+}
+
+//신규등록  function
+function fn_save() {
+	
+	var data = subForm.getValue();
+
+	var postParam = {
+			i_sBrandCd : data.v_brand_cd,
+			i_sDeptCd : data.v_dept_cd
+	}
+	
+ if (saveMode == 'I') {
+ 	rowIndex = 0;
+	  if (!fn_s_validateForm(subForm)) {
+		  return;
+	  }
+		dhx.confirm({
+			header : "알림",
+			text : "등록 하시겠습니까?",
+			buttons : ["예","아니오"],
+			buttonsAlignment: "center"
+		}).then( function (result) {
+			if(result){
+			 	$.ajax({
+					  url  : "/am/am/030/am_am_030_reg.do"
+					, type : "POST"
+			        , data : postParam
+			        , dataType : "json"
+			        , success : function(xhr){
+			        	fn_s_alertMsg(xhr.message);
+			        	fn_saveSuccess();
+					}, error : function(xhr){
+			        	fn_s_alertMsg("등록 실패");
+					}
+			     }); 
+				
+			}
+			else{
+				return;
+			}
+		});
+ }else{
+	 fn_s_alertMsg("수정기능이 없는 페이지 입니다.");
+ }
+}
+//삭제
+function fn_del(){
+	if(!fn_s_validateForm(subForm)){
+		return;
+	}
+	
+	dhx.confirm({
+		header : "알림",
+		text : "삭제하시겠습니까?",
+		buttons : ["예","아니오"],
+		buttonsAlignment: "center"
+	}).then( function (result) {
+		if(result){
+			var data = subForm.getValue();
+			var postParam = {
+					i_sBrandCd : data.v_brand_cd,
+					i_sDeptCd : data.v_dept_cd
+			}
+		 	$.ajax({
+				  url  : "/am/am/030/am_am_030_del.do"
+				, type : "POST"
+		        , data : postParam
+		        , dataType : "json"
+		        , success : function(xhr){
+		        	fn_s_alertMsg(xhr.message);
+		        	fn_saveSuccess();
+				}, error : function(xhr){
+		        	fn_s_alertMsg("삭제 실패");
+				}
+		     }); 
+		}
+		else{
+			return;
+		}
+	});
+}
+
+function fn_saveSuccess() {
+ mainPage.search();
+ fn_add();
+}
+
+//subForm - disabled
+function setDisabled(){
+	$("#v_brand_cd").attr("disabled","disabled");
+	$("#v_dept_nm").attr("disabled","disabled");
+    subForm.getItem("v_brand_cd").disable();
+    subForm.getItem("v_dept_nm").disable();
+    
+} 
+function getTreeData(array){
+	var	map	= {};
+	for(var i = 0; i < array.length; i++){
+		var	obj		= {"id" : array[i]['ID'], "value" : array[i]['TEXT'] , "LVL" : array[i]['LVL'] 
+		 				, "USE_YN" : array[i]['USE_YN']  , "SEQNO" : array[i]['SEQNO']  , "DEPT_TOP" : array[i]['DEPT_TOP'] 
+		 				 , "DEPT_TOP_ID" : array[i]['DEPT_TOP_ID']  , "CONNECT_TEXT" : array[i]['CONNECT_TEXT'] };
+		obj.items	= [];
+		map[obj.id]	= obj;
+
+		var parent	= array[i]['DEPT_TOP_ID'] || '-';
+		if(!map[parent]){
+			map[parent] = {
+				items: []
+			};
+		}
+		map[parent].items.push(obj);
+	}
+	return map['-'].items;
+}
+
+</script>
+</html>

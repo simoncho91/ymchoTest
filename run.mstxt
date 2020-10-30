@@ -1,0 +1,4 @@
+d:
+cd D:\sts-3.9.4.RELEASE\workspace\swaf-deploy\target
+java -jar -Dconf.home=/sck/bin/jenkins/swaf-deploy/conf-live/ swaf-deploy-0.0.1-SNAPSHOT.jar
+java -jar -Dconf.home=D:/sts-3.9.4.RELEASE/workspace/swaf-deploy/conf/  swaf-deploy-0.0.1-SNAPSHOT.war

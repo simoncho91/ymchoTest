@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : SysTranLogMapper.xml
+    Description   : SysTran Log 기록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.05.15  thkim       1.0        최초 생성
+-->
+<mapper namespace="SysTranLog">
+		
+	<!-- 1.  로그 조회 -->
+	<select id="selectList" resultType="Map">
+		SELECT /* SysTranLog.selectList */
+		       rownum AS NO
+		     , TRAN_LOG_NO
+		     , USER_NO
+		     , TRAN_START_DT
+		     , TRAN_START_TM
+		     , RUN_TM
+		     , CLNT_IP
+		     , SVR_IP
+		     , AC_URL
+		     , SYS_ID
+		     , AC_PARM
+		     , TRAN_END_DT
+		     , TRAN_END_TM
+		  FROM TZF_SYSTRANLOG_L
+		 WHERE TRAN_START_DT BETWEEN #{START_DT} AND #{END_DT}
+		<if test="session.SYS_ID != null and !session.SYS_ID.equals('all')">
+		   AND SYS_ID = #{session.SYS_ID}
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(AC_URL)">
+		   AND AC_URL LIKE '%'||TRIM(#{AC_URL})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_NO)">
+		   AND USER_NO LIKE '%'||TRIM(#{USER_NO})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(CLNT_IP)">
+		   AND CLNT_IP LIKE TRIM(#{CLNT_IP})
+		</if>
+		 ORDER BY TRAN_LOG_NO DESC
+	</select>
+	
+	
+	<!--  2. 등록  -->
+    <!--  2.1. 로그 등록  -->
+    <insert id="insertLog"  parameterType="com.shinsegae_inc.core.vo.SysTranLogVO">
+        INSERT /* SysTranLog.insertLog */
+          INTO TZF_SYSTRANLOG_L
+             (
+               TRAN_LOG_NO
+             , USER_NO
+             , TRAN_START_DT
+             , TRAN_START_TM
+             , TRAN_END_DT
+             , TRAN_END_TM
+             
+             , RUN_TM
+             , CLNT_IP
+             , SVR_IP
+             , AC_URL
+             , SYS_ID
+             , AC_PARM
+             )  
+	    VALUES
+	         (
+	            TZF_SYSTRANLOG_L_SEQ.NEXTVAL
+	          , #{userNo} 
+	          , #{tranStartDt} 
+	          , #{tranStartTm} 
+	          , #{tranEndDt} 
+	          , #{tranEndTm} 
+	          
+	          , #{runTm} 
+	          , #{clntIp} 
+	          , #{svrIp} 
+	          , #{acUrl} 
+	          , #{sysId}
+	          , #{acParm}
+	         )
+    </insert>
+    
+    
+</mapper>

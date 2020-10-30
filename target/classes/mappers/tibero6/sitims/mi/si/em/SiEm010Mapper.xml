@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : SiEm010Mapper.xml
+    Description   : 문안검토금지어관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.30  ash       1.0        최초 생성
+-->
+<mapper namespace="SiEm010Mapper">
+	<select id="getForbiddenListCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT
+			COUNT(*)	CNT
+		FROM
+			TSI_PF_BAN_L 
+		WHERE
+			V_DEL_YN	=	'N'
+		<if test="i_sType != 'all'">
+			AND V_TYPE_CD	=	#{i_sType}
+		</if>
+		<if test="i_sSearchWord != null and i_sSearchWord != ''">
+			AND UPPER(V_WORD) LIKE '%' || UPPER(#{i_sSearchWord}) || '%' 
+		</if>
+	</select>
+	
+	<select id="getForbiddenList" parameterType="CmMap" resultType="CmMap">
+		SELECT
+			A.*
+		FROM
+			(
+				SELECT 
+					ROW_NUMBER() OVER(PARTITION BY V_TYPE_CD ORDER BY V_TYPE_CD ASC, N_SEQ_NO DESC) N_NUM
+					, V_TYPE_CD
+					, (SELECT COMM_CD_NM FROM TZF_COMMCD_D WHERE GRP_CD = 'PROOF_BAN' AND COMM_CD = V_TYPE_CD) V_TYPE_NM
+					, N_SEQ_NO
+					, V_WORD
+					, V_REG_USER_ID
+					, V_REG_DTM
+					, V_UPDATE_USER_ID
+					, V_UPDATE_DTM
+					, V_PROOF_GUIDE					
+					, V_SIMILAR_WORD	
+					, V_EXPLAIN	
+					, V_EXAMPLE	
+				FROM
+					TSI_PF_BAN_L
+				WHERE
+					V_DEL_YN = 'N'
+				<if test="i_sType != 'all'">
+					AND V_TYPE_CD = #{i_sType}
+				</if>
+				<if test="i_sSearchWord != null and i_sSearchWord != ''">
+					AND UPPER(V_WORD) LIKE '%' || UPPER(#{i_sSearchWord}) || '%' 
+				</if>
+			) A
+	</select>
+	
+	<select id="getForbiddenExceptWordListCount" parameterType="CmMap" resultType="Integer">
+	  	SELECT
+	  		COUNT(*)
+		  FROM
+		  	KR_FILTERING_EXCEPT_WORD W
+		 WHERE
+			V_DEL_YN = 'N'
+		<if test="i_sSearchWord != null and i_sSearchWord != ''">
+			AND UPPER(V_WORD) LIKE '%' ||  UPPER(TRIM(#{i_sSearchWord})) || '%'
+		</if>
+	</select> 
+	
+	<select id="getForbiddenExceptWordList" parameterType="CmMap" resultType="CmMap">
+	SELECT
+		*
+	  FROM (
+		SELECT
+			ROW_NUMBER() OVER(ORDER BY V_REG_DTM DESC) AS N_NUM
+			, W.*
+			, SSM_USERNM_FN2(W.V_REG_USER_ID, #{s_language}, 'T1') AS V_REG_USERNM
+		  FROM
+		  	KR_FILTERING_EXCEPT_WORD W
+		 WHERE
+			V_DEL_YN = 'N'
+			<if test="i_sSearchWord != null and i_sSearchWord != ''">
+				AND UPPER(V_WORD) LIKE '%' ||  UPPER(TRIM(#{i_sSearchWord})) || '%'
+			</if>
+	) A
+	WHERE
+		1 = 1
+		<if test="i_iStartRownum != null and i_iStartRownum != ''">
+			AND  A.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select> 
+	
+	<select id="getTabList" parameterType="CmMap" resultType="CmMap">
+		SELECT * 
+		FROM TZF_COMMCD_D 
+		WHERE grp_cd = 'PROOF_BAN'
+	</select>
+	
+	<select id="getForbiddenInfo" parameterType="CmMap" resultType="CmMap">
+		SELECT 
+			V_TYPE_CD
+			, (SELECT COMM_CD_NM FROM TZF_COMMCD_D WHERE GRP_CD = 'PROOF_BAN' AND COMM_CD = V_TYPE_CD) V_TYPE_NM
+			, N_SEQ_NO
+			, V_WORD
+			, V_PROOF_GUIDE					
+			, V_SIMILAR_WORD	
+			, V_EXPLAIN	
+			, V_EXAMPLE	
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM
+		 FROM TSI_PF_BAN_L
+		WHERE  V_TYPE_CD = #{i_sType}
+		  AND N_SEQ_NO = #{i_iSeqNo}
+	</select>
+	
+	<insert id="insertSupProofForbiddenWord" parameterType="CmMap">
+		/*insertSupProofForbiddenWord - 금지어 등록*/
+		<selectKey keyProperty="i_iSeqNo" resultType="Integer" order="BEFORE">
+			/* PK 생성 */
+	    	SELECT NVL(MAX(N_SEQ_NO), 0) + 1
+        	FROM TSI_PF_BAN_L
+        	WHERE V_TYPE_CD = #{i_sType}
+	    </selectKey>
+	    INSERT INTO TSI_PF_BAN_L
+	    (
+	    	V_TYPE_CD
+	    	, N_SEQ_NO
+	    	, V_WORD
+	    	, V_REG_USER_ID
+	    	, V_REG_DTM
+	    	, V_UPDATE_USER_ID
+	    	, V_UPDATE_DTM
+	    	, V_PROOF_GUIDE	
+	    	, V_SIMILAR_WORD
+	    	, V_EXPLAIN		
+	    	, V_EXAMPLE
+	    	, V_DEL_YN
+	    ) VALUES
+	    (
+	    	#{i_sType}
+	    	, #{i_iSeqNo}
+	    	, #{i_sForbidden}
+	    	, #{s_userid}
+	    	, TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+	    	, #{s_userid}
+	    	, TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+	    	, #{i_sProofGuide}
+	    	, #{i_sSimilarWord}
+	    	, #{i_sExplain}
+	    	, #{i_sExample}
+	    	, 'N'
+	    )
+	</insert>
+	
+	
+	<update id="updateSupProofForbiddenWord" parameterType="CmMap">
+		/*insertSupProofForbiddenWord - 금지어 수정*/
+		UPDATE TSI_PF_BAN_L
+		  SET
+			 V_WORD				= #{i_sForbidden}
+	    	, V_PROOF_GUIDE		= #{i_sProofGuide}   
+	    	, V_SIMILAR_WORD    = #{i_sSimilarWord}  
+	    	, V_EXPLAIN		    = #{i_sExplain}      
+	    	, V_EXAMPLE         = #{i_sExample}      
+			, V_UPDATE_USER_ID	= #{s_userid}
+			, V_UPDATE_DTM		= TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+		WHERE V_TYPE_CD = #{i_sType}
+		  AND N_SEQ_NO  = #{i_iSeqNo}
+	</update>
+	
+	
+	<update id="deleteSupProofForbiddenWord" parameterType="CmMap">
+		/*deleteSupProofForbiddenWord - 금지어 삭제*/
+		UPDATE TSI_PF_BAN_L
+		SET
+			  V_DEL_YN 			= 'Y'
+			, V_UPDATE_USER_ID   = #{i_sRegUserId}
+			, V_UPDATE_DTM    	= TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+		WHERE 
+			  V_TYPE_CD = #{i_sType}
+		AND   N_SEQ_NO     = #{i_iSeqNo} 
+	</update>
+	
+	<insert id="insertForbiddenExceptWord" parameterType="CmMap">
+		/*insertSupProofForbiddenWord - 예외금지어 등록*/
+		<selectKey keyProperty="i_sExceptCd" resultType="java.lang.String" order="BEFORE">
+			SELECT 
+				 'EW' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(V_EXCEPTCD, 3))), 0) + 1, 8, '0')  
+			  FROM KR_FILTERING_EXCEPT_WORD
+		</selectKey>
+		INSERT INTO
+			KR_FILTERING_EXCEPT_WORD
+		(
+			V_EXCEPTCD
+			, V_WORD
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_UPDATE_USER_ID
+			, V_UPDATE_DTM
+		) 
+		VALUES (
+			#{i_sExceptCd}
+			, #{i_sWord}
+			, #{i_sRegUserId} 
+			, TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')	 
+			, #{i_sRegUserId}
+			, TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')   
+		)
+	</insert>
+	
+	<update id="updateForbiddenExceptWord" parameterType="CmMap">
+		/*updateForbiddenExceptWord - 예외금지어 수정*/
+		UPDATE KR_FILTERING_EXCEPT_WORD
+			SET
+			V_WORD =  #{i_sWord}
+			, V_UPDATE_USER_ID = #{i_sRegUserId}
+			, V_UPDATE_DTM = TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')   
+		WHERE
+			V_EXCEPTCD = #{i_sExceptCd}
+	</update>
+</mapper>

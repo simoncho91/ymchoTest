@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+                        <div th:fragment="role_title" class="role_title">
+					       <!-- <img src="/images/dhtmlx/fw_title.gif" alt="titleicon" /> -->
+					       
+						   <th:block th:if="${programInfo.get('TITLE')} != null">
+					           <span id="title" th:text="${programInfo.TITLE}"></span>
+						   </th:block> 
+
+						   <th:block th:if="${programInfo.get('MENU_DESC') != null && not #strings.isEmpty(programInfo.MENU_DESC)}">
+					           :: <span id="menu_desc" style="color:blue" th:text="${programInfo.MENU_DESC}"></span> 
+						   </th:block>						   
+						   	<span style="display:none;" id ="refMenuCd" th:text="${programInfo.get('MENU_CD')}"></span>
+						   
+					    </div>
+					    
+                        <div th:fragment="role_btn_area" class="role_btn_area">
+                           <a href="javascript:;" th:if="${btnInfo.get('INQ_AUTH_YN') != null && btnInfo.INQ_AUTH_YN.equals('1')}"       class="btnA bg_dark" id="btnSearch" onclick="fn_search();">조회</a>
+                           <a href="javascript:;" th:if="${btnInfo.get('ETC_BTN_2_AUTH_YN') != null && btnInfo.ETC_BTN_2_AUTH_YN.equals('1')}" class="btnA bg_dark" id="btnEtc2"   onclick="fn_etc2();">[(${btnInfo.ETC_BTN_2_OBJ_NM})]</a>
+                           <a href="javascript:;" th:if="${btnInfo.get('INS_AUTH_YN') != null && btnInfo.INS_AUTH_YN.equals('1')}"       class="btnA bg_dark" id="btnSave"   onclick="fn_save();">저장</a>
+                           <a href="javascript:;" th:if="${btnInfo.get('XLS_AUTH_YN') != null && btnInfo.XLS_AUTH_YN.equals('1')}"       class="btnA bg_dark" id="btnExcel"  onclick="fn_excel();">엑셀</a>
+                           <a href="javascript:;" th:if="${btnInfo.get('PRT_AUTH_YN') != null && btnInfo.PRT_AUTH_YN.equals('1')}"       class="btnA bg_dark" id="btnPrint"  onclick="fn_print();">인쇄</a>
+                           <a href="javascript:;" th:if="${btnInfo.get('ETC_BTN_1_AUTH_YN') != null && btnInfo.ETC_BTN_1_AUTH_YN.equals('1')}" class="btnA bg_dark" id="btnEtc1"   onclick="fn_etc1();">[(${btnInfo.ETC_BTN_1_OBJ_NM})]</a>
+                           <a href="javascript:;" th:if="${btnInfo.get('ETC_BTN_3_AUTH_YN') != null && btnInfo.ETC_BTN_3_AUTH_YN.equals('1')}" class="btnA bg_dark" id="btnEtc3"   onclick="fn_etc3();">[(${btnInfo.ETC_BTN_3_OBJ_NM})]</a>
+                        </div>
+</html>

@@ -1,0 +1,96 @@
+spring:
+    application:
+        name: "sitims"
+    http:
+        encoding:
+            charset: UTF-8
+            enabled: true
+            force: true
+    devtools:
+#        livereload:
+#            enabled: true
+         restart: 
+            enabled: false #운영 시 제거.
+    thymeleaf:
+        cache: false
+        view-names : 
+            - swaf/*
+            - swaf_scheduler/*
+            - sitims/views/*
+            - error
+        prefix : classpath:/templates/
+        suffix : .html
+    mvc:
+        view:
+            prefix: /WEB-INF/jsp/
+            suffix: .jsp
+    main:
+        allow-bean-definition-overriding: true
+    profiles:
+        active: local # 기본 환경
+
+management:
+    endpoints:
+        web:
+            exposure:
+                include: "*"
+        
+server:
+    port: 8080
+    error:
+        whitelabel:
+            enable: false
+        include-stacktrace: never
+    servlet:
+        session:
+            timeout: 86400
+
+globals:
+    charset: UTF-8
+    locale: ko
+    systemID: SITIMS
+    systemName: 제조통합관리
+    systemOperator: 인터네셔널팀 담당자
+    accessLog:
+        useYn: Y
+    pinfLog:
+        useYn: Y
+    log:
+        novalue:
+            column: loginPwd
+    # 스프링 시큐리티 사용여부(미사용 시 accessUrl, testUrl은 접속 허용)
+    security:
+        userSessionNm: SITIMS_SESSIONS
+        useYn: N
+        allow:
+            accessUrl: /dhtmlx/sessionValidException.do,/login/login.do,/login/logout.do
+            testUrl: /test.do,/testDB.do,/testjsp2.do
+    # 예외 처리 후 추가기능이 필요할때 사용
+    exception:
+        advice:
+            support:
+                class:
+    # 로그인 페이지
+    loginUrl: /login/init.do
+    # 에러 뷰 처리
+    error:
+        view:
+            messageKey: ErrorMsg
+            codeKey: ErrorCode
+            pageUrl: /error
+    file:
+        upload:
+            extension:
+                blackList:
+                whiteList: apk,plist,ipa,jpg,png,jpeg,pdf,bpm,gif,tiff,jpg
+            maxSize: 100240000
+    mail:
+        serverAddr:
+    reqParamMap:
+        session:
+            useYn: Y
+    stopWatch:
+        useYn: Y
+    blossomTalk:
+        url: http://10.253.12.135/Website/Custom/Mobile/SPNSRequestPushSrv_Multi.asmx/RequestPush
+        systemcode: 

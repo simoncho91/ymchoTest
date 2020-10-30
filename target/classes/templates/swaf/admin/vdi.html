@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var grdMain;
+
+//layout - c
+var frmMain;
+var cboUseYn;
+var toolbarMain;
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+
+//DataProcessor
+
+
+$(function(){
+
+	/****************************************************************************************************
+	 * 초기화
+	 ****************************************************************************************************/
+	// Layout
+	dhtmlx.image_path = dhtmlx_image_path;
+	layoutMain = new dhtmlXLayoutObject({
+	    parent: "layoutObj",
+	    pattern: "3T",
+	    skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+	});
+	
+	/* Form-조건 */
+	var a = layoutMain.cells('a');
+	a.setText('검색조건');
+	a.setHeight(SearchFormHeight[1]);
+	var str =  [ { type:'settings', position:'label-left', labelWidth:'115', inputWidth:'172', offsetLeft:'10', offsetTop:'1'}
+				,{ type: "label", list:[
+				                	{ type:"input" , name:"VDI_DOMAIN", label:"VDI 도메인", className:"offsetRight"},
+				                	{ type:"newcolumn"   },
+				                	{ type:"input" , name:"VDI_IP", label:"VDI IP", className:"offsetRight"},
+				                    { type:"newcolumn"   },
+				                    { type: "combo", label: "사용여부", name: "USE_YN"}
+				                   ]
+				}
+	          ];
+	frmSearch = a.attachForm(str);
+	var dhxCombo = frmSearch.getCombo("USE_YN");
+	dhxCombo.load("/dhtmlx/data/comboYNa.json");
+	/* Form-조건 */
+	
+	/* Grid-메인 */
+	var b = layoutMain.cells('b');
+	b.setText('사용자 목록');
+	grdMain = b.attachGrid();
+	grdMain.setHeader(["NO","VDI NO","VDI 도메인","VDI IP","비고","정렬","사용유무"]);
+	grdMain.setColumnIds("NO,VDI_NO,VDI_DOMAIN,VDI_IP,VDI_DESC,SORT_SEQ,USE_YN");
+	grdMain.setColTypes("ro,ro,ro,ro,ro,ro,ro,");
+	grdMain.setInitWidths('40,100,300,300,150,150,150,');
+	
+	fn_initGrid(grdMain);
+	/* Grid-메인 */
+	
+	
+	/* Form-마스터 */
+	var c = layoutMain.cells('c');
+	c.setText('등록');
+	c.setWidth(RegisterFormWidth[2]); 
+	var str = [{ type:'settings', position:'label-left', labelWidth:'120', inputWidth:'200', offsetLeft:'10', offsetTop:'1'  },
+	           { type: "label", list: [
+	                { type:"input"  , name:"VDI_NO"   , label: "VDI NO", readonly:"true", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"input"  , name:"VDI_DOMAIN"   , label: "VDI 도메인", maxLength:"100"  , validate: "NotEmpty", required:"true", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"input"  , name:"VDI_IP" , label: "VDI IP", maxLength:"15", validate: "NotEmpty", required:"true", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"input"  , name:"VDI_DESC"    , label: "비고", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"input"  , name:"SORT_SEQ"    , label: "정렬", validate: "NotEmpty", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"combo"  , name:"USE_YN"    , label: "사용여부", className:"offsetRight", required:"true" }
+	            ]}
+	          ]
+	frmMain = c.attachForm(str);
+	frmMain.bind(grdMain);
+	
+	cboUseYn = frmMain.getCombo("USE_YN");
+	cboUseYn.readonly(true);
+	cboUseYn.load("/dhtmlx/data/comboYN.json");
+	
+	toolbarMain = c.attachToolbar({
+	    icons_path: toolbar_icons_path,
+	    items:[
+	          {type:"button", id:"btnNew", text:"신규", img:"addrow.gif", img_disabled:"addrow_dis.gif", action:"fn_new"},
+	          {type:"button", id:"btnDel", text:"삭제", img:"delrow.gif", img_disabled:"delrow_dis.gif", action:"fn_del"},
+	          {type: "separator", id: "sep1"},
+	          {type:"button", id:"btnSave", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_save"}
+	         ]
+	});
+	
+	/* Form-마스터 */
+	
+	// DataStore 초기화
+	fn_initDS();
+	
+	// 나머지 초기화
+	layoutMain.setAutoSize("a;b", "b;c");
+	fn_init();
+	
+	/****************************************************************************************************
+	 * 이벤트 생성
+	 ****************************************************************************************************/
+	// 그리드
+	grdMain.attachEvent("onSelectStateChanged",function(id,ind) {
+		frmMain.setReadonly("VDI_NO", true);
+	    saveMode = 'U';
+	});
+});
+
+
+//DataStore 초기화
+function fn_initDS() {
+}
+
+//조회
+function fn_search() {
+    if(fn_validateForm(frmSearch)) {	
+		var postParam = fn_getPostParam(frmSearch);
+
+		fn_ajaxGetGrid({ 
+			       gridName    : grdMain
+		         , url         : "/dhtmlx/admin/vdi/getVdiList.do"
+		         , postParam   : postParam
+		         , success     : function() {
+				   grdMain.selectRow(rowIndex);
+				 }
+		});
+    }
+}
+
+//신규
+function fn_new() {
+	saveMode = 'I';
+	frmMain.clear();
+	frmMain.setItemFocus("VDI_DOMAIN");    
+}
+
+//저장
+function fn_save() {
+	var postParam = fn_getPostParam(frmMain);
+	var sUrl = "";
+
+	if (saveMode == 'I') {
+		rowIndex = 0;
+		sUrl = "/dhtmlx/admin/vdi/insert.do";
+	} else {
+	    rowIndex = grdMain.getRowIndex(grdMain.getSelectedRowId());    
+		sUrl = "/dhtmlx/admin/vdi/update.do";
+	}
+    
+	if (fn_validateForm(frmMain)) {
+	     fn_ajaxSaveForm({ url      : sUrl
+	              , postParam   : postParam
+	              , postType    : 'save'
+	              , success     : fn_search
+	     });
+	 }
+}
+
+function fn_del() {
+	var postParam = fn_getPostParam(frmMain);
+	   
+   rowIndex = 0;
+   if (saveMode == 'U') {
+	   dhtmlx.confirm("삭제하시겠습니까?", function(result){
+		   if (result) {
+		       fn_ajaxSaveForm({ url      : "/dhtmlx/admin/vdi/delete.do"
+				           , postParam   : postParam
+				           , postType    : 'save'
+				           , success     : fn_search
+		           });
+		   }
+	   });
+   }
+}
+
+</script>
+</html>

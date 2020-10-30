@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript'>
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage;
+$(function(){
+
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form'}
+			,{id:'grid',height:'85%',width:'100%', resizable: true,header:"목록"}
+			,{id:'page', resizable: true}
+		]
+	});
+
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		css: "formSearch--border_bottom",
+		rows:[
+			{cols:[
+				{ type:"input" , name:"i_sSearchStatusInput", id:"i_sSearchStatusInput", width: "500",label:"검색어" ,labelPosition: "left", labelWidth: "100", gravity: false, placeholder: "한글 제품명 OR 영문 제품명 OR 중문 제품명 OR 제품코드",required: false},
+				{ type:"select" , name:"i_sDomestic", id:"i_sDomestic",width: "250", gravity: false, label:"국내검토" ,labelPosition: "left", labelWidth: "100",value:'[(${reqVo.i_sSearchStatusVal})]'
+					,options:[
+				    	{value:'' , content:"선택"}
+						,{value:'0' , content:"검토중"}
+						,{value:'1' , content:"검토완료"}
+						,{value:'2' , content:"반려"}
+						]
+				},
+				{ type:"select" , name:"i_sFunc", id:"i_sFunc",width: "200", gravity: false,label:"기능성여부" ,labelPosition: "left", labelWidth: "100"
+						,options:[
+					    	{value:'' , content:"선택"}
+							,{value:'N' , content:"N"}
+							,{value:'Y' , content:"Y"}
+							]
+				},
+				{type: "datepicker", id:"i_sReqStDate", name:"i_sReqStDate", label: "요청일", labelInline: true, labelWidth: "100px", dateFormat: "%Y-%m-%d", width: "300px", gravity:false, editable: true,
+	   	  			 mark: fn_dhxDispToday
+	   	  			},
+	   	  			{type: "input",	width:"15", gravity: false, hidden:true},
+	   	  			{type: "datepicker", id:"i_sReqEnDate", name:"i_sReqEnDate", label: "", labelInline: true, labelWidth: "0",  dateFormat: "%Y-%m-%d", width: "200px", gravity:false, editable: true,
+	   	  			  mark: fn_dhxDispToday
+	   	  			}
+			]}
+		]
+	});
+	frmSearchCell.attach(frmSearch);
+
+	var gridCell = layoutMain.getCell('grid');    
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns:[
+			{ width: 100, id: "n_num", header: [{ text: "일련번호",align:"center" }],align:"center" ,hidden:true }
+			, { width: 80, id: "v_record_id"  , header: [{ text: "문서코드" }],hidden:true }
+			, { width: 300, id: "v_product_nm_ko"      , header: [{ text: "한글 제품명" ,align:"center" }], align:"left",hidden:true}
+			, { width: 120, id: "v_product_cd"	, header: [{ text: "제품코드" ,align:"center"}], align:"center" , autoWidth: false, mark: fn_dhxLinkCss}
+			, { width: 250, id: "v_product_nm_fast"      , header: [{ text: "한글 제품명" ,align:"center" }], align:"left"}
+			, { width: 250, id: "v_product_nm_en" , header: [{ text: "영문 제품명",align:"center" }],align:"left"}
+			, { width: 250, id: "v_product_nm_cn" , header: [{ text: "중문제품명",align:"center" }],align:"left" }
+// 			, { width: 150, id: "v_final_rst_nm" ,align:"center"      , header: [{ text: "검토현황",align:"center" }] }
+			, { width: 100, id: "v_review_status_ko_nm" ,align:"center"      , header: [{ text: "검토현황",align:"center" }], autoWidth: false }
+			, { width: 80, id: "v_func_yn" , header: [{ text: "기능성",align:"center" }], align:"center", autoWidth: false  }
+			, { width: 100, id: "v_request_dtm_ko" , header: [{ text: "검토요청일",align:"center" }], align:"center", autoWidth: false  }
+		]
+    	,headerRowHeight: 46
+    	,autoWidth: true
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	gridCell.attach(grdMain);
+	
+	grdMain.events.on("CellClick", fn_view2);
+	grdMain.events.on("CellDblClick", fn_view);
+
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/br/pr/010/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    		, postParam : {i_sRaReqYn : 'Y'}
+    });
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	frmSearch.getItem('i_sSearchStatusInput').setValue(param.i_sSearchStatusInput);
+    	frmSearch.getItem('i_sDomestic').setValue(param.i_sDomestic);
+    	frmSearch.getItem('i_sFunc').setValue(param.i_sFunc);
+    }
+
+});
+function fn_view(row,col,e) {
+	var data = grdMain.data.getItem(row.id);    	
+	console.log(data);
+	location.href='/br/pw/010/br_pw_010_t1_view.do?i_sRecordId='+data.v_record_id+'&i_sProductCd='+data.v_product_cd;
+}
+function fn_view2(row,col,e) {
+	if (col.id == 'v_product_cd')
+		fn_view(row,col,e);
+}
+function fn_search() {
+    mainPage.search(1);
+}
+
+function fn_excel() {
+	var param = mainPage.postParam;
+	param.i_sExcelFileNm="국내검토";
+	fn_excel_download("/br/pr/010/br_pr_010_list_excel.do", param);
+}
+
+$(document).on('keyup','#i_sSearchStatusInput',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+</script>
+</html>

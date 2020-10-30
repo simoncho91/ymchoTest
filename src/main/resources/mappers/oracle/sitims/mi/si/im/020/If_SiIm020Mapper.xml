@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_SiIm020Mapper.xml
+    Description   : 성분등록요청
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.11  kykwak       1.0        최초 생성
+-->
+<mapper namespace="If_SiIm020Mapper">
+
+	<!-- 성분등록요청 리스트  수정 -->
+	<update id="modifyForSiIm020" parameterType="CmMap">
+			UPDATE /* If_SiIm020Mapper.modifyForSiIm020 */
+				TODM_CONRQ_M  
+			SET                     
+				V_STATE = #{i_sState}
+			<if test="i_sGiConCd != null and i_sGiConCd != ''">
+			  , V_GI_CON_CD = #{i_sGiConCd}
+			</if>
+			  , V_REJECT_OPN =	#{i_sRejectOpn}
+			  , V_CONFM_USER_ID = #{i_sConFmUserId}
+			  , V_CONFM_DTM = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			  , V_UPDATE_USER_ID = #{i_sUpdateUserId}
+			  , V_UPDATE_DTM  = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			WHERE
+				V_REQ_CON_ID = #{i_sRegConId}
+	</update>
+	
+</mapper>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript' src='/sitims/js/util/cm_function.js'></script>  
+<script type='text/javascript'>
+var layoutMain, layoutA, layoutB, layoutC, layoutD, toolbar1, toolbar2, searchForm, mainForm, dcGrdMain;
+
+var tabId = "all";
+var mode  = "M";
+var seq;
+var sameCheckArray;			//중복체크용 금지어 배열
+var sameCheckOriginalWord;	//중복체크용 수정모드 기존 금지어
+
+$(function(){
+	//전체 레이아웃 초기화
+	layoutMain	=	new dhx.Layout("layoutObj", {
+		css  : "dhx_layout-cell--border_top",
+		rows : [
+			{id : "searchForm", gravity: false, height: "60px", css: "dhx_layout-cell--border_bottom", resizable : true},
+			{cols : [
+				{id : "mainGrid", resizable : true, width:"50%"},
+				{rows : [
+					{id : "toolbarMain", gravity:false},
+					{id : "mainForm"}, 
+				],resizable:true, width:"50%"}
+			],header:"목록", height: "90%",resizable:true}
+		]
+	});
+	
+	//금지어 검색 레이아웃
+	searchForm	=	new dhx.Form(null, {
+		cols : [
+			{type : "select", id : "i_sType_search",name : "i_sType_search", label : "금지어 카테고리", labelPosition : "left", labelWidth : "120", width : "420", gravity : false, options:[{value : "all", content : "전체"}], required: true},
+			{type : "input",  id : "i_sSearchWord", name : "i_sSearchWord", label : "금지어", labelPosition : "left", labelWidth:"100", width:"300", gravity:false },
+		]
+	});
+	layoutMain.getCell("searchForm").attach(searchForm);
+	
+	//버튼 툴바1 레이아웃
+	toolbar1 = new dhx.Toolbar(null, {
+		css : "dhx_widget--bordered dhx_widget--bg_gray",
+		data : [
+			{id : "add", 	icon : "dxi dxi-plus", 		value : "신규"},
+			{id : "save", 	icon : "dxi dxi-check", 	value : "저장"},
+			{id : "del", 	icon : "dxi dxi-delete",	value : "삭제"}
+		]
+	});
+	
+	layoutMain.getCell("toolbarMain").attach(toolbar1);
+
+	//버튼 툴바2 레이아웃
+	toolbar2 = new dhx.Toolbar(null, {
+		data : [
+			{type: "spacer"},
+			{type : "button", 	id : "search", 	icon : "dxi dxi-search", 	value : "검색"},
+			{type : "seperator"},
+			{type : "button", 	id : "excel", 	icon : "dxi-file-excel", 	value : "excel"},
+		]
+	});
+	
+	dcGrdMain	=	new dhx.DataCollection();
+	
+	//우측 상세 레이아웃
+	mainForm	=	new dhx.Form(null, {
+		rows : [
+			{height: '7%', type : "select", id : "i_sType", 		name : "i_sType", 			label : "금지어 카테고리",		labelPosition : "left", labelWidth : "180", width : "600", gravity : false, required: true,	options:[{}], disabled : true},
+			{height: '7%', type : "input",  id : "i_sForbidden", 	name : "i_sForbidden", 		label : "금지어",				labelPosition : "left", labelWidth : "180", width : "600", gravity : false, required: true, disabled : true},
+			{height: '14%', type : "textarea",  id : "i_sSimilarWord",	name : "i_sSimilarWord", 	label : "유사 금지표현",			labelPosition : "left", labelWidth : "180", width : "600", gravity : true, required: true, disabled : true},
+			{height: '14%', type : "textarea",  id : "i_sExplain",		name : "i_sExplain", 		label : "대체표현 및 수정가이드",	labelPosition : "left", labelWidth : "180", width : "600", gravity : true, required: true, disabled : true},
+			{height: '14%', type : "textarea",  id : "i_sExample",		name : "i_sExample", 		label : "유사 처분사례", 		labelPosition : "left", labelWidth : "180", width : "600", gravity : true, required: true, disabled : true}
+		]
+	});
+	
+	layoutMain.getCell("mainForm").attach(mainForm);
+	
+	//메인그리드
+	mainGrid	=	new dhx.Grid(null, {
+		columns : [
+			//{width : 70,	id : "n_seq_no",    		header : [{text:"No", 				align : "center"}], align : "right", autoWidth: false},
+			{width : 450,	id : "v_type_nm",	 		header : [{text:"금지어 카테고리", 			align : "center"}], align : "left"},
+			{width : 450,	id : "v_word",	 			header : [{text:"금지어", 			align : "center"}], align : "left"}			
+		],
+		headerRowHeight : 46,
+		resizable : true,
+		fitToContainer: true,
+		selection : "row",
+		data : dcGrdMain
+	});
+	
+	layoutMain.getCell("mainGrid").attach(mainGrid);
+	
+	//button Event Init
+	fn_buttonEvent();
+
+	//get tabcode Init
+	fn_getTabData();
+	
+	//get list Data Init
+	fn_search();
+});
+
+//탭코드 가져오기
+function fn_getTabData(){
+	fn_ajax({
+		  url		 : "/si/em/010/si_em_010_get_tab_ajax.do"
+		, postParam  : ""
+		, success 	 : function(data){
+			var tabData			=	data.data;
+			var typeTemp		=	[];		//우측레이아웃 금지어 카테고리 셀렉트박스
+			var typeSearchTemp	=	[];		//상단레이아웃 금지어 카테고리 셀렉트박스(전체 선택 포함)
+			
+			for(var i=0; i < tabData.length; i++){
+				typeTemp.push({value : tabData[i].COMM_CD, content : tabData[i].COMM_CD_NM});
+			}
+			
+			typeSearchTemp		=	Array.prototype.slice.call(typeTemp);	//deep copy
+			typeSearchTemp.unshift({value : "all", content : "전체"});		//앞쪽에 전체 option 추가
+			
+			mainForm.getItem("i_sType").config.options			=	typeTemp;
+			mainForm.paint();
+			mainForm.clear();
+			
+			searchForm.getItem("i_sType_search").config.options =	typeSearchTemp;
+			searchForm.paint();
+			searchForm.clear();
+			
+		}
+	});
+}
+
+//데이터 가져오기, 검색
+function fn_search(){
+	var postParam 			= fn_getPostParam(searchForm);
+	postParam.i_sType		= tabId;
+	
+	fn_ajaxGetGrid({ 
+		  gridName        	  : mainGrid
+		, url                 : "/si/em/010/si_em_010_get_list_ajax.do"
+		, postParam           : postParam
+		, success             : function(data) {
+			//신규, 수정 저장시 중복체크용 배열
+			var data	=	data.result.data;
+			
+			sameCheckArray = [];
+			
+			for(var i=0; i<data.length; i++){
+				sameCheckArray.push(data[i].v_word);
+			}
+		}
+	});
+}
+
+//금지어 상세데이터 출력
+function fn_getViewData(seq,id){
+	fn_ajax({ 
+		  url                  : "/si/em/010/si_em_010_get_view_ajax.do"
+		, postParam            : {i_iSeqNo : seq, i_sType : id}
+		, success              : function(data) {
+			var viewData = data.result.data;
+			mainForm.getItem("i_sType").setValue(viewData.v_type_cd);
+			mainForm.getItem("i_sForbidden").setValue(viewData.v_word);
+			mainForm.getItem("i_sSimilarWord").setValue(viewData.v_similar_word);
+			mainForm.getItem("i_sExplain").setValue(viewData.v_explain);
+			mainForm.getItem("i_sExample").setValue(viewData.v_example);
+		}
+	});
+}
+
+//금지어 등록,삭제 등 CRUD
+function fn_save(){
+	//신규가 아니거나, 상세가 아닌경우 저장 금지
+	if(!fn_isNull(seq) || mode == "R"){
+	}else{
+		fn_s_alertMsg("수정할 데이터를 선택하거나 '신규'를 클릭하여 데이터를 작성해주세요");
+		return;
+	}
+	
+	var	alerText;
+	var postParam  		= fn_getPostParam(mainForm);
+	postParam.mode 		= mode;
+	postParam.i_iSeqNo  = seq;
+	
+	
+	if(mode == 'D'){
+		postParam.postType  = 'del';
+		alertText			= '삭제하시겠습니까?';
+	}else{
+		//기본 벨리데이션 체크
+		if(!fn_s_validateForm(mainForm)){
+			return;
+		}
+		
+		//글자수 벨리데이션 체크
+		if(!fn_lengthValiCheck()){
+			return;
+		};
+		
+		//금지어 중복 체크
+		if(!fn_sameWordCheck()){
+			return;
+		};
+		
+		postParam.postType  = 'save';
+		alertText			= '저장하시겠습니까?';
+	}
+	
+	dhx.confirm({
+		header				: "알림",
+		text				: alertText,
+		buttons 			: ["예","아니오"],
+		buttonsAlignment	: "center"
+	}).then( function (result) {
+		if(result){
+			fn_s_ajaxSaveForm({
+				 url       : "/si/em/010/si_em_010_save_ajax.do"
+				,postParam : postParam
+				,postType  : postParam.postType
+				,success   : function(){
+					fn_search();
+				}
+			});
+
+			//저장,삭제 후 클릭한 상세 초기화
+			seq = "";
+			mainForm.clear();
+		}
+	});
+	
+	mainForm.getItem("i_sType").config.disabled=true;
+}
+
+function fn_lengthValiCheck() {
+	var data = mainForm.getValue();
+	var flag = true;
+	
+	if(!check_length(data.i_sForbidden, 90)){
+		fn_s_alertMsg("금지어가 최대 제한글자수를 초과했습니다.");
+		flag = false;
+	}
+	
+	if(!check_length(data.i_sSimilarWord, 3800)){
+		fn_s_alertMsg("유사 금지표현이 최대 제한글자수를 초과했습니다.");
+		flag = false;
+	}
+
+	if(!check_length(data.i_sExplain, 3800)){
+		fn_s_alertMsg("대체표현 및 수정가이드가 최대 제한글자수를 초과했습니다.");
+		flag = false;
+	}
+	
+	if(!check_length(data.i_sExample, 350)){
+		fn_s_alertMsg("유사처분사례가 최대 제한글자수를 초과했습니다.");
+		flag = false;
+	}
+	return flag;
+}
+
+//금지어 중복체크
+function fn_sameWordCheck(){
+	var flag = true;
+	for(var i=0; i<sameCheckArray.length; i++){
+		if(mode == 'M') {	//수정모드일 때 - 수정할 금지어 자체는 중복체크에서 제외
+			if(sameCheckArray[i] != sameCheckOriginalWord && sameCheckArray[i] == mainForm.getValue().i_sForbidden) {
+				fn_s_alertMsg("중복된 금지어가 존재합니다");
+				flag = false;
+			}
+		} else {			//신규모드일 때
+			if(sameCheckArray[i] == mainForm.getValue().i_sForbidden) {
+				fn_s_alertMsg("중복된 금지어가 존재합니다");
+				flag = false;
+			}	
+		}
+	}
+	return flag;
+}
+
+//버튼 이벤트
+function fn_buttonEvent(){
+	//	toolbar click
+	toolbar1.events.on("Click", function(id,e) {
+		if(id == "add") {
+			mode = "R";
+			//상세보기 클릭시 데이터 등록 폼 활성화
+			mainForm.getItem("i_sType").config.disabled 		= false;
+			mainForm.getItem("i_sForbidden").config.disabled	= false;
+			mainForm.getItem("i_sSimilarWord").config.disabled	= false;
+			mainForm.getItem("i_sExplain").config.disabled		= false;
+			mainForm.getItem("i_sExample").config.disabled		= false;
+			
+			mainForm.clear();
+		}else if(id == "save"){
+			if(mode == 'R'){	//신규 누르고 세이브 시 신규 플래그 유지
+				mode = "R";
+			}else{
+				mode = "M";
+			}
+			
+			fn_save();	
+		}else if(id == "del") {
+			if(fn_isNull(seq)){	//데이터 선택 없이 삭제 클릭시
+				fn_s_alertMsg("삭제할 데이터를 선택해주세요.");
+				return;
+			}
+			mode = "D";
+			fn_save();
+		}
+	});
+	
+	toolbar2.events.on("Click", function(id,e){
+		if(id == "excel"){
+			mainGrid.export.xlsx({ name : '문안검토 금지어 관리', url: "/dhtmlx/commExcelDownload.do" });
+		}else if(id == "search"){
+			fn_search();
+		}
+	});
+	
+	//	cell click -> 상세보기
+	mainGrid.events.on("CellClick",function(row, column, e){
+		//상세보기 클릭시 데이터 등록 폼 활성화
+		mainForm.getItem("i_sType").config.disabled 		= false;
+		mainForm.getItem("i_sForbidden").config.disabled	= false;
+		mainForm.getItem("i_sSimilarWord").config.disabled	= false;
+		mainForm.getItem("i_sExplain").config.disabled		= false;
+		mainForm.getItem("i_sExample").config.disabled		= false;
+		
+		mode					=	"M";
+		sameCheckOriginalWord	=	row.v_word;
+		seq						=	row.n_seq_no;
+		fn_getViewData(row.n_seq_no, row.v_type_cd);
+	});
+	
+	//	search click
+	searchForm.events.on("ButtonClick", function(id, e){
+		fn_search();
+	});
+
+	//	type change
+	searchForm.events.on("change", function(id, e){
+		if(id == 'i_sType_search'){
+			tabId = e;
+			dcGrdMain.removeAll();
+			fn_search();
+		}
+		seq = "";
+	});
+	
+	//	enter search
+	$(document).on('keyup','#i_sSearchWord',function(e){
+		if(e.keyCode == 13){
+			fn_search(tabId);
+		}
+	});
+}
+
+//엑셀 다운로드
+function fn_excel() {
+	fn_s_confirmMessage("Excel 다운로드","다운로드 하시겠습니까?",function(){
+		var postParam 			= fn_getPostParam(searchForm);
+		postParam.i_sType		= tabId;
+		fn_excel_download_exe("/si/em/010/si_em_010_list_excel.do", postParam);
+	});
+	
+}
+
+
+</script>
+</html>

@@ -1,0 +1,53 @@
+
+<html th:replace="~{layout/dhtmlxPopLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type="text/javascript">
+$(function(){
+	layoutMain = new dhx.Layout('layoutObj',{
+	     css: "dhx_layout-cell--border_top",
+			rows:[
+				{id:'grid',height:'75%'}
+			]		
+	});
+	
+   var b = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null,{
+		columns:[
+			{ width: 100, id: "v_product_cd" , header: [{ text: "Prod Cd",align:"center" }] , align:"center" , autoWidth: false}
+			,{ width: 200, id: "n_part_no" , header: [{ text: "Part No",align:"center" }], align:"center"}
+			,{ width: 120, id: "v_div" , header: [{ text: "구분",align:"center" }], align:"center"}
+			,{ width: 120, id: "v_raw_cd" , header: [{ text: "RAW",align:"center" }], align:"center"}
+			,{ width: 120, id: "v_con_cd" , header: [{ text: "성분코드",align:"center" }], align:"center"}
+			,{ width: 150, id: "v_before_func" , header: [{ text: "수정 전 Func",align:"center" }], align:"left", autoWidth: false}
+			,{ width: 150, id: "v_after_func" , header: [{ text: "수정 후 Func",align:"center" }], align:"left", autoWidth: false}
+		]
+		, headerRowHeight: 46
+		, autoWidth: true
+	    , resizable: true
+	    , selection: "row"
+        , sortable : false 
+        , multiselection : false 
+		, data:dcGrdMain
+	});
+	b.attach(grdMain);
+
+   mainPage = new CmDhtmlx6Paging({
+   		layout: layoutMain
+   		, noPaging : true
+   		, name : 'mainPage'
+     	, gridData : dcGrdMain
+    	, grid 	 : grdMain
+   		, url : "/br/pw/020/getFuncLogList.do"
+   		, postParam : {
+   			i_sRecordId :		'[(${reqVo.i_sRecordId})]'
+   			, i_sProductCd :    '[(${reqVo.i_sProductCd})]'
+			, i_sPartNo :     '[(${reqVo.i_sPartNo})]'
+			, i_sDivision :     '[(${reqVo.i_sDivision})]'
+   		}
+   });   
+
+   mainPage.initPaging();
+  
+});
+</script>

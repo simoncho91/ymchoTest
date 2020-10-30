@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxPopLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript'>
+var layoutMain,grdMain,frmSearch,chkRowId;
+$(function(){
+	layoutMain = new dhx.Layout('layoutObj',{
+	     css: "dhx_layout-cell--border_top",
+			rows:[
+				{id:'form'}
+				,{id:'toolbar'}
+				,{id:'grid',height:'75%'}
+				,{id:'page'}
+			]		
+	});
+	var a = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		rows:[
+			{type:'input',id:'i_sInput',name:'i_sInput',value:'[(${reqVo.i_sInput})]' ,label:'이름/아이디' ,labelPosition: "left", labelWidth: "80", width: "250", gravity: false}
+		]
+	});
+	a.attach(frmSearch);
+	var	str	= '';
+	str	+= '<table class="sty_sort" id="tbl_search" style="border-top: 2px solid #191919;">';
+	str	+= '  <colgroup>';
+	str	+= '    <col style="width:95px;">';
+	str	+= '    <col style="">';
+	str	+= '  </colgroup>';
+	str	+= '  <tbody>';
+	str	+= '    <tr>';
+	str	+= '      <th>검색 조건</th>';
+	str	+= '      <td><input name="i_sInput" id="i_sInput" class="inp_sty01" type="text" value=\"[(${reqVo.i_sInput})]\" placeholder="이름 OR 아이디" style="margin-right:8px;width: 308px;"><a href="javascript:fn_search();" class="btnA bg_dark">조회</a></td>';
+	str	+= '    </tr>';
+	str	+= '  </tbody>';
+	str	+= '</table>';
+	a.attachHTML(str);
+	
+    var b = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null,{
+		columns:[        
+			{ width: 70, id: "n_num" , header: [{ text: "No." ,align:"center" }],align:"right",hidden:true}
+			,{ width: 0, id: "v_user_no" , header: [{ text: "" }],hidden:true}
+			,{ width: 200, id: "v_user_nm" , header: [{ text: "이름" ,align:"center" }],align:"center",hidden:false}
+			,{ width: 200, id: "v_login_id" , header: [{ text: "아이디" ,align:"center" }],align:"left",hidden:false}
+			,{ width: 210, id: "v_dept_nm" , header: [{ text: "부서" ,align:"center" }],align:"left",hidden:false}
+		]
+		,headerRowHeight: 42
+	    ,resizable: true
+	    ,selection: "row"
+        ,multiselection : false 
+        ,autoWidth: true
+		,data:dcGrdMain
+	});
+	b.attach(grdMain);
+
+    grdMain.events.on("CellDblClick", function(row,col,e){
+    	var data = grdMain.data.getItem(row.id);
+    	parent.[(${reqVo.i_sCmFunction})](data);
+    });
+	 grdMain.events.on("cellClick", function(r,c,e){
+		 chkRowId = r.id;
+		 $('#main_radio_'+r.n_num).prop('checked',true);
+	 });
+	 
+	 $(document).on('keyup','#i_sInput',function(e){
+			if(e.keyCode == 13){
+				fn_search();
+			}
+		});
+
+ 	/* var gridMainToolbar = new dhx.Toolbar(null,{
+		data:[
+			{type: "spacer"}
+// 		 	,{type:"button",icon:"dxi-plus",value:"선택",id:'btnSel'},
+		 	,{type:"button",icon:"dxi-search",value:"조회",id:'btnSearch'}
+ 		]
+ 	});
+ 	layoutMain.getCell('toolbar').attach(gridMainToolbar);
+    
+    gridMainToolbar.events.on("Click", function(id){
+    	if(id=='btnSel'){
+        	var data = grdMain.data.getItem(chkRowId);
+        	parent.[(${reqVo.i_sCmFunction})](data);
+    	}else if(id=='btnSearch'){
+    	    mainPage.search();    		
+    	}
+    }); */
+    
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/br/pr/020/getDesignerList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['radio','n_num']
+       		, pageSize : 50
+       		, succSearchFunc : succFunc
+    });
+    mainPage.initPaging();
+});
+var succFunc = function(data){	
+	if(data.length == 1){
+		parent.[(${reqVo.i_sCmFunction})](data[0]);
+	}
+}
+
+function fn_radioClick(rowId,obj){
+	chkRowId = rowId;
+}
+function fn_search() {	 
+	frmSearch.setValue({ "i_sInput": $('#i_sInput').val()});
+	mainPage.search(1);
+}
+function fn_close() {
+	fn_popClose();
+}
+</script>
+</html>

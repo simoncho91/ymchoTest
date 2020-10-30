@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.shinsegae-inc</groupId>
+	<artifactId>sitims</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>war</packaging>
+	
+	<name>sitims</name>
+	<description>sitims</description>
+
+    <repositories>
+        <!-- SI -->
+        <repository>
+            <id>anonymous</id>
+            <url>http://10.102.20.83:9080/nexus/content/groups/public/</url>
+        </repository>
+    </repositories>
+    
+    <pluginRepositories>
+        <pluginRepository>
+            <id>anonymous</id>
+            <url>http://10.102.20.83:9080/nexus/content/groups/public/</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+         <version>2.1.2.RELEASE</version>
+        <relativePath/>
+    </parent>
+    
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+		<maven.test.skip>true</maven.test.skip>
+	</properties>
+
+	<dependencies>
+        <dependency>
+	        <groupId>com.shinsegae-inc</groupId>
+	        <artifactId>swaf-core</artifactId>
+	        <version>2.1.3</version>
+	        <type>jar</type>
+	    </dependency>
+	    
+        <dependency>
+            <groupId>com.shinsegae-inc</groupId>
+            <artifactId>swaf-core-dhtmlx</artifactId>
+            <version>1.3.0</version>
+            <type>jar</type>
+            <exclusions>
+				<exclusion>
+					<groupId>com.shinsegae-inc</groupId>
+	        		<artifactId>swaf-core</artifactId>
+				</exclusion>
+			</exclusions>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+		<dependency>
+		    <groupId>nz.net.ultraq.thymeleaf</groupId>
+		    <artifactId>thymeleaf-layout-dialect</artifactId>
+            <version>2.4.1</version>
+		</dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mybatis.spring.boot</groupId>
+			<artifactId>mybatis-spring-boot-starter</artifactId>
+			<version>1.3.2</version>
+        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>de.codecentric</groupId>
+			<artifactId>spring-boot-admin-starter-client</artifactId>
+			<version>2.1.1</version>
+		</dependency>
+        <dependency>
+            <groupId>de.codecentric</groupId>
+            <artifactId>spring-boot-admin-starter-client</artifactId>
+            <version>2.1.4</version>
+        </dependency>
+
+		<dependency>
+		    <groupId>com.github.ulisesbocchio</groupId>
+		    <artifactId>jasypt-spring-boot-starter</artifactId>
+		    <version>2.0.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.bgee.log4jdbc-log4j2</groupId>
+			<artifactId>log4jdbc-log4j2-jdbc4.1</artifactId>
+			<version>1.16</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-jasper</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- tibero6 -->
+		<dependency>
+			<groupId>com.tmax.tibero</groupId>
+			<artifactId>tibero-jdbc</artifactId>
+			<version>6.0</version>
+		</dependency>
+        <!-- oracle -->
+        <dependency>
+	        <groupId>ojdbc</groupId>
+	        <artifactId>ojdbc</artifactId>
+	        <version>6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20140107</version>
+        </dependency>
+        
+        <dependency>
+	        <groupId>com.google.code.gson</groupId>
+	        <artifactId>gson</artifactId>
+	        <version>2.8.5</version>
+		</dependency>
+		        
+		<!--  JSP 소스 자동 반영  -->
+	    <dependency>
+	        <groupId>org.springframework.boot</groupId>
+	        <artifactId>spring-boot-devtools</artifactId>
+            <scope>true</scope>
+	    </dependency>
+	    
+	    <!--  Jenkins Restful Client  -->
+		<dependency>
+			<groupId>com.offbytwo.jenkins</groupId>
+			<artifactId>jenkins-client</artifactId>
+			<version>0.3.8</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+		<dependency>
+	      <groupId>org.apache.commons</groupId>
+	      <artifactId>commons-exec</artifactId>
+	      <version>1.3</version>
+	    </dependency> 
+	    
+	    <dependency>
+		    <groupId>org.apache.commons</groupId>
+		    <artifactId>commons-lang3</artifactId>
+		    <version>3.0</version>
+		</dependency>
+		
+        <!-- findbugs annotation 추가 lib -->
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/commons-fileupload/commons-fileupload -->
+        <dependency>
+            <groupId>commons-fileupload</groupId>
+            <artifactId>commons-fileupload</artifactId>
+            <version>1.3.1</version>
+        </dependency>
+        <!-- 
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.5</version>
+        </dependency>
+        -->
+        
+        <dependency>
+		    <groupId>org.apache.maven.plugins</groupId>
+		    <artifactId>maven-war-plugin</artifactId>
+		    <version>3.2.3</version>
+		    <type>maven-plugin</type>
+		</dependency>
+	    <dependency>
+		    <groupId>org.apache.maven.plugins</groupId>
+		    <artifactId>maven-resources-plugin</artifactId>
+		    <version>3.1.0</version>
+		</dependency>
+
+		<!-- Git Core Library -->
+	    <dependency>
+	       <groupId>org.eclipse.jgit</groupId>
+	       <artifactId>org.eclipse.jgit</artifactId>
+	       <version>5.2.1.201812262042-r</version>
+	    </dependency>
+	    
+        <!-- junit -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
+
+        <!-- jsp -->
+		<dependency>
+		    <groupId>javax.servlet</groupId>
+		    <artifactId>jstl</artifactId>
+		</dependency>
+
+		<!-- 아이시프트, 사용 라이브러리 -->
+		<dependency>
+		    <groupId>jasperreports</groupId>
+		    <artifactId>jasperreports</artifactId>
+		    <version>4.6.0</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>pd4ml</groupId>
+		    <artifactId>pd4ml</artifactId>
+		    <version>1.0.0</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>ss_css2</groupId>
+		    <artifactId>ss_css2</artifactId>
+		    <version>1.0.0</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>jtidy-r938</groupId>
+		    <artifactId>jtidy-r938</artifactId>
+		    <version>1.0.0</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>itext</groupId>
+		    <artifactId>itext</artifactId>
+		    <version>2.1.7</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>core-renderer-R8-final</groupId>
+		    <artifactId>core-renderer-R8-final</artifactId>
+		    <version>1.0.0</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>jai_core</groupId>
+		    <artifactId>jai_core</artifactId>
+		    <version>1.0.0</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>java-image-scaling</groupId>
+		    <artifactId>java-image-scaling</artifactId>
+		    <version>0.8.6</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>jazzlib</groupId>
+		    <artifactId>jazzlib</artifactId>
+		    <version>1.0.0</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>PDFRenderer</groupId>
+		    <artifactId>PDFRenderer</artifactId>
+		    <version>1.0.0</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi -->
+		<dependency>
+		    <groupId>org.apache.poi</groupId>
+		    <artifactId>poi</artifactId>
+		    <version>3.10-FINAL</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml -->
+		<dependency>
+		    <groupId>org.apache.poi</groupId>
+		    <artifactId>poi-ooxml</artifactId>
+		    <version>3.10-FINAL</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml-schemas -->
+		<dependency>
+		    <groupId>org.apache.poi</groupId>
+		    <artifactId>poi-ooxml-schemas</artifactId>
+		    <version>3.10-FINAL</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans -->
+		<dependency>
+		    <groupId>org.apache.xmlbeans</groupId>
+		    <artifactId>xmlbeans</artifactId>
+		    <version>2.6.0</version>
+		</dependency>
+
+		<!-- 아이시프트, 사용 라이브러리 -->
+
+	</dependencies>
+
+	<build>
+		<plugins>
+					
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-pmd-plugin</artifactId>
+			<version>3.8</version>
+			<dependencies>
+				<dependency>
+					<groupId>net.sourceforge.pmd</groupId>
+					<artifactId>pmd-java</artifactId>
+					<version>5.8.1</version>
+				</dependency>
+				<dependency>
+					<groupId>net.sourceforge.pmd</groupId>
+					<artifactId>pmd-plsql</artifactId>
+					<version>5.8.1</version>
+				</dependency>
+				<dependency>
+					<groupId>net.sourceforge.pmd</groupId>
+					<artifactId>pmd-xml</artifactId>
+					<version>5.8.1</version>
+				</dependency>
+			</dependencies>
+			<configuration>
+				<rulesets>
+					<ruleset>${basedir}/rules/shinsegae_pmd_rule_pro_v0.5.xml</ruleset>
+				</rulesets>
+				<excludes>
+					<exclude>com/shinsegae_inc/swaf/**/*.java</exclude>
+				</excludes>
+			</configuration>
+		</plugin>
+	
+		<plugin>
+			<groupId>org.codehaus.mojo</groupId>
+			<artifactId>findbugs-maven-plugin</artifactId>
+			<version>3.0.4</version>
+            <dependencies>
+                <dependency>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy</artifactId>
+                    <version>2.4.7</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.maven.reporting</groupId>
+                    <artifactId>maven-reporting-impl</artifactId>
+                    <version>2.3</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-resources</artifactId>
+                    <version>1.0.1</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.maven.doxia</groupId>
+                    <artifactId>doxia-integration-tools</artifactId>
+                    <version>1.7.5</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-ant</artifactId>
+                    <version>2.4.7</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-groovydoc</artifactId>
+                    <version>2.4.7</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-templates</artifactId>
+                    <version>2.4.7</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-xml</artifactId>
+                    <version>2.4.7</version>
+                </dependency>
+                <dependency>
+                  <groupId>com.google.code.findbugs</groupId>
+                  <artifactId>findbugs</artifactId>
+                  <version>3.0.1</version>
+                </dependency>
+                <dependency>
+                  <groupId>com.google.code.findbugs</groupId>
+                  <artifactId>bcel-findbugs</artifactId>
+                  <version>6.0</version>
+                </dependency>
+                <dependency>
+                  <groupId>com.google.code.findbugs</groupId>
+                  <artifactId>jFormatString</artifactId>
+                  <version>2.0.1</version>
+                </dependency>
+                <dependency>
+                  <groupId>dom4j</groupId>
+                  <artifactId>dom4j</artifactId>
+                  <version>1.6.1</version>
+                </dependency>
+                <dependency>
+                  <groupId>jaxen</groupId>
+                  <artifactId>jaxen</artifactId>
+                  <version>1.1.6</version>
+                </dependency>
+                <dependency>
+                  <groupId>org.ow2.asm</groupId>
+                  <artifactId>asm-tree</artifactId>
+                  <version>5.0.2</version>
+                </dependency>
+            </dependencies>
+			<configuration>
+				<xmlOutput>true</xmlOutput>
+				<findbugsXmlOutput>true</findbugsXmlOutput>
+				<xmlOutputDirectory>${basedir}/target</xmlOutputDirectory>
+				<effort>Max</effort>
+				<threshold>Low</threshold>
+				<failOnError>true</failOnError>
+				<includeFilterFile>${basedir}/rules/findbugs-include_(V0.9)_pjt.xml</includeFilterFile>
+				<excludeFilterFile>${basedir}/rules/findbugs-exclude_(V0.9)_pjt.xml</excludeFilterFile>
+			</configuration>
+		</plugin>  
+            
+		</plugins>
+	</build>
+	
+</project>

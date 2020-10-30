@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : AccessLogMapper.xml
+    Description   : Access Log 기록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  손홍신       1.0        최초 생성
+-->
+<mapper namespace="AccessLog">
+		
+	<!-- 1. 접속 로그 조회 -->
+	<select id="selectAccessLogList" resultType="Map">
+		SELECT /* AccessLog.selectAccessLogList */
+			   A.AC_LOG_NO,
+		       A.AC_DT,
+		       A.AC_TM,
+		       A.AC_RSLT_CD,
+		       (SELECT COMM_CD_NM FROM TZF_COMMCD_D WHERE GRP_CD = 'SY005' AND COMM_CD = A.AC_RSLT_CD ) AS AC_RSLT_CD_NM,
+		       A.SYS_ID,
+		       A.CLNT_IP,
+		       A.SVR_IP,
+		       A.AC_URL,
+		       A.REG_USER_NO,
+		       A.REG_DTM,
+		       A.REG_IP,
+		       B.LOGIN_ID,
+		       B.USER_NM
+		  FROM TZF_ACCESSLOG_L A, TZF_USER_M B
+		 WHERE A.REG_USER_NO = B.USER_NO(+)
+		<if test="SYS_ID != null and !SYS_ID.equals('all')">
+		   AND A.SYS_ID = #{SYS_ID}
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(LOGIN_ID)">
+		   AND B.LOGIN_ID LIKE '%'||TRIM(#{LOGIN_ID})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_NM)">
+		   AND B.USER_NM LIKE '%'||TRIM(#{USER_NM})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(CLNT_IP)">
+		   AND A.CLNT_IP LIKE '%'||TRIM(#{CLNT_IP})||'%'
+		</if>
+		<if test="START_DT != null and !START_DT.equals('') and END_DT != null and !END_DT.equals('')">
+		   AND A.AC_DT BETWEEN TO_DATE(#{START_DT}, 'YYYY-MM-DD') AND TO_DATE(#{END_DT}, 'YYYY-MM-DD')
+		</if>
+		 ORDER BY A.AC_DT DESC, A.AC_TM DESC
+	</select>
+	
+	<!--  2. 등록  -->
+    <!--  2.1. 접속 로그 등록  -->
+    <insert id="insertLog"  parameterType="com.shinsegae_inc.core.vo.AccessLogVO">
+        INSERT /* AccessLog.insertLog */
+          INTO TZF_ACCESSLOG_L
+             (
+               AC_LOG_NO
+             , AC_DT
+             , AC_TM
+             , AC_RSLT_CD
+             , CLNT_IP
+             
+             , SVR_IP
+             , AC_URL
+             , REG_USER_NO
+             , REG_DTM
+             , REG_IP
+             
+             , MOD_USER_NO
+             , MOD_DTM
+             , MOD_IP
+             , SYS_ID
+             )  
+	    VALUES
+	         (
+	            TZF_ACCESSLOG_L_SEQ.NEXTVAL
+	          , TO_CHAR(SYSDATE, 'YYYYMMDD')
+	          , TO_CHAR(SYSDATE, 'HH24MISS')
+	          , #{acRsltCd} 
+	          , #{clntIp} 
+	          
+	          , #{svrIp} 
+	          , #{acUrl} 
+	          , #{regUserNo}
+	          , SYSDATE
+	          , #{regIp}
+	          
+	          , #{modUserNo}
+	          , SYSDATE
+	          , #{modIp}	          
+	          , #{sysId}
+	         )
+    </insert>
+    
+	<!--  3. 조회...  -->
+    <select id="selectList"  parameterType="hashMap" resultType="hashMap">
+        SELECT /* AccessLog.selectList */
+               AC_DT
+             , AC_TM
+		     , FN_GET_CODENM('SY005', AC_RSLT_CD) AS ACCES_TYPE_NM
+		     , CLNT_IP
+		     , SVR_IP
+		     , AC_URL
+		     , REG_USER_NO
+		  FROM  TZF_ACCESSLOG_L
+		 WHERE 1=1
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_ID)">
+           AND REG_USER_NO LIKE #{USER_ID}
+        </if>
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(AC_RSLT_CD)">
+           AND AC_RSLT_CD = #{AC_RSLT_CD}
+        </if>
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(SVR_IP)">
+           AND SVR_IP = #{SVR_IP}
+        </if>
+        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(CLNT_IP)">
+           AND CLNT_IP = #{CLNT_IP}
+        </if>
+        <if test="START_DT != null and !START_DT.equals('') and END_DT != null and !END_DT.equals('')">
+		   AND AC_DT BETWEEN #{START_DT} AND #{END_DT}
+		</if>
+          ORDER BY AC_LOG_NO DESC
+    </select>
+    
+</mapper>

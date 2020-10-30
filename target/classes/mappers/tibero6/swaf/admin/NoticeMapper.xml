@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : NoticeMapper.xml
+    Description   : Notice 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.26  조은정       1.0        최초 생성
+-->
+<mapper namespace="Notice">
+	<resultMap id="noticeFile" type="java.util.HashMap">
+		<result column="ATCH_SEQ" property="ATCH_SEQ" />
+		<result column="POST_NO" property="POST_NO" />
+		<result column="ORG_FILE_NM" property="name" />
+		<result column="FILE_PATH" property="FILE_PATH" />
+		<result column="FILE_NM" property="FILE_NM" />
+		<result column="FILE_EXTN" property="FILE_EXTN" />
+		<result column="FILE_SIZE" property="displaySize" />
+		<result column="ATCH_DTM" property="ATCH_DTM" />
+	</resultMap>
+
+
+	<select id="selectNoticeList" resultType="Map">
+		SELECT /* Notice.selectNoticeList */
+		  A.POST_NO, 
+		  A.BOARD_NO, 
+		  A.POST_TITLE,
+		  A.POST_CNTS,
+		  A.WRT_USER_NO,
+		  TO_CHAR(A.WRT_DTM, 'YYYY-MM-DD') AS WRT_DTM, 
+		  A.SORT_SEQ, 
+		  TO_CHAR(A.POST_ST_DTM, 'YYYY-MM-DD') AS POST_ST_DTM, 
+		  TO_CHAR(A.POST_ED_DTM, 'YYYY-MM-DD') AS POST_ED_DTM, 
+		  A.UGNT_YN, 
+		  A.USE_YN, 
+		  A.POST_HITS, 
+		  A.POST_STS_CD,
+		  DECODE((	SELECT COUNT(*)
+		  				FROM TZF_POSTATCH_D 
+		          		WHERE POST_NO = A.POST_NO
+		          		AND USE_YN = 'Y' ), 0, 'N', 'Y') AS ATCH_YN,
+		   TO_CHAR(A.MOD_DTM, 'YYYY-MM-DD') AS MOD_DTM       		
+		FROM 	TZF_POST_M A
+		WHERE 1=1
+		AND	A.USE_YN = 'Y'
+		<if test="SYS_ID != null and !SYS_ID.equals('all')">
+		   AND A.SYS_ID 	= #{SYS_ID}
+		</if>
+		<if test="POST_STS_CD != null and !POST_STS_CD.equals('all')">
+		   AND A.POST_STS_CD= #{POST_STS_CD}
+		</if>
+		<if test="POST_NO != null and !POST_NO.equals('')">
+		   AND A.POST_NO LIKE '%'||TRIM(#{POST_NO})||'%'
+		</if>
+		<if test="UGNT_YN != null and !UGNT_YN.equals('all')">
+			AND A.UGNT_YN = #{UGNT_YN}
+		</if>
+		ORDER BY SORT_SEQ, POST_NO
+	</select>
+	
+	
+	<insert id="insertNotice" parameterType="Map">
+	 <selectKey keyProperty="POST_NO" resultType="string" order="BEFORE">
+        SELECT LPAD(TZF_POST_M_SEQ.NEXTVAL, 8, '0') FROM DUAL
+     </selectKey>
+		INSERT /* Notice.insertNotice */
+		INTO TZF_POST_M(
+		    POST_NO,
+		    PAR_POST_NO,
+		    BOARD_NO,
+		    POST_TITLE,
+		    POST_CNTS,
+		    WRT_USER_NO,
+		    WRT_DTM,
+		    SYS_ID,
+		    SORT_SEQ,
+		    POST_ST_DTM,
+		    POST_ED_DTM,
+		    UGNT_YN,
+		    USE_YN,
+		    POST_HITS,
+		    POST_STS_CD,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP,
+		    MOD_USER_NO, 
+		    MOD_DTM,
+		    MOD_IP
+		  ) VALUES
+			(
+				#{POST_NO},
+				#{PAR_POST_NO},
+			    '01',
+			    #{POST_TITLE},
+			    #{POST_CNTS},
+			    #{USER_NO},
+			    SYSDATE,
+			    #{SYS_ID},
+			    #{SORT_SEQ},
+			    #{POST_ST_DTM},
+			    #{POST_ED_DTM},
+			    #{UGNT_YN},
+			    'Y',
+			    '0',
+			    #{POST_STS_CD},
+			    #{USER_NO},
+			    SYSDATE,
+			    #{REG_IP},
+			    #{MOD_USER_NO},
+			    #{MOD_DTM},
+			    #{MOD_IP}
+			)
+	</insert>
+	
+	
+	<update id="updateNotice" parameterType="Map">
+		UPDATE /* Notice.updateNotice */
+			TZF_POST_M SET 
+		   	POST_STS_CD		= #{POST_STS_CD},
+		   	POST_TITLE		= #{POST_TITLE},
+		   	POST_CNTS		= #{POST_CNTS},
+			UGNT_YN			= #{UGNT_YN},
+			SORT_SEQ			= #{SORT_SEQ},
+			POST_ST_DTM		= #{POST_ST_DTM},
+			POST_ED_DTM		= #{POST_ED_DTM},
+			MOD_USER_NO      		= #{MOD_USER_NO},
+			MOD_DTM     		= SYSDATE,
+			MOD_IP      		= #{MOD_IP}
+		WHERE POST_NO   	= #{POST_NO}
+	</update>
+	
+	
+	<update id="deleteNotice" parameterType="Map">
+		UPDATE /* Notice.deleteNotice */
+			TZF_POST_M SET 
+		   	USE_YN 				= 'N',
+			MOD_USER_NO      		= #{MOD_USER_NO},
+			MOD_DTM     		= SYSDATE,
+			MOD_IP      		= #{MOD_IP}
+		WHERE POST_NO  	= #{POST_NO}
+	</update>
+	
+	
+	<select id="selectFileList" resultMap="noticeFile">
+		SELECT /* Notice.selectFileList */
+ 			ATCH_SEQ, 
+ 			POST_NO,
+ 			ORG_FILE_NM, 
+ 			FILE_PATH, 
+ 			FILE_NM, 
+ 			FILE_EXTN,
+ 			ROUND(FILE_SIZE/(1024*1024), 2) AS FILE_SIZE, 
+ 			TO_CHAR(ATCH_DTM, 'YYYY-MM-DD') AS ATCH_DTM
+		FROM 	TZF_POSTATCH_D
+		WHERE 	1=1
+			AND	POST_NO = #{POST_NO}
+			AND	USE_YN   = 'Y'
+		<if test="ATCH_SEQ != null and !ATCH_SEQ.equals('')">
+			AND ATCH_SEQ	= #{ATCH_SEQ} 
+		</if>
+		ORDER BY ATCH_SEQ
+	</select>
+	
+	
+	<insert id="insertFile" parameterType="Map">
+		INSERT /* Notice.insertFile */
+		INTO TZF_POSTATCH_D(
+		    ATCH_SEQ,
+		    ORG_FILE_NM, 
+		    FILE_PATH, 
+		    FILE_NM, 
+		    FILE_EXTN, 
+		    FILE_SIZE, 
+		    POST_NO, 
+		    ATCH_DTM, 
+		    USE_YN, 
+		    REG_USER_NO, 
+		    REG_DTM, 
+		    REG_IP
+		  ) VALUES
+			(
+				TZF_POSTATCH_D_SEQ.NEXTVAL,
+				#{localFile},
+			    #{key},
+			    #{file},
+			    #{FILE_EXTN},
+			    #{size},
+			    #{POST_NO},
+			    SYSDATE,
+			    'Y',
+			    #{USER_NO},
+			    SYSDATE,
+			    #{REG_IP}
+			)
+	</insert>
+	
+	
+	<update id="deleteFile" parameterType="Map">
+		UPDATE /* Notice.deleteFile */
+			TZF_POSTATCH_D SET 
+		   	USE_YN 				= 'N',
+			MOD_USER_NO      		= #{MOD_USER_NO},
+			MOD_DTM     		= SYSDATE,
+			MOD_IP      		= #{MOD_IP}
+		WHERE POST_NO   	= #{POST_NO}
+		<if test="ATCH_SEQ != null and !ATCH_SEQ.equals('')">
+			AND ATCH_SEQ	= #{ATCH_SEQ} 
+		</if>
+	</update>
+</mapper>

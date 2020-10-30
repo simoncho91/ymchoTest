@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript' src='/sitims/js/util/cm_function.js'></script>
+<script type='text/javascript'>
+
+//layout
+var layoutMain;
+var searchForm;
+var mainGrid;
+var subForm;
+
+//toolbar
+var gridSubToolbar;
+
+//local variable
+var rowIndex = 0;
+var dcGrdMain;
+
+//paging
+var mainPage;
+var	i_iNowPageNo= 1;
+var	i_iPageSize= 50;
+
+$(function(){
+/****************************************************************************************************
+  * 초기화 
+  ****************************************************************************************************/    
+	
+	  layoutMain = new dhx.Layout("layoutObj", {
+		     css: "dhx_layout-cell--border_top",
+		     rows: [
+		    	  {id: "searchForm",gravity: false,height: "60px", css: "dhx_layout-cell--border_bottom"}
+	               ,{rows: [
+                           {cols:[
+	                        	 {id: "mainGrid", width: "1000px",css: "layout_padding_right",resizable: true}
+	                        	 ,{rows:[
+	                        		 {id: "toolbarSub",gravity:false}
+	                        		 ,{id: "subForm", gravity:false}
+	                        	 ],resizable: true,css: "div_scroll"}
+        	 				],header:"목록", resizable: true }
+	                      ]
+	                 }
+	               ,{id:'page'}
+		     	 ]
+		 });
+	  
+	  // Form-검색조건
+	  searchForm = new dhx.Form(null, {
+		  rows: [
+    	  		{cols:[
+    	  			{type: "datepicker", id:"i_sReqStDate", name:"i_sReqStDate", label: "요청일", labelInline: true, labelWidth: "100px", dateFormat: "%Y-%m-%d", width: "250px", gravity:false, editable: true,
+    	  			 mark: fn_dhxDispToday
+    	  			},
+    	  			{type: "input",	width:"15", gravity: false, hidden:true},
+    	  			{type: "datepicker", id:"i_sReqEnDate", name:"i_sReqEnDate", label: "", labelInline: true, labelWidth: "0",  dateFormat: "%Y-%m-%d", width: "150px", gravity:false, editable: true,
+    	  			  mark: fn_dhxDispToday
+    	  			},
+    	  			{type: "datepicker", id:"i_sConfmStDate", name:"i_sConfmStDate", label: "승인일", labelInline: true, labelWidth: "100px", dateFormat: "%Y-%m-%d", width: "250px", gravity:false, editable: true,
+    	  			  mark: fn_dhxDispToday
+    	  			},
+    	  			{type: "input",	width:"15", gravity: false, hidden:true},
+    	  			{type: "datepicker", id:"i_sConfmEnDate", name:"i_sConfmEnDate", label: "", labelInline: true, labelWidth: "0",  dateFormat: "%Y-%m-%d", width: "150px", gravity:false, editable: true,
+      	  			  mark: fn_dhxDispToday
+    	  			}
+	 				,{type: "input", id: "i_sInciNm", name: "i_sInciNm",  label: "성분", labelPosition: "left", labelWidth: "40px", width: "300", gravity: false, placeholder: "한글명 OR 영문명 OR CasNo"}
+	 				,{type: "select", id: "i_sState", name: "i_sState",  label: "진행현황", labelPosition: "left", labelWidth: "80px", width: "300", gravity: false, options:[{}]}
+	 			]}
+	 		]
+	  });
+	  layoutMain.getCell("searchForm").attach(searchForm);
+	  
+	  // Grid-메인    
+	  dcGrdMain = new dhx.DataCollection();
+		  //
+	  mainGrid = new dhx.Grid("grid", {
+	      columns: [
+	          { width: 100, id: "v_inci_nm_ko",            header: [{ text: "성분 한글명",align:"center" }], align:"left" },
+	          { width: 100, id: "v_inci_nm_en",            header: [{ text: "성분 영문명",align:"center" }], align:"left" },
+	          { width: 150, id: "v_cas_no1",            header: [{ text: "Cas No.",align:"center" }], align:"left", template: function(text, row, col) {
+					return text + (row.n_cas_cnt > 1 ? ' 외' + (row.n_cas_cnt-1) + '개' : '');
+				} },
+	          { width: 210,  id: "v_state_nm",           header: [{ text: "요청상태",align:"center" }], align:"left" , autoWidth: false, htmlEnable: true,
+	        	     template: function (text, row, col) {
+	        	    	 if(row.v_state == "CO_ST01"){
+		        	    	return "<span style=\"padding-right:5px;\">"+row.v_state_nm
+        	    			+"</span><img src='/sitims/images/common/btn_new_code.gif' name=\"mainGrid_button_"+row.n_num
+        	    			+"\" id=\"mainGrid_button_"+row.n_num+"\" style=\"cursor: pointer; padding-top: 10px;\" onclick=\"fn_mainGridClick('"+row.v_req_con_id+"','"+row.v_state+"','"+row.v_reg_con_cd+"')\">";				 	 
+	        	    	 }else{
+	        	    		 return row.v_state_nm;
+	        	    	 }
+	        	     } },
+	          { width: 120, id: "v_req_dtm",            header: [{ text: "요청일",align:"center" }], align:"center"},
+	          { width: 100,  id: "v_confm_dtm",           header: [{ text: "승인일" ,align:"center"}], align:"center"},
+	          { width: 100, id: "v_user_vendor_nm",       header: [{ text: "업체명 (업체담당자)",align:"center" }], align:"left" }
+	      ],
+	      headerRowHeight: 46,
+	      autoWidth: true,
+	      resizable: true,
+	      selection: "row",
+	      fitToContainer: true,
+	      data: dcGrdMain
+	  });
+	  layoutMain.getCell("mainGrid").attach(mainGrid);
+	  
+	  // Form-서브  
+	  subForm = new dhx.Form(null, {
+	      rows: [
+	 			,{type: "text", id: "v_inci_nm_ko", name: "v_inci_nm_ko",  label: "성분 한글명", labelPosition: "left", labelWidth: "130", width: "100%", gravity: false}
+	 			,{type: "text", id: "v_inci_nm_en", name: "v_inci_nm_en",  label: "성분 영문명", labelPosition: "left", labelWidth: "130", width: "100%", gravity: false}
+	 			,{type: "textarea", id: "v_cas_nmrn", name: "v_cas_nmrn",  label: "Cas No.", labelPosition: "left", labelWidth: "130", width: "370",height:"80px", gravity: false , readOnly: true}
+	 			,{type: "select", id: "v_state", name: "v_state",  label: "요청 상태", labelPosition: "left", labelWidth: "130", width: "370", gravity: false, required: true, options: [{}] }
+	 			,{type: "text", id: "v_reg_con_cd", name: "v_reg_con_cd",  label: "신규 생성 성분 코드", labelPosition: "left", labelWidth: "130", width: "100%", gravity: false}
+	 			,{type: "input", id: "v_gi_con_cd", name: "v_gi_con_cd",  label: "기존 생성 성분 코드", labelPosition: "left", labelWidth: "130", width: "370", gravity: false}
+	 			,{type: "text", id: "v_opinion", name: "v_opinion",  label: "등록의견", labelPosition: "left", labelWidth: "130", width: "100%", gravity: false}
+	 			,{type: "textarea", id: "v_reject_opn", name: "v_reject_opn",  label: "검토의견", labelPosition: "left", labelWidth: "130", width: "370",height:"100px", gravity: false, required: true}
+	 			,{type: "text", id: "v_relate_product_nm", name: "v_relate_product_nm",  label: "사용되는 제품코드", labelPosition: "left", labelWidth: "130", width: "100%", gravity: false}
+	 			,{type: "text", id: "v_user_vendor_nm", name: "v_user_vendor_nm",  label: "업체명 (업체담당자)", labelPosition: "left", labelWidth: "130", width: "100%", gravity: false}
+	 			,{type: "text", id: "v_email", name: "v_email",  label: "담당자 E-mail", labelPosition: "left", labelWidth: "130", width: "100%", gravity: false}
+	 			,{type: "input", id: "v_req_con_id", name: "v_req_con_id",hidden:true}
+	 		]
+	  });
+	  layoutMain.getCell("subForm").attach(subForm);
+	  
+	  // sub-툴바    
+	  gridSubToolbar = new dhx.Toolbar(null, {
+	      css: "dhx_widget--bordered dhx_widget--bg_gray",
+	      data: [
+	          {id: "btnModify",icon: "dxi dxi-check",value: "저장"}
+	      ]
+	  });    
+	  layoutMain.getCell("toolbarSub").attach(gridSubToolbar);
+	  
+	  
+	  
+/****************************************************************************************************
+ * 이벤트 생성 
+ ****************************************************************************************************/
+ 		
+	gridSubToolbar.events.on("Click", function(id, e){
+	   	if(id=='btnModify'){
+	   		fn_save();
+	   	}
+    });
+    
+    
+	 mainGrid.events.on("CellClick", function(row,column,e){
+		setEnabled();
+		 var postParam = new Object();
+		 postParam.grpcd = "dsStatueId:CONREQ_STATUS:Y:S";
+		 var rowConCd = row.v_reg_con_cd;
+		 if(row.v_state == 'CO_ST01'){
+			 
+			 subForm.getItem("v_gi_con_cd").disable();
+			 subForm.getItem("v_gi_con_cd").config.required = false;
+
+			 fn_s_ajaxGetDsForCombo({ 
+				 postParam : postParam
+			   , async:false
+			   , success : 
+			     function(responseData) { 
+					
+			  		   // State 셀렉트 박스
+					   var tmpStatuejson = responseData.dsStatueId.options;
+					   var tmpStatueArray = new Array();
+					   for(var i=0;i<tmpStatuejson.length;i++){
+					  	 var tmpStatueObject = new Object();
+						   if(tmpStatuejson[i].value == "CO_ST01" || tmpStatuejson[i].value == "CO_ST02" || tmpStatuejson[i].value == "CO_ST04"){
+							   continue;
+						   }
+						   tmpStatueObject.value =  tmpStatuejson[i].value
+						   tmpStatueObject.content = tmpStatuejson[i].content
+						   tmpStatueObject.CDNM = tmpStatuejson[i].CDNM
+						   tmpStatueArray.push(tmpStatueObject);
+					   }
+					   
+					   var statueOptions = new Object();
+					   statueOptions.options = tmpStatueArray;
+					   fn_s_selectboxPaint(subForm, ["v_state"], statueOptions);   
+				}
+			 });
+			 if(rowConCd){
+				 setDisabled();
+			 }
+			 
+		 }else{
+			 fn_s_ajaxGetDsForCombo({ 
+				 postParam : postParam
+			   , async:false
+			   , success : 
+			     function(responseData) { 
+					fn_s_selectboxPaint(subForm, ["v_state"], responseData.dsStatueId);
+				}
+			 });
+			 gridSubToolbar.isDisabled("btnModify");
+			 setDisabled();
+		 }
+		 
+		 fn_s_gridToForm(mainGrid, subForm);
+	 }); 
+
+    mainPage = new CmDhtmlx6Paging({
+   		layout:layoutMain
+   		, name : 'mainPage'
+   		, gridData : dcGrdMain
+  		, grid 	 : mainGrid
+   		, url : "/si/im/020/si_im_020_list.do"
+   		, frmSearch: searchForm
+   		, gridPageCell : layoutMain.getCell('page')
+   		, denySortCol : ['n_num']
+    });
+     
+  	//검색 Form 엔터이벤트
+    $(document).on('keyup','#i_sInciNm',function(e){
+    	if(e.keyCode == 13){
+    		fn_search();
+    	}
+    });
+    $(document).on('keyup','#i_sCasNm',function(e){
+    	if(e.keyCode == 13){
+    		fn_search();
+    	}
+    });
+  	//sub Form selected 이벤트
+    $(document).on('change','#v_state',function(e){
+    	subForm.setValue({"v_gi_con_cd" : ""});
+    	fn_giConSelect($(this).val());
+    });
+
+    fn_initDS();
+
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	searchForm.getItem('i_sReqDate').setValue(param.i_sReqDate);
+    	searchForm.getItem('i_sConfmDate').setValue(param.i_sConfmDate);
+    	searchForm.getItem('i_sInciNm').setValue(param.i_sInciNm);
+    	searchForm.getItem('i_sState').setValue(param.i_sState);
+
+    }
+    fn_search();
+    setDisabled();
+});
+/****************************************************************************************************
+ * 초기화 function 종료 
+ ****************************************************************************************************/
+
+//리스트 조회
+function fn_search() {
+
+    mainPage.search(1);
+	 var postParam = new Object();
+	 postParam.grpcd = "dsStatueId:CONREQ_STATUS:Y:S";
+	 fn_s_ajaxGetDsForCombo({ 
+		 postParam : postParam
+	   , async:false
+	   , success : 
+	     function(responseData) { 
+			fn_s_selectboxPaint(subForm, ["v_state"], responseData.dsStatueId);
+		}
+	 }); 
+    var data = subForm.getValue();
+	 if(data.v_state == 'CO_ST01'){
+		 setDisabled();
+		 subForm.getItem("v_gi_con_cd").config.required = false;
+		 
+	 }else{
+
+		 setDisabled();
+	 }
+
+    //mainGrid.selection.setCell(mainGrid.data.getId(rowIndex), false);
+    fn_s_gridToForm(mainGrid, subForm);
+
+}
+
+function fn_excel(){
+	fn_excel_download("/si/im/020/si_im_020_list_excel.do", mainPage.postParam);
+}
+
+//SearchForm StatueData초기화  :: SubForm StatueData 초기화
+function fn_initDS() {
+
+ var postParam = new Object();
+ postParam.grpcd = "dsStatueId:CONREQ_STATUS:Y:S";
+
+ fn_s_ajaxGetDsForCombo({ 
+	 postParam : postParam
+   , async:false
+   , success : 
+     function(responseData) { 
+		fn_s_selectboxPaint(searchForm, ["i_sState"], responseData.dsStatueId);
+		fn_s_selectboxPaint(subForm, ["v_state"], responseData.dsStatueId);
+		
+	}
+ });
+ searchForm.getItem('i_sState').setValue("CO_ST01");
+}
+//신규 init function
+function fn_add(){
+ mainGrid.selection.setCell(mainGrid.data.getId(-1), false);
+ subForm.getItem("v_gi_con_cd").config.required = false;
+ setEnabled();
+ subForm.clear();
+}
+
+//신규등록  function
+function fn_save() {
+	var data = subForm.getValue();
+	var postParam = {
+			i_sState : data.v_state,
+			i_sGiConCd : data.v_gi_con_cd,
+			i_sRejectOpn : data.v_reject_opn,
+			i_sRegConId : data.v_req_con_id
+	}
+ 	rowIndex = 0;
+	//저장 function
+	var regex = /^[A-Za-z0-9+]*$/; // 한글체크
+	
+    if(!fn_s_validateForm(subForm)) {
+   	 return;
+    }
+    if(data.v_state == 'CO_ST01' || data.v_state == 'CO_ST02') {
+    	fn_s_alertMsg("요청상태를 확인해주세요");
+    	 return;
+    }
+    if(subForm.getItem("v_state").config.disabled == true || subForm.getItem("v_reject_opn").config.disabled == true) {
+    	fn_s_alertMsg("요청상태가 등록요청일 경우에만 저장가능합니다.");
+      	 return;
+    }
+	if(!fn_isNull(data.v_gi_con_cd)){
+		if(!regex.test(data.v_gi_con_cd)){
+			
+			fn_s_alertMsg("기존  생성 성분 코드는 영어와 숫자만 입력 가능합니다.");
+			return;
+		}
+		if(!check_length(data.v_gi_con_cd,10)){
+			
+			fn_s_alertMsg("기존 생성 성분 코드가 최대 제한 입력값를 초과 했습니다.");
+			return;
+		}
+	}
+	if(!check_length(data.v_reject_opn,500)){
+		
+		fn_s_alertMsg("검토의견이 최대 제한글자수를 초과했습니다.");
+		return;
+	}
+	dhx.confirm({
+		header : "알림",
+		text : "저장 하시겠습니까?",
+		buttons : ["예","아니오"],
+		buttonsAlignment: "center"
+	}).then( function (result) {
+		if(result){
+
+			$.ajax({
+				  url  : "/si/im/020/si_im_020_modify.do"
+				, type : "POST"
+		        , data : postParam
+		        , dataType : "json"
+		        , success : function(xhr){
+		        	fn_s_alertMsg(xhr.message);
+		        	fn_saveSuccess();
+				}, error : function(xhr){
+		        	fn_s_alertMsg("저장 실패");
+				}
+		     }); 
+		}
+		else{
+			return;
+		}
+	});
+}
+function fn_saveSuccess() {
+ mainPage.search();
+ fn_add();
+}
+
+//subForm - disabled
+function setDisabled(){
+   
+   $("#v_state").attr("disabled","disabled");
+   subForm.getItem("v_state").disable();
+   subForm.getItem("v_gi_con_cd").disable();
+   subForm.getItem("v_reject_opn").disable();
+} 
+//subForm - enabled
+function setEnabled(){
+	
+	$("#v_state").removeAttr("disabled");
+	 subForm.getItem("v_state").enable();
+	 subForm.getItem("v_gi_con_cd").enable();
+	 subForm.getItem("v_reject_opn").enable();
+}
+// subForm - selected
+function fn_giConSelect(val){
+	if(val == 'CO_ST03'){
+	   subForm.getItem("v_gi_con_cd").config.required = true;
+	   subForm.getItem("v_gi_con_cd").enable();
+	   
+	}else{
+	   subForm.getItem("v_gi_con_cd").config.required = false;
+	   subForm.getItem("v_gi_con_cd").disable();
+	}
+}
+// mainGrid - button Click
+function fn_mainGridClick(i_sReqConId,i_sState,i_sRegConCd){
+	var param = {
+			i_sReqConId : i_sReqConId
+	}
+	var ConCd = i_sRegConCd;
+ 	try{//openMenuCd=MISIIM011
+		
+		$.ajax({
+			url : "/si/im/020/si_im_020_stateValidation.do",
+			type: "GET",   
+			dataType : "JSON",
+			data : param,
+			success : function(result){
+				if(result.data.resultCount == 1){
+					if (parent.mdiObj.pages['MISIIM010']) {
+						fn_s_alertMsg("성분DB탭이 이미 열려져 있습니다.<br/>탭을 닫고 다시 시도해주세요.");
+					}else{
+						if(!ConCd){
+							parent.mdiObj.create_tab('MISIIM010','성분DB','/si/im/010/si_im_010_reg.do?&i_sReqConId='+i_sReqConId);
+						}else{
+							parent.mdiObj.create_tab('MISIIM010','성분DB','/si/im/010/si_im_010_view.do?&i_sConCd='+i_sRegConCd+'&i_nVerSeq='+1);
+						}
+					}
+				}else{
+					fn_s_alertMsg("이미 변경 된 값입니다 초기화 클릭 후 진행 해주세요");
+				}
+			},
+			error : function(){
+				fn_s_alertMsg("요청상태 유효성 검사중 오류가 발생했습니다.");
+			}
+			
+		});
+		
+	}catch(e){
+		fn_s_alertMsg("새탭이나 새창에서 사용할수 없는 기능 입니다.");
+    	 return;
+	} 
+}
+</script>
+</html>

@@ -1,0 +1,50 @@
+
+<html th:replace="~{layout/dhtmlxPopLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type="text/javascript">
+$(function(){
+	layoutMain = new dhx.Layout('layoutObj',{
+	     css: "dhx_layout-cell--border_top",
+			rows:[
+				{id:'grid',height:'75%'}
+			]		
+	});
+	
+   var b = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null,{
+		columns:[
+			{ width: 200, id: "v_doc_nm" , header: [{ text: "문서명",align:"center" }] , align:"left" , autoWidth: false}
+			,{ width: 200, id: "v_title" , header: [{ text: "Title",align:"center" }], align:"center"}
+			,{ width: 120, id: "v_reg_dtm" , header: [{ text: "요청일",align:"center" }], align:"center"}
+		]
+		, headerRowHeight: 46
+		, autoWidth: true
+	    , resizable: true
+	    , selection: "row"
+        , sortable : false 
+        , multiselection : false 
+		, data:dcGrdMain
+	});
+	b.attach(grdMain);
+
+   mainPage = new CmDhtmlx6Paging({
+   		layout: layoutMain
+   		, noPaging : true
+   		, name : 'mainPage'
+     	, gridData : dcGrdMain
+    	, grid 	 : grdMain
+   		, url : "/br/pw/020/getReqFileList.do"
+   		, noPaging : true
+   		, postParam : {
+   			i_sRecordId :		'[(${reqVo.i_sRecordId})]'
+   			, i_sProductCd :    '[(${reqVo.i_sProductCd})]'
+			, i_sNationCd :     '[(${reqVo.i_sNationCd})]'
+			, i_sFileReqYn :     'Y'
+   		}
+   });   
+
+   mainPage.initPaging();
+  
+});
+</script>

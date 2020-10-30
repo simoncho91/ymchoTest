@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html th:fragment="layout(script)" xmlns:th="http://www.thymeleaf.org">
+<head>
+            
+<title th:if="${@environment.getActiveProfiles()[0] == 'live'}"     th:text="${@environment.getProperty('globals.systemName')}"></title>
+<title th:unless="${@environment.getActiveProfiles()[0] == 'live'}" th:text="${@environment.getProperty('globals.systemName') +' ['+@environment.getActiveProfiles()[0] + ']'}"></title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta http-equiv="expires" content="-1">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="cache-control" content="no-cache">
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="format-detection" content="telephone=no">
+  <meta name="author" content="">
+  <meta name="keywords" content="" />
+  <meta name="description" content="">
+  <!-- css -->
+  <link rel="stylesheet" type="text/css" href="/sitims/CSS/common.css">
+  <!--[if lt IE 9]>
+  <script type="text/javascript" src="/sitims/js/lib/html5.js"></script>
+  <![endif]-->
+
+<link rel="stylesheet" href="/css/bootstrap.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="/fontawesome/css/all.css" crossorigin="anonymous">
+
+<script type='text/javascript' src='/js/jquery/jquery-1.11.1.min.js'></script>
+<script type='text/javascript' src='/js/commonUtils.js'></script>
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type="text/javascript" src="/sitims/js/util/cm_function.js"></script>
+<script type="text/javascript" th:inline="javascript">
+var locStorage;
+var loginId;
+var timer = null;
+var isRunning = false;
+$(function() {
+    /*<![CDATA[*/ 
+    var msg = /*[[ ${msg} ]]*/;
+    if ( (msg != null) && (msg != "") ){
+        fn_s_alertMsg(msg);
+    }
+    /*]]>*/ 
+
+    // parent가 존재하면 login화면을 parent화면에 redirect
+    if(0 < parent.length){
+        parent.location.href = "/login/init.do";
+    }
+
+    if (typeof localStorage === 'undefined') {
+        loginId = CookieUtil.get("loginId");
+    } else {
+        locStorage = window.localStorage;
+        loginId    = locStorage.getItem("loginId");
+    }
+    
+    
+    if ( (loginId != null) && (loginId != "") ) {
+        $('#loginId').val(loginId);
+        document.getElementById('login_chk').checked = true;
+        $('#loginPwd').focus();
+    } else {
+        $('#loginId').focus();
+    }
+    
+    $("#loginId").keydown(function (key) {
+        if (key.keyCode == 13) {
+            fn_login();
+        }
+    });
+    $("#loginPwd").keydown(function (key) {
+        if (key.keyCode == 13) {
+            fn_login();
+        }
+    });
+
+    $(".btn_recive_num").click(function(e){
+    	var regex= /[^0-9]/g
+        if ($('#pwdInitId').val() == "") {
+            fn_s_alertMsg('사용자 ID를 입력하세요.');
+            $('#pwdInitId').focus();
+            return false;
+        }
+        if ($('#pwdInitPhone').val() == "") {
+            fn_s_alertMsg('사용자 전화번호를 입력하세요.');
+            $('#pwdInitPhone').focus();
+            return false;
+        }
+        if (regex.test($('#pwdInitPhone').val())) {
+            fn_s_alertMsg('사용자 전화번호는 숫자만 입력하세요.');
+            $('#pwdInitPhone').val("");
+            $('#pwdInitPhone').focus();
+            return false;
+        }
+        if ($('#pwdInitPhone').val().length < 10) {
+            fn_s_alertMsg('전화번호는 최소10자리를 입력하세요.');
+            $('#pwdInitPhone').val("");
+            $('#pwdInitPhone').focus();
+            return false;
+        }
+        var postParam = new Object();
+        postParam.LOGIN_ID  = $('#pwdInitId').val(); 
+        postParam.PHONE_NO = $('#pwdInitPhone').val();
+    	$.ajax({
+    		url : "/login/initPwdSendCertifiNumber.do",
+    		type : "POST",
+    		data : postParam,
+    		dataType : "JSON",
+    		success : function(data){
+    			if(data.statue.indexOf("fail") > -1){
+    				fn_s_alertMsg(data.msg);
+         			  $('#pwdInitId').val("");
+           			  $('#pwdInitPhone').val("");
+    			}else{
+        		  fn_s_alertMsg(data.msg);
+       			  $('#pwdInitId').attr("disabled",true);
+       			  $('#pwdInitPhone').attr("disabled",true);
+       	    	  $(".btn_recive_num").hide();
+       	    	  $("#timeExtend").html("<a href='#' id='extendTimeText' onclick='timerInterface()'>유효시간 연장</a>");
+       	    	  timerInterface();
+    			}
+
+    		},
+    		error : function(data){
+    			fn_s_alertMsg("DB오류");
+    		}
+    		
+    	});
+
+    });
+    $(".btn_chk").click(function(e){
+        if ($('#certifiNumber').val() == "") {
+            fn_s_alertMsg('인증번호를 입력해주세요.');
+            $('#certifiNumber').val("");
+            $('#certifiNumber').focus();
+            return false;
+        }
+        var postParam = new Object();
+        postParam.CERT_NUM  = $('#certifiNumber').val(); 
+        postParam.LOGIN_ID  = $('#pwdInitId').val(); 
+    	$.ajax({
+    		url : "/login/initPwd.do",
+    		type : "POST",
+    		data : postParam,
+    		dataType : "JSON",
+    		success : function(data){
+    			if(data.statue.indexOf("fail") > -1){
+    				fn_s_alertMsg(data.msg);
+    				$('#certifiNumber').val("");
+    			}else{
+	    			fn_s_alertMsg(data.msg);
+	    			 $('#pwdInitId').attr("disabled",false);
+	       			  $('#pwdInitPhone').attr("disabled",false);
+	    			 $('#pwdInitId').val("");
+	       			  $('#pwdInitPhone').val("");
+	       			$('#certifiNumber').val("");
+	       	    	  $(".btn_recive_num").show();
+	       	    	  $("#extendTimeText").remove();
+	       	    	clearInterval(timer);
+	       	    	$('.time').html("");
+	       	    	$("#pop-password_init").hide();
+    			}
+    		},
+    		error : function(data){
+    			fn_s_alertMsg("DB오류");
+    		}
+    		
+    	});
+    });
+    $(".btn_pop_close").click(function(e){
+    	location.reload();
+    });
+    $(".btn_password_init").click(function(e){
+    	$("#pop-password_init").show();
+    });
+    
+	
+})
+function startTimer() {
+            var count = 180;
+            var display = $('.time');
+    		var minutes, seconds;
+            timer = setInterval(function () {
+            minutes = parseInt(count / 60, 10);
+            seconds = parseInt(count % 60, 10);
+     
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+     
+            display.html(minutes + ":" + seconds);
+     
+            // 타이머 끝
+            if (--count < 0) {
+    	     clearInterval(timer);
+    	     display.html("시간초과");
+    	     $('.btn_chk').attr("disabled","disabled");
+    	     $("#extendTimeText").remove();
+    	    isRunning = false;
+            }
+        }, 1000);
+            isRunning = true;
+}
+function timerInterface(){
+	
+	if (isRunning){
+		clearInterval(timer);
+		$('.time').html("");
+		startTimer();
+	}else{
+		startTimer();
+	}
+}
+function fn_login(){
+    if ($('#loginId').val() == "") {
+        fn_s_alertMsg('사용자 ID를 입력하세요.');
+        $('#loginId').focus();
+        return false;
+    }
+    if ($('#loginPwd').val() == "") {
+        fn_s_alertMsg('사용자 비밀번호를 입력하세요.');
+        $('#loginPwd').focus();
+        return false;
+    }
+        
+    var postParam = new Object();
+    postParam.loginId  = $('#loginId').val();
+    postParam.loginPwd = $('#loginPwd').val();
+
+    if ( ($('#login_chk').is(":checked")) && ($('#loginId').val() != '') ) {
+        if (typeof sessionStorage === 'undefined') {
+            CookieUtil.set("loginId", $('#loginId').val());
+        } else {
+            locStorage.setItem("loginId",$('#loginId').val());
+        }
+    }
+
+    $.ajax({
+        url      : "/login/login.do",
+        data     : postParam,
+        async    : true,
+        type     : "POST",
+        dataType : "json",
+        success  : function(responseData, textStatus, jqXHR){
+        	if (responseData == "success") {
+        		//링크로 들어온 경우 그 링크의 화면을 오픈하기 위한 스크립트 처리
+        		var openMenuCd = fn_getParameterByName("openMenuCd");
+        		if( openMenuCd != undefined && openMenuCd != "" ){
+        		//	$(location).attr('href',"/main/init.do?openMenuCd="+openMenuCd);
+        			$(location).attr('href',"/tiims/init.do?openMenuCd="+openMenuCd);
+        		}else{
+	        //	   $(location).attr('href',"/main/init.do");
+	        	   $(location).attr('href',"/tiims/init.do");
+        		}
+        	} else {
+        		fn_s_alertMsg(responseData);
+        	}
+        },
+        error : function(jqXHR, textStatus, errorThrown) {
+            fn_s_alertMsg(jqXHR);
+        }
+    });
+}
+
+function clearText(obj){
+    if(obj.defaultValue == obj.value) 
+       obj.value = '';
+    else if(obj.value == '') 
+       obj.value = obj.defaultValue;
+}
+
+</script>
+</head>
+<body>
+  <!-- wrap -->
+  <div id="wrap" class="wrap">
+    <div class="login_wrap">
+      <div class="login_area">
+          <fieldset class="field_login">
+            <legend class="blind">로그인</legend>
+            <h1><span class="blind">TIIMS - Technical integrated information management system</span></h1>
+            <input type="text" class="inp" id="loginId" maxlength="16" placeholder="ID" value="" />
+            <input type="password" class="inp" id="loginPwd" maxlength="16" placeholder="Password" value="" />
+            <div class="mid_btns">
+              <span class="login_chk">
+                <input type="checkbox" id="login_chk">
+                <label for="login_chk">Remember Me</label>
+              </span>
+              <button type="button" class="btn_password_init" data-pop="btn-open-pop" data-target="#pop-password_init">비밀번호 초기화</button>
+            </div>
+            <button type="submit" class="btn_submit" onclick="javascript:fn_login(); return false;">LOG IN</button>
+          </fieldset>
+      </div>
+    </div>
+    <!-- 비밀번호 초기화 팝업 -->
+    <div class="layer_wrap layer_password_init" id="pop-password_init">
+      <div class="layer_dialog">
+        <h2 class="tit">비밀번호 초기화</h2>
+        <form>
+          <fieldset>
+            <dl>
+              <dt>아이디</dt>
+              <dd class="cellBox">
+                <div class="cell"><input type="text" maxlength="16" id="pwdInitId" name="userId"/></div>
+              </dd>
+            </dl>
+            <dl>
+              <dt>등록 휴대폰 번호</dt>
+              <dd class="cellBox">
+                <div class="cell"><input type="text" maxlength="11" placeholder=" - 없이 입력" id="pwdInitPhone" name="PHONE_NO"/></div>                
+              </dd>
+            </dl>
+            <div class="mid_btns">
+              <button type="button" class="btn_recive_num">인증번호 받기</button>
+              <a href="javascript:;">인증번호가 오지 않나요?</a>
+            </div>
+            <div class="certification">
+              <div class="inBox">
+                <input type="text" maxlength="6" placeholder="인증번호 입력" id="certifiNumber"/>
+                <button type="button" class="btn_chk">확인</button>
+              </div>
+              <span id="timeExtend"></span>
+              <p>인증번호 유효시간 <span class="time"></span></p>
+            </div>
+          </fieldset>
+        </form>
+        <button type="button" data-pop="btn-close-pop" data-target="#pop-password_init" class="btn_pop_close"><span class="blind">팝업 닫기</span></button>
+      </div>
+    </div><!-- //비밀번호 초기화 팝업 -->
+  </div><!-- //wrap -->
+  <!-- js -->
+  <script type="text/javascript" src="/sitims/js/lib/jquery-3.3.1.min.js"></script>
+  <script type="text/javascript" src="/sitims/js/lib/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="/sitims/js/lib/jquery.easing.1.3.js"></script>
+  <script type="text/javascript" src="/sitims/js/ui-comm.js"></script>
+</body>
+
+
+</html>

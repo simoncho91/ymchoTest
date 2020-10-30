@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script src="/ckeditor/ckeditor.js"></script><!-- ckeditor 사용시 -->
+<script type='text/javascript'>
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+
+var dcGrdMain;
+var checkboxConfig;
+
+// 레이아웃 변수 설정
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage;
+var	i_iNowPageNo	= 1;
+var	i_iPageSize		= 50;
+
+// 레이아웃 초기화
+$(function(){
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form', gravity: false, height: "60px",}
+// 			,{id:'toolbar', resizable: true}
+//             ,{id: "toolbarSub", resizable: true}
+            ,{id: "grid", height:'75%', resizable: true,header:"목록"}
+            ,{id:'page', resizable: true}
+		  ]
+	  });
+
+	// 폼 설정 - 검색조건
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		css: "formSearch--border_bottom",
+		cols:[
+			,{type: "datepicker", id:"i_sStDate", name:"i_sStDate", label: "시작일", labelInline: true, labelWidth: "100px", dateFormat: "%Y-%m-%d", width: "250px", gravity:false, editable: true,
+				mark: fn_dhxDispToday	}
+			,{type: "input",width:"15", gravity: false, hidden:true}
+			,{type: "datepicker", id:"i_sEnDate", name:"i_sEnDate", label: "종료일", labelInline: true, labelWidth: "100px", dateFormat: "%Y-%m-%d", width: "250px", gravity:false, editable: true,
+				mark: fn_dhxDispToday	}
+			,{type: "input" , id:"i_sSearchNm", name:"i_sSearchNm", label:"검색명", labelPosition: "left", labelWidth: "100", width: "400px", gravity: false, icon: "dxi dxi-magnify", placeholder: "제목 or 작성자", required: false}
+			,{type: "input",width:"15", gravity: false, hidden:true}
+			,{type: "input", id:"i_sFuncId", name: "i_sFuncId", width:"15", gravity: false, hidden:true}
+			]
+		});
+	frmSearchCell.attach(frmSearch);
+		
+	// grid 메인
+	var gridCell = layoutMain.getCell('grid');    
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+	    //css: "table-layout--border_top",
+		columns:[
+			, { width: 600, id: "v_title",align:"left"      , header: [{ text: "제목",align:"center"}], mark: fn_dhxLinkCss,   }
+			, { width: 200, id: "v_reg_user_nm",align:"center"      , header: [{ text: "작성자",align:"center"}], autoWidth: false  }
+			, { width: 250, id: "v_reg_dtm",align:"center"      , header: [{ text: "작성일",align:"center"}], autoWidth: false  }
+			, { hidden: true, id: "c_content",align:"center"      , header: [{ text: "CONTENT"}] }
+			, { hidden: true, id: "v_file",align:"center"      , header: [{ text: "FILE"}] }
+			, { hidden: true, id: "v_record_id",align:"center"      , header: [{ text: "RECORD ID"}] }
+		]
+    	,autoWidth: true
+    	,headerRowHeight: 46
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	
+	gridCell.attach(grdMain);
+	
+	grdMain.events.on("CellClick", fn_view2);
+	grdMain.events.on("CellDblClick", fn_view);
+
+// 	 var gridMainToolbar = new dhx.Toolbar(null,{
+// 		data:[
+// 			{type: "spacer"},
+// 			{type:"button", value:"등록",id:'btnAdd'}
+// 	 	]
+// 	 });
+	 
+// 	 layoutMain.getCell('toolbar').attach(gridMainToolbar);
+    
+// 	 gridMainToolbar.events.on("Click", function(id,e){
+//     		if(id == 'btnAdd'){
+// 	    		window.location.href='/nb/nb/030/nb_nb_030_reg.do?i_sActionFlag=R';
+// 	    	}
+// 	   });
+	 	
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/nb/nb/030/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    		, moveCallBack : fn_setFrmSearch
+    });
+    mainPage.initPaging(pageCallback);
+    function pageCallback(param){
+    	frmSearch.getItem('i_sStDate').setValue(param.i_sStDate);
+    	frmSearch.getItem('i_sEnDate').setValue(param.i_sEnDate);
+    	frmSearch.getItem('i_sSearchNm').setValue(param.i_sSearchNm);
+    }
+    
+
+});
+function fn_view(row,col,e) {
+	var data = grdMain.data.getItem(row.id);
+	location.href='/nb/nb/030/nb_nb_030_view.do?i_sRecordId='+data.v_record_id;
+}
+function fn_view2(row,col,e) {
+	if (col.id == 'v_title')
+		fn_view(row,col,e);
+}
+// 초기화 후 function 이벤트
+// 리스트 조회
+function fn_setFrmSearch() {
+	var labelRequired;
+	frmSearch.forEach(function(item, index, array) {
+		
+		console.log(item.config);
+		
+		if(item.config.required && fn_isNull(item.config.value)){
+			labelRequired=item.config.label;
+			return; 
+		}		
+	});
+	if(!fn_isNull(labelRequired)){
+		alert(labelRequired + "을 입력 후 검색바랍니다.");
+		return;
+	}
+}
+
+function fn_search() {
+	fn_setFrmSearch();
+	mainPage.search(1);
+}
+
+$(document).on('keyup','#i_sSearchNm',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+//기타2 : 신규 페이지 이동
+function fn_etc2(){
+	window.location.href='/nb/nb/030/nb_nb_030_reg.do?i_sActionFlag=R';	
+}
+
+</script>
+</html>

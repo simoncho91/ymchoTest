@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : AtchMapper.xml
+    Description   : 첨부파일 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.05.28  이정훈       1.0        최초 생성
+-->
+<mapper namespace="Atch">
+
+	<!--  1. 조회.  -->
+	
+	<!--  1.0. 첨부파일 조회 DHTMLX (건별 업로드 지원으로 TZF_ATCH_M:TZF_ATCH_D 두 테이블이 1:1관계) -->
+	<select id="selectAtchList" parameterType="map" resultType="map">
+		SELECT /* Atch.selectAtchList */
+			   A.ATCH_NO,
+		       A.REG_USER_NO,
+		       B.ATCH_SEQ,
+		       B.ORG_FILE_NM,
+		       B.FILE_SIZE,
+		       A.ATCH_NO||'-'||B.ATCH_SEQ as ATCH_NO_SEQ
+		  FROM TZF_ATCH_M A,
+		       TZF_ATCH_D B
+		 WHERE A.ATCH_NO 	= B.ATCH_NO
+		   AND ATCH_TP_CD 	= #{atchTpCd}
+		   AND ATCH_CD 		= #{atchCd}
+	  ORDER BY A.ATCH_NO DESC,
+		       B.ATCH_SEQ
+	</select>
+	
+	<!--  1.0. 첨부파일 상세 조회 DHTMLX -->
+	<select id="selectAtchInfo" parameterType="map" resultType="map">
+		SELECT /* Atch.selectAtchInfo */
+			   A.ATCH_NO,
+		       A.REG_USER_NO,
+		       B.ATCH_SEQ,
+		       B.ORG_FILE_NM,
+		       B.FILE_SIZE,
+	           B.FILE_PATH,
+	           B.FILE_NM
+		  FROM TZF_ATCH_M A,
+		       TZF_ATCH_D B
+		 WHERE A.ATCH_NO 		= B.ATCH_NO
+		   AND A.ATCH_NO 		= #{atchNo}
+		   AND B.ATCH_SEQ 		= #{atchSeq}
+	  ORDER BY A.ATCH_NO DESC,
+		       B.ATCH_SEQ
+	</select>
+	
+	<!--  1.1. 첨부파일 상세 조회  -->
+	<select id="selectAtchDList" parameterType="com.shinsegae_inc.core.vo.AtchVO" resultType="com.shinsegae_inc.core.vo.AtchVO">
+		SELECT /* Atch.selectAtchDList */
+ 			   ATCH_NO 				AS atchNo
+ 			 , ATCH_SEQ 			AS atchSeq
+ 			 , ORG_FILE_NM 			AS orgFileNm
+ 			 , FILE_PATH			AS filePath
+ 			 , FILE_NM				AS fileNm
+ 			 , FILE_EXTN			AS fileExtn
+ 			 , CEIL(FILE_SIZE/1024) AS fileSize
+ 			 , DNLD_CNT				AS dnldCnt
+ 			 , TO_CHAR(ATCH_DTM, 'YYYY-MM-DD') AS atchDtm
+             , (SELECT COUNT(*) FROM TZF_ATCH_D WHERE  ATCH_NO = A.ATCH_NO) AS fileCnt
+		FROM 	TZF_ATCH_D A
+		WHERE 	1=1
+			AND	ATCH_NO = #{atchNo}
+			AND	USE_YN   = 'Y'
+		<if test="atchSeq gt 0">
+			AND ATCH_SEQ	= #{atchSeq} 
+		</if>
+		ORDER BY ATCH_SEQ
+	</select>
+	
+	 <!--  1.2. 첨부파일상세 SEQ 채번  -->
+    <select id="selectFileSeq" parameterType="int" resultType="int">
+        SELECT /* Atch.selectFileSeq */
+               NVL(MAX(ATCH_SEQ), 0) AS ATCH_SEQ 
+		  FROM TZF_ATCH_D 
+		 WHERE ATCH_NO = #{atchNo}
+    </select>
+    
+    <!--  1.3. 첨부파일 목록 조회. (Nexa 에서만 사용함)  -->
+     <select id="selectFileListForNexa" parameterType="int" resultType="hashMap">
+        SELECT /* Atch.selectFileListForNexa */
+               ATCH_NO 		AS ATCH_FILE_GRP_ID
+             , ATCH_SEQ 	AS SEQ             
+             , ORG_FILE_NM  AS ATCH_FILE_NM    
+             , FILE_EXTN    AS CNTE_TYPE_VAL   
+             , FILE_SIZE    AS FILE_SIZE_VAL   
+             , DNLD_CNT     AS DNLD_CNTR       
+          FROM TZF_ATCH_D  A
+         WHERE ATCH_NO = #{atchFileGrpId}
+    </select>
+	
+	
+	<!--  2.등록  -->
+	<insert id="insertAtchM" parameterType="com.shinsegae_inc.core.vo.AtchVO">
+		<selectKey keyProperty="atchNo" resultType="int" order="BEFORE">
+	        SELECT TZF_ATCH_M_SEQ.NEXTVAL FROM DUAL
+	     </selectKey>
+		INSERT /* Atch.insertAtchM */
+		INTO TZF_ATCH_M(
+			ATCH_NO, 
+		    USE_YN, 
+		    REG_USER_NO, 
+		    REG_DTM, 
+		    REG_IP
+		) VALUES
+		(
+			#{atchNo},
+			'N',
+			#{regUserNo},
+		    SYSDATE,
+		    #{regIp}
+		)
+	</insert>
+	
+	
+	<insert id="insertAtchD" parameterType="com.shinsegae_inc.core.vo.AtchVO">
+		INSERT /* Atch.insertAtchD */
+		INTO TZF_ATCH_D(
+		    ATCH_NO, 
+		    ATCH_SEQ,
+		    ORG_FILE_NM, 
+		    FILE_PATH, 
+		    FILE_NM, 
+		    FILE_EXTN, 
+		    FILE_SIZE, 
+		    DNLD_CNT,
+		    ATCH_DTM, 
+		    USE_YN, 
+		    REG_USER_NO, 
+		    REG_DTM, 
+		    REG_IP
+		  ) VALUES
+			(
+				#{atchNo},
+				#{atchSeq},
+				#{orgFileNm},
+			    #{filePath},
+			    #{fileNm},
+			    #{fileExtn},
+			    #{fileSize},
+			    0,
+			    SYSDATE,
+			    'Y',
+			    #{regUserNo},
+			    SYSDATE,
+			    #{regIp}
+			)
+	</insert>
+	
+	<!-- 3. 수정 -->
+	<!-- 3.0 첨부파일 정보 수정 DHTMLX -->
+	<update id="updateAttachInfo" parameterType="Map">
+		 UPDATE TZF_ATCH_M SET /* Atch.updateAttachInfo */
+				ATCH_TP_CD			= #{atchTpCd},
+				ATCH_CD      		= #{atchCd}
+		  WHERE ATCH_NO 			= #{atchNo} 
+	</update>
+	
+	<update id="increaseDnldCnt" parameterType="com.shinsegae_inc.core.vo.AtchVO">
+		UPDATE /* Atch.increaseDnldCnt */
+		       TZF_ATCH_D
+		   SET DNLD_CNT = DNLD_CNT + 1
+		 WHERE ATCH_NO = #{atchNo}
+		   AND ATCH_SEQ = #{atchSeq}
+	</update>
+	
+	<!--  4. 삭제  -->
+    <!--  4.1. 마스터 삭제  -->
+    <delete id="deleteFile" parameterType="int">
+        DELETE /* Atch.deleteFile */
+          FROM TZF_ATCH_M
+         WHERE ATCH_NO = #{atchNo}
+    </delete>
+    
+    <!--  4.2. 상세 삭제  -->
+    <delete id="deleteFileDtl" parameterType="com.shinsegae_inc.core.vo.AtchVO">
+        DELETE /* Atch.deleteFileDtl */
+          FROM TZF_ATCH_D
+         WHERE ATCH_NO = #{atchNo}
+           AND ATCH_SEQ = #{atchSeq}
+    </delete>
+    
+    <!--  4.3. 마스터 삭제 DHTMLX -->
+    <delete id="deleteFileDhtmlx" parameterType="map">
+        DELETE /* Atch.deleteFileDhtmlx */
+          FROM TZF_ATCH_M
+         WHERE ATCH_NO = #{atchNo}
+    </delete>
+    
+    <!--  4.4. 상세 삭제  DHTMLX -->
+    <delete id="deleteFileDtlDhtmlx" parameterType="map">
+        DELETE /* Atch.deleteFileDtlDhtmlx */
+          FROM TZF_ATCH_D
+         WHERE ATCH_NO = #{atchNo}
+           AND ATCH_SEQ = #{atchSeq}
+    </delete>
+	
+</mapper>

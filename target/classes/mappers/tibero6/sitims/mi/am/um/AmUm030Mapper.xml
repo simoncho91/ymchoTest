@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : AmUm030Mapper.xml
+    Description   : RA 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.21  kykwak       1.0        최초 생성
+-->
+<mapper namespace="AmUm030Mapper">
+	<!-- 페이징을 위한 include -->
+	<sql id="AmUm030ListInclude">	
+		FROM TSI_GLB_RA_L AS A
+		WHERE 1=1
+		<if test="i_arrStr != null">
+			AND	A.V_NATION_CD IN 
+			<foreach collection="i_arrStr" item="item" index="index"  open="(" close=")" separator=",">
+	            #{item}
+	        </foreach>
+		</if>	 
+		<if test="i_sBrand != null and i_sBrand != ''">
+			AND	A.V_BRAND_CD = #{i_sBrand}
+		</if>		
+		<if test="i_sCharger != null and i_sCharger != ''">
+			AND UPPER(FN_GET_USERNM(A.V_USER_ID)) LIKE '%'|| UPPER(#{i_sCharger}) ||'%'
+		</if>
+	</sql>
+	<!-- RA User Id 조회 리스트-->
+	<select id="getRaIds" resultType="CmMap" parameterType="CmMap">
+		SELECT /* AmUm030Mapper.getRaIds */
+		DISTINCT A.V_USER_ID
+			,FN_GET_USERNM(A.V_USER_ID) AS V_USER_NM
+			,(SELECT LOGIN_ID FROM TZF_USER_M  WHERE V_USER_ID = USER_NO) V_LOGIN_ID
+		<include refid="AmUm030ListInclude"/>
+	</select>
+	<!-- RA리스트 조회 -->
+	<select id="selectAmUm030List" resultType="CmMap" parameterType="CmMap">
+	SELECT * FROM( /* AmUm030Mapper.selectAmUm030List */
+		SELECT 
+			 ROW_NUMBER() OVER(ORDER BY
+			 <choose> 
+				<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+					${i_sSortCol} ${i_sSortDir}
+				</when>	 
+				<otherwise>
+					A.V_REG_DTM 
+				</otherwise>	
+			</choose>
+			) AS N_NUM
+			, A.*
+		FROM(
+			SELECT
+				 (SELECT B.COMM_CD_NM FROM TZF_COMMCD_D AS B WHERE B.COMM_CD = A.V_NATION_CD) AS V_NATION_NM
+				, (SELECT B.COMM_CD_NM FROM TZF_COMMCD_D AS B WHERE B.COMM_CD = A.V_BRAND_CD) AS V_BRAND_NM
+				, (FN_GET_USERNM(A.V_USER_ID)) AS V_USER_NM
+				, (FN_GET_USERNM(A.V_REG_USER_ID)) AS V_REG_USER_ID
+				, TO_CHAR(TO_DATE(A.V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REG_DTM
+				, A.V_REG_DTM AS V_REG_DTM_EXCEL
+				, A.V_UPDATE_DTM AS V_UPDATE_DTM_EXCEL
+				, (FN_GET_USERNM(A.V_UPDATE_USER_ID)) AS V_UPDATE_USER_ID
+				, TO_CHAR(TO_DATE(A.V_UPDATE_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_UPDATE_DTM
+				, A.V_USER_ID
+				, A.V_NATION_CD
+				, A.V_BRAND_CD
+			<include refid="AmUm030ListInclude"/>
+			) A
+		) TEMP
+		 WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+	<!-- 페이징을 위한 리스트 총 개수 -->
+	<select id="getAmUm030ListCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT /* AmUm030Mapper.getAmUm030ListCount */
+			COUNT(*) AS CNT 
+			<include refid="AmUm030ListInclude"/>
+	</select>
+	<!-- RA 신규 등록  -->
+	<insert id="regForRaAdmin" parameterType="CmMap">
+		INSERT /* AmUm030Mapper.regForRaAdmin */
+			INTO 
+				TSI_GLB_RA_L
+                	(V_NATION_CD
+                     , V_BRAND_CD
+                     , V_USER_ID
+                     , V_REG_USER_ID
+                     , V_REG_DTM  
+                     , V_UPDATE_USER_ID
+                     , V_UPDATE_DTM
+                    )
+             VALUES (  #{v_nation_cd}
+                     , #{v_brand_cd}
+                     , #{v_user_id}
+                     , #{i_sRegUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     , #{i_sUpdateUserId}
+                     , TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+                     )
+	</insert>
+	<!-- RA관리자 삭제 -->
+	<delete id="delForRaAdmin" parameterType="CmMap">
+		DELETE /* AmUm030Mapper.delForRaAdmin */
+			FROM TSI_GLB_RA_L 
+				WHERE
+					V_NATION_CD = #{v_nation_cd} 
+				AND V_BRAND_CD = #{v_brand_cd}
+	       		AND V_USER_ID = #{v_user_id}
+	</delete>
+	<!-- RA 수정 -->
+	<update id="modifyForRaAdmin" parameterType="CmMap">
+			UPDATE /* AmUm030Mapper.modifyForRaAdmin */
+				TSI_GLB_RA_L 
+			SET                     
+				V_USER_ID = #{v_user_id}
+			  , V_UPDATE_USER_ID = #{i_sUpdateUserId}
+			  , V_UPDATE_DTM  = TO_CHAR(SYSDATE,'yyyymmddhh24miss')
+			WHERE
+				V_NATION_CD = #{v_nation_cd} AND V_BRAND_CD = #{v_brand_cd}
+	
+	</update>
+	<!-- RA 등록, 수정, 삭제을 위한 유효성 검사 -->
+	 <select id="getSelectCountForRa" parameterType="CmMap" resultType="java.lang.Integer">
+			SELECT /* AmUm030Mapper.getSelectCountForRa */
+				COUNT(*) 
+			FROM TSI_GLB_RA_L
+			WHERE
+					V_NATION_CD = #{v_nation_cd} 
+				AND V_BRAND_CD = #{v_brand_cd}
+		<if test="isNot_regRa == null">
+			AND V_USER_ID = #{v_user_id}
+		</if>	
+	</select>
+</mapper>

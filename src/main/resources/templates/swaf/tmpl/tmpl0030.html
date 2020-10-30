@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<style>
+    div#layoutObj {
+        position: relative;
+    } 
+</style>
+<script>
+
+
+//layout
+var layoutMain;
+
+var searchForm;
+var mainGrid;
+var subGrid;
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+
+var dcGrdMain;
+var dcGrdSub;
+
+$(function(){
+
+ /****************************************************************************************************
+  * 초기화
+  ****************************************************************************************************/    
+ layoutMain = new dhx.Layout("layoutObj", {
+     css: "dhx_layout-cell--bordered",
+     rows: [
+         { id: "searchForm",header: "검색조건", gravity: false, collapsable: true, height: "95px", css: "dhx_layout-cell--border_bottom", resizable: true }
+        ,{
+         cols: [
+                { id: "mainGrid",    header: "상위 메뉴 목록",width: "400px",css: "layout_padding_right",collapsable: true,resizable: true}
+                ,{ id: "subGrid",    header: "메뉴 목록",width: "800px",css: "layout_padding_right",collapsable: true,resizable: true}
+             ]
+         }
+     ]
+ });
+  
+ 
+ // Form-검색조건
+ searchForm = new dhx.Form(null, {
+     cols: [
+   {type: "select", id: "SYS_ID", name: "SYS_ID",  label: "업무",        labelPosition: "left", labelWidth: "110", width: "250", gravity: false, options: [{}] },
+   {type: "input", id: "MENU_CD", name: "MENU_CD", label: "메뉴ID",    labelPosition: "left", labelWidth: "110", width: "250", gravity: false},
+   {type: "input", id: "MENU_NM", name: "MENU_NM", label: "메뉴명",    labelPosition: "left", labelWidth: "110", width: "250", gravity: false},
+   {type: "select", id: "USE_YN",  name: "USE_YN",  label: "사용여부",  labelPosition: "left", labelWidth: "110", width: "250", gravity: false, options: [{}] }
+  ]
+ });
+ layoutMain.getCell("searchForm").attach(searchForm);
+ 
+ 
+
+ dcGrdMain = new dhx.DataCollection();
+ // Grid-sub  
+ mainGrid = new dhx.Grid(null, {
+     columns: [
+         { width: 40,  id: "NO",                header: [{ text: "NO" }] },
+         { width: 60,  id: "DEPTH",             header: [{ text: "DEPTH" }] },
+         { width: 100, id: "SYS_ID",            header: [{ text: "시스템" }] },
+         { width: 120, id: "SYS_NM",            header: [{ text: "시스템" }] },
+         { width: 140, id: "MENU_CD",           header: [{ text: "메뉴ID" }] },
+         { width: 50,  id: "MENU_NM",           header: [{ text: "메뉴" }] }
+     ],
+     headerRowHeight: 30,
+     autoWidth: true,
+     resizable: true,
+     selection: "row",
+     fitToContainer: true,
+     data: dcGrdMain
+ });
+ layoutMain.getCell("mainGrid").attach(mainGrid);
+ 
+ dcGrdSub= new dhx.DataCollection();
+ 
+ // Grid-sub  
+ subGrid = new dhx.Grid(null, {
+     columns: [
+         { width: 40,  id: "NO",                header: [{ text: "NO" }] },
+         { width: 140, id: "MENU_CD",           header: [{ text: "메뉴ID" }] },
+         { width: 50,  id: "MENU_NM",           header: [{ text: "메뉴" }] },
+         { width: 70,  id: "USE_YN",            header: [{ text: "사용여부" }] },
+         { width: 50,  id: "SORT_SEQ",          header: [{ text: "정렬" }] },
+         { width: 400, id: "URL",               header: [{ text: "전체경로" }] }
+     ],
+     headerRowHeight: 30,
+     autoWidth: true,
+     resizable: true,
+     selection: "row",
+     fitToContainer: true,
+     data: dcGrdSub
+ });
+ layoutMain.getCell("subGrid").attach(subGrid);
+ 
+ 
+ 
+ 
+ // 초기화
+ fn_s_init();
+ fn_initDS();
+ 
+ fn_search();
+ 
+ 
+ 
+ 
+ /****************************************************************************************************
+  * 이벤트 생성
+  ****************************************************************************************************/
+ 
+ mainGrid.events.on("CellClick", function(row,column,e){
+	 fn_searchDtl();
+ }); 
+ 
+});
+
+
+//DataStore 초기화
+function fn_initDS() {
+
+ var postParam = new Object();
+ postParam.grpcd = "dsSysId:SY002:Y:S;dsUseYn:SY003:Y:S";
+
+ 
+ 
+
+ fn_s_ajaxGetDsForCombo({ postParam : postParam
+                      , async:false
+                   , success : 
+                    function(responseData) { 
+                           
+               fn_s_selectboxPaint(searchForm, ["SYS_ID"], responseData.dsSysId);
+                  searchForm.getItem("SYS_ID").setValue("SITIMS");
+               fn_s_selectboxPaint(mainForm, ["SYS_ID"], responseData.dsSysId);
+
+               fn_s_selectboxPaint(searchForm, ["USE_YN"], responseData.dsUseYn);
+               fn_s_selectboxPaint(mainForm, ["USE_YN", "PAUS_YN", "VDI_YN", "PINF_YN"], responseData.dsUseYn);
+                             fn_getParentMenu();
+                           
+                          }
+ 
+ 
+ });
+}
+
+
+//DataStore 초기화
+function fn_getParentMenu() {
+
+var postParam = new Object();
+postParam.sqlid = "dsParentMenu:Menu.selectParentMenu:S";
+postParam.SYS_ID = searchForm.getItem("SYS_ID").getValue();
+
+fn_s_ajaxGetDsForCombo({ postParam : postParam
+                    , async:false
+                      , success : 
+                          function(responseData) {
+
+               fn_s_selectboxPaint(mainForm, ["PAR_MENU_CD"], responseData.dsParentMenu);
+                                mainForm.getItem("PAR_MENU_CD").config.options = responseData.dsParentMenu.options;
+                                                     //fn_search();
+                                                  }
+});
+}
+
+
+//조회
+function fn_search() {
+ 
+
+     var postParam = fn_getPostParam(searchForm);
+
+     fn_ajaxGetGrid({ 
+    	 		gridName         : mainGrid
+              , url                 : "/tmpl/tmpl0030/selectParentList.do"
+              , postParam           : postParam
+              , success             : function(responseData) {
+               mainGrid.selection.setCell(mainGrid.data.getId(0), false);
+               fn_searchDtl();
+               }
+     });
+ 
+}
+
+//조회
+function fn_searchDtl() {
+
+    var postParam  = mainGrid.selection.getCell().row;
+    
+    fn_ajaxGetGrid({
+        gridName : subGrid,
+        url : "/tmpl/tmpl0030/selectMenuList.do",
+        postParam : postParam,
+        success : function(responseData) {
+        }
+    }); 
+}
+
+</script>
+</html>

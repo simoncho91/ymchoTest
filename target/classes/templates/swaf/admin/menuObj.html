@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var grdMain;
+
+//layout - c
+var layoutSub;
+
+//layoutSub - a
+var layoutSub1;
+
+//layoutSub - b
+var layoutSub2;
+
+//layoutSub1 - a
+var grdSub1;
+
+//layoutSub1 - b
+var frmSub2;
+
+//layoutSub2 - a
+var grdSub2;
+
+//layoutSub2 - b
+var frmSub2;
+
+
+//local variable
+var rowIndex = 0;
+var saveMode01 = 'I';
+var saveMode02 = 'I';
+
+var dhxWinsGrd;
+var dhxWinsForm;
+var dhxWinsLayout;
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/
+    // layout
+    dhtmlx.image_path = dhtmlx_image_path;
+    layoutMain = new dhtmlXLayoutObject({
+        parent: "layoutObj",
+        pattern: "3T",
+        skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+    });
+    
+    /* Form-조건 */
+    var a = layoutMain.cells('a');
+    a.setText('검색조건');
+    a.setHeight(SearchFormHeight[1]);
+    
+    var strLabel =  [{ type: "label", list:[
+						                	{ type:"combo" , name:"SYS_ID" , label:"시스템", readonly:true, required:"true"},
+						                    { type:"newcolumn"   }
+					 ]}
+                    ];
+    strLabel.unshift(SearchFormStyle4);
+    frmSearch = a.attachForm(strLabel);
+    
+    /* Grid-메인 */
+    var b = layoutMain.cells('b');
+    b.setText('메뉴 목록');
+    b.setWidth(RegisterFormWidth[2]); 
+    grdMain = b.attachGrid();
+    grdMain.setHeader(["NO","DEPTH","","","","메뉴ID","메뉴명","","상위메뉴","","정렬","","","","","","","","","","",""]);
+    grdMain.setColumnIds("NO,DEPTH,COMP_CD,SYS_ID,SYS_NM,MENU_CD,MENU_NM,PAR_MENU_CD,PAR_MENU_NM,USE_YN,SORT_SEQ,URL,PAUS_YN,INQ_AUTH_YN,INS_AUTH_YN,XLS_AUTH_YN,PRT_AUTH_YN,ETC_BTN_1_AUTH_YN,ETC_BTN_2_AUTH_YN,ETC_BTN_3_AUTH_YN,PINF_YN,VDI_YN");
+    grdMain.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+    grdMain.setInitWidths('40,60,0,0,0,80,*,0,100,0,40,0,0,0,0,0,0,0,0,0,0,0');
+    fn_initGrid(grdMain);
+    
+	// layoutSub
+	layoutSub = new dhtmlXLayoutObject({
+	    parent: layoutMain.cells('c'),
+	    pattern: "2E",
+	    skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+	});
+	
+	// layoutSub1
+	layoutSub1 = new dhtmlXLayoutObject({
+	    parent: layoutSub.cells('a'),
+	    pattern: "2U",
+	    skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+	});
+	
+	// layoutSub2
+	layoutSub2 = new dhtmlXLayoutObject({
+	    parent: layoutSub.cells('b'),
+	    pattern: "2U",
+	    skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+	});
+
+	// layoutSub1_1 - OBJ기본리스트 grid
+    var sub1a = layoutSub1.cells('a');
+    sub1a.setText('OBJ기본리스트');
+    grdSub1 = sub1a.attachGrid();
+    grdSub1.setHeader(["","","","오브젝트ID","오브젝트명","","","","액션URL","","로그"]);
+    grdSub1.setColumnIds("OBJ_TP_CD,SYS_ID,MENU_CD,OBJ_ID,OBJ_NM,OBJ_CLS_CD,OBJ_ACTN_CLS_CD,OBJ_TP_CD,AC_URL,SORT_SEQ,LOG_YN");
+    grdSub1.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+    grdSub1.setInitWidths('0,0,0,100,*,0,0,0,150,0,80');
+    fn_initGrid(grdSub1);
+    
+	// layoutSub1_2 - OBJ기본리스트 form
+    var sub1b = layoutSub1.cells('b');
+    sub1b.setText('기본OBJ');
+    
+    var strLabel = [{type: "label", list: [
+                    	{ type:"input"  , name:"OBJ_TP_CD" , label: "오브젝트구분CD", readonly:true, hidden:true}
+	                ]},
+                    {type: "label", list: [
+	                    { type:"input"  , name:"SYS_ID" , label: "시스템", readonly:true, hidden:true }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"MENU_CD" , label: "메뉴ID", readonly:true, hidden:true }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"combo"  , name:"OBJ_ID" , label: "오브젝트", readonly:true, required:"true" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"OBJ_NM" , label: "오브젝트명", readonly:true, required:"true" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"AC_URL" , label: "액션URL", required:"true" }
+	                ]},
+	                {type: "label", list: [
+   	                    { type:"input"  , name:"SORT_SEQ" , label: "정렬순번" }
+   	                ]},
+	                {type: "label", list: [
+	                    { type:"combo"  , name:"OBJ_ACTN_CLS_CD" , label: "동작구분" }
+	                ]},
+	                {type: "label", list: [
+   	                    { type:"combo"  , name:"LOG_YN" , label: "로그" }
+   	                ]}
+	               ];
+    strLabel.unshift(RegisterFormStyle1);
+    frmSub1 = sub1b.attachForm(strLabel);
+    frmSub1.getCombo("OBJ_ACTN_CLS_CD"  ).load("/dhtmlx/data/comboYN.json");
+    frmSub1.getCombo("LOG_YN"           ).load("/dhtmlx/data/comboYN.json");
+
+    sub1b.attachToolbar({
+        icons_path: toolbar_icons_path,
+        items:[
+              {type:"button", text:"신규", img:"new.gif", img_disabled:"new_dis.gif", action:"fn_newObj"},
+              {type: "separator", id: "sep1"},
+              {type:"button", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_saveObj"},
+              {type:"button", text:"삭제", img:"delrow.gif", img_disabled:"delrow_dis.gif", action:"fn_delObj"}
+             ]
+    });
+    
+    frmSub1.bind(grdSub1);
+    
+ // layoutSub2_1 - OBJ추가리스트 grid
+    var sub2a = layoutSub2.cells('a');
+    sub2a.setText('OBJ추가리스트');
+    grdSub2 = sub2a.attachGrid();
+    grdSub2.setHeader(["","","","오브젝트ID","오브젝트명","","","","액션URL","","로그"]);
+    grdSub2.setColumnIds("OBJ_TP_CD,SYS_ID,MENU_CD,OBJ_ID,OBJ_NM,OBJ_CLS_CD,OBJ_ACTN_CLS_CD,OBJ_TP_CD,AC_URL,SORT_SEQ,LOG_YN");
+    grdSub2.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+    grdSub2.setInitWidths('0,0,0,100,*,0,0,0,150,0,80');
+    fn_initGrid(grdSub2);
+    
+	// layoutSub2_2 - OBJ추가리스트 form
+    var sub2b = layoutSub2.cells('b');
+    sub2b.setText('추가OBJ');
+    
+    var strLabel = [{type: "label", list: [
+                      	{ type:"input"  , name:"OBJ_TP_CD" , label: "오브젝트구분CD", readonly:true, hidden:true}
+   	                ]},
+    				{type: "label", list: [
+	                    { type:"input"  , name:"SYS_ID" , label: "시스템", readonly:true, hidden:true }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"MENU_CD"   , label: "메뉴ID", readonly:true, hidden:true }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"OBJ_ID"   , label: "오브젝트ID", required:"true" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"OBJ_NM" , label: "오브젝트명", required:"true" }
+	                ]},
+	                {type: "label", list: [
+	                    { type:"input"  , name:"AC_URL"    , label: "액션URL", required:"true" }
+	                ]},
+	                {type: "label", list: [
+   	                    { type:"input"  , name:"SORT_SEQ" , label: "정렬순번" }
+   	                ]},
+	                {type: "label", list: [
+  	                    { type:"combo"  , name:"OBJ_ACTN_CLS_CD" , label: "동작구분" }
+  	                ]},
+	                {type: "label", list: [
+	                    { type:"combo"  , name:"LOG_YN"   , label: "로그" }
+	                ]}
+	               ];
+    strLabel.unshift(RegisterFormStyle1);
+    frmSub2 = sub2b.attachForm(strLabel);
+    frmSub2.getCombo("OBJ_ACTN_CLS_CD"  ).load("/dhtmlx/data/comboYN.json");
+    frmSub2.getCombo("LOG_YN"           ).load("/dhtmlx/data/comboYN.json");
+
+    sub2b.attachToolbar({
+        icons_path: toolbar_icons_path,
+        items:[
+              {type:"button", text:"신규", img:"new.gif", img_disabled:"new_dis.gif", action:"fn_newObjAdd"},
+              {type: "separator", id: "sep1"},
+              {type:"button", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_saveObjAdd"},
+              {type:"button", text:"삭제", img:"delrow.gif", img_disabled:"delrow_dis.gif", action:"fn_delObjAdd"}
+             ]
+    });
+    
+    frmSub2.bind(grdSub2);
+    
+    
+    // DataStore 초기화
+    fn_initDS();
+    
+    // 나머지 초기화
+    //layoutMain.setAutoSize("a;b", "b;c");
+    fn_init();
+
+    // 최초 조회
+    fn_search();
+
+    /****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+	// grdMain Row Change
+ 	grdMain.attachEvent("onSelectStateChanged",function(id) {
+     	var sMenuCd = grdMain.cells(id, grdMain.getColIndexById("MENU_CD")).getValue();
+ 		
+     	if(sMenuCd != ''){
+     		saveMode01 = 'I';
+     		saveMode02 = 'I';
+     		frmSub1.clear();
+     		frmSub1.clear();
+     		fn_searchMenuObjList();
+     		fn_searchMenuObjAddList();
+     		fn_searchMenuObjIdList();
+     		
+     	}
+ 	});
+     
+    frmSearch.getCombo("SYS_ID").attachEvent("onChange",function(value, text) {
+    	 fn_getParentMenu();
+    	 grdMain.clearAll();
+    });
+
+    // 그리드
+    grdSub1.attachEvent("onRowSelect",function(id,ind) {
+        saveMode01 = 'U';
+    });
+	
+    grdSub2.attachEvent("onRowSelect",function(id,ind) {
+        saveMode02 = 'U';
+        frmSub2.setReadonly('OBJ_ID', true);
+    });
+    
+	//frmSub1 Value Change
+	frmSub1.attachEvent("onChange", function (name, value, state){
+	     if("OBJ_ID" == name){
+	    	 sObjNm = frmSub1.getCombo('OBJ_ID').getSelectedText();
+	    	 frmSub1.setItemValue('OBJ_NM', sObjNm);
+	     }
+	});
+});
+
+// DataStore 초기화
+function fn_initDS() {
+
+    var postParam = new Object();
+    postParam.grpcd = "dsSysId:SY002:Y:S";
+
+    fn_ajaxGetDsForCombo({ postParam : postParam
+                         , async:false
+		                 , success : 
+		                	 function(responseData) { 
+		                	                            frmSearch.getCombo("SYS_ID").load(responseData.dsSysId); 
+								                	    frmSearch.getCombo("SYS_ID").setComboValue("SITIMS");
+								                	    fn_getParentMenu();
+								                	 }
+	});
+}
+
+//DataStore 초기화
+function fn_getParentMenu() {
+
+    var postParam = new Object();
+    postParam.sqlid = "dsParentMenu:Menu.selectParentMenu:S";
+    postParam.SYS_ID = frmSearch.getCombo("SYS_ID").getSelectedValue();
+
+    fn_ajaxGetDsForCombo({ postParam : postParam });
+}
+
+// 조회
+function fn_search() {
+    if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(frmSearch);
+	    
+	    fn_ajaxGetGrid({ gridName         : grdMain
+	             , url                 : "/dhtmlx/admin/menu/selectList.do"
+	             , postParam           : postParam
+	             , success             : function() {
+									                 grdMain.selectRow(rowIndex);
+									                }
+	    });
+    }
+}
+
+// OBJ기본리스트 조회
+function fn_searchMenuObjList() {
+    if(fn_validateForm(frmSearch)) {
+    	var sSysId 	= grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("SYS_ID")).getValue();
+    	var sMenuCd = grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("MENU_CD")).getValue();
+    	
+	    var postParam = new Object();
+	    postParam.SYS_ID = sSysId;
+	    postParam.MENU_CD = sMenuCd;
+	    
+	    fn_ajaxGetGrid({ gridName         : grdSub1
+	             , url                 : "/dhtmlx/admin/menuObj/selectObjList.do"
+	             , postParam           : postParam
+	             , success             : function() {
+	            	 								grdSub1.selectRow(0);
+	            	 								saveMode01 = 'U';
+									                }
+	    });
+    }
+}
+
+//OBJ추가리스트 조회
+function fn_searchMenuObjAddList() {
+    if(fn_validateForm(frmSearch)) {
+    	var sSysId 	= grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("SYS_ID")).getValue();
+    	var sMenuCd = grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("MENU_CD")).getValue();
+    	
+	    var postParam = new Object();
+	    postParam.SYS_ID = sSysId;
+	    postParam.MENU_CD = sMenuCd;
+	    
+	    fn_ajaxGetGrid({ gridName         : grdSub2
+	             , url                 : "/dhtmlx/admin/menuObj/selectObjAddList.do"
+	             , postParam           : postParam
+	             , success             : function() {
+													grdSub2.selectRow(0);
+													saveMode02 = 'U';
+									                }
+	    });
+    }
+}
+
+// 버튼 권한 조회
+function fn_searchMenuObjIdList() {
+    if(fn_validateForm(frmSearch)) {
+    	var sSysId 	= grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("SYS_ID")).getValue();
+    	var sMenuCd = grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("MENU_CD")).getValue();
+    	
+	    var postParam = new Object();
+	    postParam.SYS_ID = sSysId;
+	    postParam.MENU_CD = sMenuCd;
+	    
+	    fn_ajax({ gridName         : grdSub2
+	             , url                 : "/dhtmlx/admin/menuObj/selectBtnAuthList.do"
+	             , postParam           : postParam
+	             , success             : function(responseData) {
+	            	 								 fn_dynamicCombo(responseData);
+									                 //grdSub2.selectRow(rowIndex);
+									                }
+	    });
+    }
+}
+// 동적 콤보 생성
+function fn_dynamicCombo(responseData){
+	var data = '{options:' + JSON.stringify(responseData.result.data) +'}';
+	data = data.toLowerCase();
+    frmSub1.getCombo("OBJ_ID"           ).load(data.toString());
+}
+
+// 신규 기본OBJ
+function fn_newObj() {
+    saveMode01 = 'I';
+    frmSub1.clear();
+    frmSub1.setItemValue('OBJ_TP_CD', '10');
+    frmSub1.setReadonly('OBJ_NM', false);
+    frmSub1.setItemFocus("AC_URL");    
+}
+
+// 신규 추가OBJ
+function fn_newObjAdd() {
+    saveMode02 = 'I';
+    frmSub2.clear();
+    frmSub2.setItemValue('OBJ_TP_CD', '20');
+    frmSub2.setReadonly('OBJ_ID', false);
+    frmSub2.setItemFocus("OBJ_ID");
+}
+
+// 기본OBJ 저장
+function fn_saveObj() {
+	var postParam = fn_getPostParam(frmSub1);
+	postParam.saveMode = saveMode01;
+
+	var sSysId 	= grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("SYS_ID")).getValue();
+	var sMenuCd = grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("MENU_CD")).getValue();
+    postParam.SYS_ID = sSysId;
+    postParam.MENU_CD = sMenuCd;
+	
+	if (fn_validateForm(frmSub1)) {
+	     fn_ajaxSaveForm({ url      : "/dhtmlx/admin/menuObj/saveObj.do"
+	              , postParam   : postParam
+	              , success     : fn_searchMenuObjList
+	     });
+	}
+}
+
+// 추가OBJ 저장
+function fn_saveObjAdd() {
+	var postParam = fn_getPostParam(frmSub2);
+	postParam.saveMode = saveMode02;
+	
+	var sSysId 	= grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("SYS_ID")).getValue();
+	var sMenuCd = grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("MENU_CD")).getValue();
+    postParam.SYS_ID = sSysId;
+    postParam.MENU_CD = sMenuCd;
+	
+	if (fn_validateForm(frmSub2)) {
+	     fn_ajaxSaveForm({ url      : "/dhtmlx/admin/menuObj/saveObj.do"
+	              , postParam   : postParam
+	              , success     : fn_searchMenuObjAddList
+	     });
+	}
+}
+
+function fn_saveSuccess() {
+	fn_search();
+}
+
+// OBJ기본리스트 삭제
+function fn_delObj() {
+   var postParam = fn_getPostParam(frmSub1);
+   
+   rowIndex = 0;
+   if (saveMode01 == 'U') {
+	   dhtmlx.confirm("삭제하시겠습니까?", function(result){
+		   if (result) {
+		       fn_ajaxSaveForm({ url      : "/dhtmlx/admin/menuObj/deleteObj.do"
+				           , postParam   : postParam
+				           , success     : fn_searchMenuObjList
+		           });
+		   }
+	   });
+   }
+}
+
+// OBJ추가리스트 삭제
+function fn_delObjAdd() {
+   var postParam = fn_getPostParam(frmSub2);
+   
+   rowIndex = 0;
+   if (saveMode02 == 'U') {
+	   dhtmlx.confirm("삭제하시겠습니까?", function(result){
+		   if (result) {
+		       fn_ajaxSaveForm({ url      : "/dhtmlx/admin/menuObj/deleteObj.do"
+				           , postParam   : postParam
+				           , success     : fn_searchMenuObjAddList
+		           });
+		   }
+	   });
+   }
+}
+
+// 개인정보대상 팝업 호출
+function fn_openPop(){
+	//윈도우 셋팅
+    var dhxWins = new dhtmlXWindows();
+    dhxWins.attachViewportTo("layoutObj");
+    
+    dhxWins.attachEvent("onClose", function(win){
+        fn_search();
+        return true;
+    });
+    
+    var postParam = new Object();
+    
+    // 윈도우 위치 셋팅, modal창으로 지정
+    var dw = dhxWins.createWindow("menu_P01", 68, 66, 830, 500);
+    dhxWins.window("menu_P01").setText("개인정보대상");
+    dhxWins.window("menu_P01").setModal(true);
+
+    // 레이아웃 셋팅
+    dhxWinsLayout = dw.attachLayout("1C");
+    
+    // 그리드 셋팅
+    var a = dhxWinsLayout.cells('a');
+    a.setText('개인정보대상 목록');
+    a.setWidth(RegisterFormWidth[1]); 
+    dhxWinsGrd = a.attachGrid();
+    dhxWinsGrd.setHeader(["NO","","개인정보번호","개인정보명","사용여부"]);
+    dhxWinsGrd.setColumnIds("NO,MENU_CD,PINF_NO,PINF_NM,USE_YN");
+    dhxWinsGrd.setColTypes("ro,ro,ro,ro,ch");
+    dhxWinsGrd.setInitWidths('60,0,*,120,100');
+    dhxWinsGrd.enableMultiselect(true);
+    fn_initGrid(dhxWinsGrd);
+    
+    fn_searchPinf();
+    
+	// 개인정보 팝업 check 이벤트	
+    dhxWinsGrd.attachEvent("onCheck", function(rId,cInd,state){
+    	dhxWinsGrd.selectRow(rId-1);
+    	fn_savePinf();
+    });
+       
+}
+
+</script>
+</html>

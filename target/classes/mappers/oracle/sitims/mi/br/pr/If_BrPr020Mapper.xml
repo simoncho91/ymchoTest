@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_BrPr020Mapper.xml
+    Description   : 문안검토목록 IF
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.11  ishift       1.0        최초 생성
+-->
+<mapper namespace="If_BrPr020Mapper">
+	<insert id="insertBrPr020" parameterType="CmMap">
+		INSERT INTO	TSI_ADRQ_L
+		(
+			V_AD_REQ_ID,		/*요청번호*/
+			V_PRODUCT_CD,		/*제품코드*/
+			V_RECORD_ID,		/*문서코드*/
+			V_TITLE,			/*제목*/
+			V_AD_REQ_STATUS_CD,	/*상태코드*/
+			V_AD_CONTENT,		/*의뢰내용*/
+			V_FILTERING_TEXT,	/*금지어 필터링*/
+			V_REG_USER_ID,		/*등록자(마케터)*/
+			V_REG_DTM			/*등록일*/
+		)
+		VALUES
+		(
+			#{i_sAdReqId},
+			#{i_sProductCd},
+			#{i_sRecordCd},
+			#{i_sTitle},
+			#{i_sStatus},
+			#{i_sReqText},
+			#{i_sFilteringText},
+			#{i_sUserNm},
+			REPLACE(#{i_sRegDtm},'.','')
+		)
+	</insert>
+	
+	
+	<insert id="mergeBrPr020" parameterType="CmMap">
+		/*문안등록 검토요청 merge*/
+		MERGE INTO TSI_ADRQ_L TAL
+		USING DUAL
+		ON(TAL.V_AD_REQ_ID = #{i_sAdReqId})
+		WHEN MATCHED THEN
+			UPDATE SET
+			 V_TITLE				=	#{i_sTitle}				/*제목*/
+			,V_PRODUCT_CD			=	#{i_sProductCd}			/*제품코드*/
+			,V_AD_REQ_STATUS_CD		=	#{i_sStatus}			/*상태코드*/
+			,V_AD_CONTENT			=	#{i_sReqText}			/*의뢰내용*/
+			,V_FILTERING_TEXT		=	#{i_sFilteringText}		/*금지어 필터링*/
+			,V_UPDATE_USER_ID		=	#{i_sUserNm}			/*수정자*/
+			,V_UPDATE_DTM			=	REPLACE(#{i_sRegDtm},'.','')
+		WHEN NOT MATCHED THEN
+			INSERT
+			(
+				V_AD_REQ_ID,		/*요청번호*/
+				V_PRODUCT_CD,		/*제품코드*/
+				V_RECORD_ID,		/*문서코드*/
+				V_TITLE,			/*제목*/
+				V_AD_REQ_STATUS_CD,	/*상태코드*/
+				V_AD_CONTENT,		/*의뢰내용*/
+				V_FILTERING_TEXT,	/*금지어 필터링*/
+				V_REG_USER_ID,		/*등록자(마케터)*/
+				V_REG_DTM			/*등록일*/
+			)
+			VALUES
+			(
+				#{i_sAdReqId},
+				#{i_sProductCd},
+				#{i_sRecordCd},
+				#{i_sTitle},
+				#{i_sStatus},
+				#{i_sReqText},
+				#{i_sFilteringText},
+				#{i_sUserNm},
+				REPLACE(#{i_sRegDtm},'.','')
+			)
+	</insert>
+	
+	
+	
+	<!-- 문안검토요청 수정 -->
+	<update id="updateBrPr020" parameterType="CmMap">
+		/* 문안검토요청 수정(IF) */
+		UPDATE TSI_ADRQ_L
+		SET 
+			 V_TITLE				=	#{i_sTitle}		/*제목*/
+			,V_PRODUCT_CD			=	#{i_sProductCd}	/*제품코드*/
+			,V_AD_REQ_STATUS_CD		=	#{i_sStatus}	/*상태코드*/
+			,V_AD_CONTENT			=	#{i_sReqText}	/*의뢰내용*/
+			,V_FILTERING_TEXT		=	#{i_sFilteringText}	/*금지어 필터링*/
+			,V_UPDATE_USER_ID		=	#{i_sUserNm}	/*수정자*/
+			,V_UPDATE_DTM			=	REPLACE(#{i_sRegDtm},'.','')
+		WHERE V_AD_REQ_ID			=	#{i_sAdReqId}
+	</update>
+	
+	<!-- 문안검토요청 상태변경(요청취소, 반려) -->
+	<update id="changeStatus" parameterType="CmMap">
+		/* 문안검토요청 상태변경(IF - 요청취소, 반려) */
+		UPDATE 
+			TSI_ADRQ_L
+		SET 
+			V_AD_REQ_STATUS_CD		=	#{i_sStatus}					/*상태코드*/
+			,V_UPDATE_USER_ID		=	#{i_sUserNm}					/*수정자*/
+			,V_UPDATE_DTM			=	REPLACE(#{i_sRegDtm},'.','')	/*업데이트일자*/
+			,V_AD_CONTENT_RS		=	#{i_sAdContentRs}				/*검토의견(RA승인,반려)*/
+		WHERE V_AD_REQ_ID			=	#{i_sAdReqId}
+	</update>
+	
+	<!-- 문안검토완료 여부 업데이트 -->
+	<update id="adComplete" parameterType="CmMap">
+		/* 문안검토완료 여부 업데이트(IF) */
+		UPDATE 
+			TSI_PD_D
+		SET 
+			 V_CK_ADVERTISE_YN		=	'Y'
+			,V_CK_ADVERTISE_DTM		=	TO_CHAR(SYSDATE,'YYYYMMDD')
+		WHERE V_RECORD_ID			=	#{i_sRecordId}
+		AND V_PRODUCT_CD			=	#{i_sProductCd}
+	</update>
+	
+	<!-- 문안검토 실증자료 코멘트 등록,수정-->
+	<insert id="brPr020ReviewContentReg" parameterType="CmMap">
+		/*실증자료 코멘트 등록,수정*/
+		MERGE INTO TSI_ADRC_L TAL
+		USING DUAL
+		ON(TAL.V_PRODUCT_CD = #{i_sProductCd} AND TAL.N_SEQ = #{i_nSeq})
+		WHEN MATCHED THEN
+			UPDATE SET
+			 	 TAL.V_CONTENT = #{i_sContent}
+				,TAL.V_REG_USER_ID = #{i_sUserNm}
+				,TAL.V_REG_DTM	=	TO_CHAR(SYSDATE,'YYYYMMDD')
+		WHEN NOT MATCHED THEN
+			INSERT
+			(
+				V_PRODUCT_CD
+				, N_SEQ
+				, V_CONTENT
+				, V_REG_USER_ID
+				, V_REG_DTM
+			) 
+			VALUES
+			(
+				#{i_sProductCd}
+				,#{i_nSeq}
+				,#{i_sContent}
+				,#{i_sUserNm}
+				,#{i_sRegDtm}
+			)
+	</insert>
+
+	<!-- 원화등록요청 -->
+	<update id="updateBrPrOri020" parameterType="CmMap">
+		/* 원화등록요청(IF) */
+		UPDATE TSI_ADRQ_L
+		SET 
+			 V_VESSEL_YN				= 	#{i_sVesselYn}		/*용기 Y/N*/
+			,V_BOX_YN					=	#{i_sBoxYn}			/*단상자 Y/N*/
+			,V_PAPER_YN					=	#{i_sPaperYn}		/*내지설명서 Y/N*/
+			,V_MAKER_NM					=	#{i_sVendorNm}		/*제조사*/
+			,V_SELLER_NM				=	#{i_sSellerNm}		/*판매사*/
+			,V_MAKER_ADDR				=	#{i_sVendorAddr}	/*제조사 주소*/
+			,V_ORIGIN_SITE				=	#{i_sOriginSite}	/*원산지*/
+			,V_PAY_TX					=	#{i_sPayTx}			/*보상문구*/
+			,V_CS_PHONE_NO				=	#{i_sCsPhoneNo}		/*고객상담실 전화번호*/
+			,V_HOWTO_METHOD				=	#{i_sHowtoMethod}	/*용법용량*/
+			,V_PIC_REQ_CONTENT			=	#{i_sPicReqContent}	/*원화작성 요청내역*/
+			,V_AD_REQ_STATUS_CD			=	#{i_sStatus}		/*상태코드*/
+			,V_CAUTION					=	#{i_sCaution}		/*공통주의사항*/
+			,V_DESIGNER_ID				=	#{i_sDesignerId}	/*디자이너 아이디*/
+			,V_DESIGN_ODM_ID			=	#{i_sOdmDesignerId}	/*외주디자이너 아이디*/
+		WHERE V_AD_REQ_ID				=	#{i_sAdReqId}
+	</update>
+	
+	<!-- 원화검토 의견 등록 -->
+	<insert id="brPr020OpinionReg" parameterType="CmMap">
+		/*원화검토 의견 등록*/
+		INSERT INTO	TSI_OPAD_L
+		(
+			V_OPINION_NO,		/*의견넘버(PK/시퀀스)*/
+			V_AD_REQ_ID,		/*문안코드*/
+			V_PRODUCT_CD,		/*제품코드*/
+			V_RA_OPINION,		/*의견(RA)*/
+			V_REG_USER_ID,		/*등록자*/
+			V_REG_DTM,			/*등록일*/
+			V_PACKING_TYPE		/*용기타입(용기,단상자,내지)*/
+		)
+		VALUES
+		(
+			#{i_sOpinionNo},
+			#{i_sAdReqId},
+			#{i_sProductCd},
+			#{i_sMessage},
+			#{i_sRegUserId},
+			TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'),
+			#{i_sMsgType}
+		)
+	</insert>
+	
+	<!-- 원화검토 승인,반려 -->
+	<update id="brPr020OpinionApprChange" parameterType="CmMap">
+		/*원화검토 승인,반려*/
+		UPDATE
+			TSI_ADRQ_L
+		SET
+			V_${type}_PIC_STATUS_CD	=	#{i_sApprStatus}
+			,V_${type}_PIC_DTM		=	TO_CHAR(SYSDATE, 'YYYYMMDD')
+		WHERE
+			V_AD_REQ_ID	=	#{i_sAdReqId}
+	</update>
+	
+	<!-- 원화검토 의견 수정 -->
+	<update id="brPr020OpinionModify" parameterType="CmMap">
+		/*원화검토 의견 수정*/
+		UPDATE 
+			TSI_OPAD_L
+		SET	
+			 V_RA_OPINION	=	#{i_sOpinion}
+			,V_UPDATE_DTM	=	TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+		WHERE	
+			V_OPINION_NO	=	#{i_sMessageNo}
+	</update>
+	
+	<!-- 원화검토 의견 삭제 -->
+	<delete id="brPr020OpinionDelete" parameterType="CmMap">
+		/* 원화검토 의견 삭제 */
+		DELETE FROM TSI_OPAD_L
+		WHERE V_OPINION_NO	=	#{i_sMessageNo}
+	</delete>
+</mapper>

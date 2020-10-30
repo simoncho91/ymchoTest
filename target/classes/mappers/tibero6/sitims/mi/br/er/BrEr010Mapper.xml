@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : BrEr010Mapper.xml
+    Description   : 문안검토
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.16  shahn       1.0        최초 생성
+-->
+<mapper namespace="BrEr010Mapper">
+	<sql id="getAcceptListInclude">
+		SELECT 
+				M.*
+				, ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_AD_REQ_ID DESC,V_REG_DTM DESC
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+			FROM (
+				SELECT 
+				    TAL.V_AD_REQ_ID,
+				    TAL.V_TITLE,
+				    TAL.V_PRODUCT_CD,
+				    TPD.V_BRAND_CD,
+				    FN_SUB_CODENM('BRAND_CODE',TPD.V_BRAND_CD) AS BRAND_NM,
+				    TAL.V_REG_USER_ID,
+				    FN_GET_USERNM(TAL.V_REG_USER_ID) V_REG_USER_NM,
+				    TO_CHAR(TO_DATE(TAL.V_REG_DTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD') AS V_REG_DTM,
+					TAL.V_REG_DTM AS V_REG_DTM_ORI,
+				    TAL.V_RA_ID,
+				    FN_GET_USERNM(TAL.V_RA_ID) V_RA_NM,
+				    TAL.V_AD_REQ_STATUS_CD,
+				    FN_SUB_CODENM('AD_REQ_STATUS',TAL.V_AD_REQ_STATUS_CD) STATUS,
+				    (SELECT V_VENDOR_LABOR_ID FROM TSI_PD_M WHERE V_RECORD_ID = TPD.V_RECORD_ID) AS VENDOR_ID
+				FROM 
+					TSI_ADRQ_L TAL 
+				INNER JOIN
+					TSI_PD_D TPD 
+				ON (TAL.V_PRODUCT_CD = TPD.V_PRODUCT_CD AND TAL.V_RECORD_ID = TPD.V_RECORD_ID)
+				WHERE 1=1
+				AND 	TAL.V_AD_REQ_STATUS_CD	!= 'AD_REQ_STATUS01'
+				<if test="i_sStatus != null and i_sStatus != ''">
+					AND  	TAL.V_AD_REQ_STATUS_CD = #{i_sStatus}
+				</if>
+				<if test="i_sBrandCd != null and i_sBrandCd != ''">
+					AND  	TPD.V_BRAND_CD 		= #{i_sBrandCd}
+				</if>
+				<if test="i_sSearchKeyword != null and i_sSearchKeyword != ''">
+				AND		(   
+							TAL.V_TITLE			LIKE	'%' || #{i_sSearchKeyword} || '%' OR
+							FN_GET_USERNM(TAL.V_REG_USER_ID)	LIKE	'%' || #{i_sSearchKeyword} || '%'
+						)
+				</if>
+				<if test="i_sStDate != null and i_sStDate != ''">
+				AND	SUBSTR(TAL.V_REG_DTM, 1, 8)   BETWEEN #{i_sStDate} AND #{i_sEnDate}
+				</if>
+			) M
+	</sql>
+
+	<select id="getAcceptCount" parameterType="CmMap" resultType="java.lang.Integer">
+		SELECT 
+			COUNT(*)
+		FROM
+			(<include refid="getAcceptListInclude"/>) TEMP
+	</select>
+	
+	<select id="getAcceptList" parameterType="CmMap" resultType="CmMap">
+		SELECT 
+			TEMP.*
+		FROM
+			(<include refid="getAcceptListInclude"/>) TEMP
+		WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>		
+		AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+</mapper>

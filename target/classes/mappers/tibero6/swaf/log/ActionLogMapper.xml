@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : ActionLogMapper.xml
+    Description   : Action Log 기록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  김태형       1.0        최초 생성
+-->
+<mapper namespace="ActionLog">
+	
+	<!--  1. 오류 로그 조회  -->
+	
+	
+	<!--  2. 등록  -->
+    <!--  2.1. 프로그램 액션 로그 등록  -->
+    <insert id="insertLog"  parameterType="com.shinsegae_inc.core.vo.ActionLogVO">
+        INSERT /* ActionLog.insertLog */
+          INTO TZF_ACTIONLOG_L
+             (
+               ACTN_LOG_NO
+             , OCCU_DT
+             , OCCU_TM
+             , ACTN_TP_CD
+             , CLNT_IP
+             
+             , SVR_IP
+             , AC_URL
+             , AC_PARM
+             , END_DT
+             , END_TM
+             
+             , SYS_ID
+             , REG_USER_NO
+             , REG_DTM
+             , REG_IP
+             
+             , USER_NO
+             , MENU_CD
+             )  
+	    VALUES
+	         (
+	            TZF_ACTIONLOG_L_SEQ.NEXTVAL
+	          , #{occuDt}
+	          , #{occuTm}
+	          , #{actnTpCd} 
+	          , #{clntIp} 
+	          
+	          , #{svrIp} 
+	          , #{acUrl} 
+	          , #{acParm}
+	          , #{endDt}
+	          , #{endTm}
+	          
+	          , #{sysId}
+	          , #{regUserNo}
+	          , SYSDATE
+	          , #{regIp}
+	          
+	          , #{regUserNo}
+	          , #{menuCd}
+	         )
+    </insert>
+	
+	
+	<!-- 3. 액션 로그 조회 -->
+	<select id="selectActionLogList" resultType="Map">
+		SELECT /* actionLog.selectActionLogList */
+			   A.ACTN_LOG_NO,
+			   A.OCCU_DT,
+			   A.OCCU_TM,
+			   A.ACTN_TP_CD,
+			   A.CLNT_IP,
+			   A.SVR_IP,
+			   A.AC_URL,
+			   A.AC_PARM,
+			   A.END_DT,
+			   A.END_TM,
+			   A.SYS_ID,
+			   A.REG_USER_NO,
+			   A.REG_DTM,
+			   A.REG_IP,
+			   A.USER_NO,
+			   A.MENU_CD,
+		       B.LOGIN_ID,
+		       B.USER_NM
+		  FROM TZF_ACTIONLOG_L A, TZF_USER_M B
+		 WHERE A.REG_USER_NO = B.USER_NO
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(ACTN_TP_CD)"> 
+		   AND A.ACTN_TP_CD = #{ACTN_TP_CD}
+		</if>   
+		<if test="SYS_ID != null and !SYS_ID.equals('all')">
+		   AND A.SYS_ID = #{SYS_ID}
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(LOGIN_ID)">
+		   AND B.LOGIN_ID LIKE '%'||TRIM(#{LOGIN_ID})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_NM)">
+		   AND B.USER_NM LIKE '%'||TRIM(#{USER_NM})||'%'
+		</if>
+		<if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(CLNT_IP)">
+		   AND B.CLNT_IP LIKE '%'||TRIM(#{CLNT_IP})||'%'
+		</if>
+		<if test="START_DT != null and !START_DT.equals('') and END_DT != null and !END_DT.equals('')">
+		   AND A.OCCU_DT BETWEEN TO_DATE(#{START_DT}, 'YYYY-MM-DD') AND TO_DATE(#{END_DT}, 'YYYY-MM-DD')
+		</if>
+		 ORDER BY A.OCCU_DT DESC, A.OCCU_TM DESC
+	</select>
+	
+	<!-- 1. 액션 로그 조회 -->
+    <select id="selectList" resultType="upperKeyMap">
+        select /* actionlog.selectList */
+               sys_id
+             , reg_dtm
+             , user_no
+             , login_id
+             , user_nm
+             , count(ac_url) as cnt 
+        from (
+              select a.sys_id
+                   , to_char(a.reg_dtm, 'YYYY-MM-DD') as reg_dtm
+                   , a.user_no
+                   , b.login_id
+                   , b.user_nm
+                   , a.ac_url
+                from tzf_actionlog_l a
+                   , tzf_user_m b
+               where a.reg_user_no = b.user_no   
+		         and a.sys_id = #{SYS_ID}
+		        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(ACTN_TP_CD)"> 
+		           and a.actn_tp_cd = #{ACTN_TP_CD}
+		        </if>   
+		        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(LOGIN_ID)">
+		           and b.login_id like '%'||trim(#{LOGIN_ID})||'%'
+		        </if>
+		        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_NM)">
+		           and b.user_nm like '%'||trim(#{USER_NM})||'%'
+		        </if>
+		        <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(CLNT_IP)">
+		           and b.clnt_ip like '%'||trim(#{CLNT_IP})||'%'
+		        </if>
+		        <if test="START_DT != null and !START_DT.equals('') and END_DT != null and !END_DT.equals('')">
+		           and a.occu_dt between #{START_DT} and #{END_DT}
+		        </if>
+             ) a
+       group by sys_id
+              , reg_dtm
+              , user_no
+              , login_id
+              , user_nm           
+     order by a.reg_dtm desc
+    </select>
+
+    <!--  2. 상세 조회  -->
+    <select id="selectDetailList"  parameterType="hashMap" resultType="upperKeyMap">
+        select /* actionlog.selectDetailList */
+               a.actn_log_no,
+               a.occu_dt,
+               a.occu_tm,
+               a.actn_tp_cd,
+               a.clnt_ip,
+               a.svr_ip,
+               a.ac_url,
+               a.ac_parm,
+               a.end_dt,
+               a.end_tm,
+               a.sys_id,
+               a.reg_user_no,
+               a.reg_dtm,
+               a.reg_ip,
+               a.user_no,
+               a.menu_cd
+          from tzf_actionlog_l a
+         where a.sys_id = #{SYS_ID}
+           and a.reg_user_no = #{USER_NO}
+           and to_char(a.reg_dtm, 'yyyy-mm-dd') = #{REG_DTM}
+          order by actn_log_no desc
+    </select>
+</mapper>

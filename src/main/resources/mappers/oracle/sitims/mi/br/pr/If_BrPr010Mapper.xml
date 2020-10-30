@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_BrPr010Mapper.xml
+    Description   : 제품 등록
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.07.24  jjw       1.0        최초 생성
+-->
+<mapper namespace="If_BrPr010Mapper">
+
+	
+	<delete id="deleteBrPr010Prod" parameterType="CmMap">
+		DELETE /* If_BrPr010Mapper.deleteBrPr010Prod */
+			TSI_PD_D
+		WHERE V_RECORD_ID = #{i_sRecordId}
+	</delete>
+	
+	<delete id="deleteBrPr010Nation" parameterType="CmMap">
+		DELETE	/* If_BrPr010Mapper.deleteBrPr010Nation */ 
+			TSI_PD_NA_L
+		WHERE V_RECORD_ID = #{i_sRecordId}		
+		<if test="i_sProductCd != null and i_sProductCd != ''">
+			AND V_PRODUCT_CD = #{i_sProductCd}
+		</if>
+		<if test="i_sExp != null and i_sExp != ''">
+			AND V_NATION_CD = #{i_sExp}
+		</if>
+		<if test='i_sExistReviewStatue == "Y"'>
+			AND V_REVIEW_STATUS IS NULL
+			AND V_NATION_CD != 'KO'
+		</if>
+	</delete>
+	
+	<delete id="deleteBrPr010Func" parameterType="CmMap">
+		DELETE	/* If_BrPr010Mapper.deleteBrPr010Func */
+			TSI_PDFC_L
+		WHERE V_RECORD_ID = #{i_sRecordId}
+		<if test="i_sProductCd != null and i_sProductCd != ''">
+			AND V_PRODUCT_CD = #{i_sProductCd}
+		</if>
+	</delete>
+	
+	<delete id="deleteBrPr010ProductFunc" parameterType="CmMap">
+		DELETE /* If_BrPr010Mapper.deleteBrPr010ProductFunc */ 
+			TSI_PDFC_L
+		WHERE V_PRODUCT_CD = #{i_sProductCd}
+	</delete>
+	<update id="updateBrPr010Mst" parameterType="CmMap">
+		UPDATE /* If_BrPr010Mapper.updateBrPr010Mst */
+			TSI_PD_M	SET
+			V_RECEIP_STATUS     = #{i_sReceipStatus}
+			,V_VENDOR_ID        = #{i_sCompanycd}    
+			,V_VENDOR_LABOR_ID  = #{i_sCompanyLabor} 
+			,V_IMPORT_YN        = #{i_sImportyn}     
+			,V_FLAG_IMP         = #{i_sImport}       
+			,V_F_MAKER_NM       = #{i_sF_mager_nm}   
+			,V_L_MAKER_NM       = #{i_sL_mager_nm}   
+			,V_BM_ID            = #{i_sUserid}      
+			,V_UPDATE_USER_ID	= #{i_sLoginUserId}                       
+			,V_UPDATE_DTM       = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_RECORD_ID = #{i_sRecordId}
+	</update>
+	<update id="updateBrPr010Prod" parameterType="CmMap">
+		UPDATE /* If_BrPr010Mapper.updateBrPr010Prod */
+				TSI_PD_D	
+			SET
+			V_PRODUCT_NM_KO = #{i_sProduct_KoNm}
+			, V_PRODUCT_NM_EN = #{i_sProduct_EnNm}
+			<if test="i_sProduct_CnNm != null">
+			, V_PRODUCT_NM_CN = #{i_sProduct_CnNm}
+			</if>
+ 			, V_CONTENT_NUM = #{i_sCNnum}
+ 			, V_CAPACITY = #{i_sProductCapacity}
+ 			, V_CNTR_FORM = #{i_sCntrForm}
+ 			, V_CNTR_FORM_ETC = #{i_sCntrForm_etc}
+ 			, V_CNTR_MATR = #{i_sCntrMatr}
+ 			, V_CNTR_MATR_ETC = #{i_sCntrMatr_etc}
+ 			, V_FREE_GN = #{i_sSogugn}
+ 			, V_MUSOGU_CONT = #{i_sMusogucont}
+ 			, V_SOGU_CONT = #{i_sSogucont}
+ 			, V_PON_MSG = #{i_sPonMsg}
+ 			, V_FUNC_YN = #{i_sFuncyn}
+ 			, V_LEAVEON_YN = #{i_sLeaveonYn}
+ 			, V_ORIGIN_DIV = #{i_sOriginDiv}
+			, V_UPDATE_USER_ID	= #{i_sLoginUserId}                       
+			, V_UPDATE_DTM       = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE V_PRODUCT_CD = #{i_sProductCd}
+	</update>
+	
+	<insert id="insertBrPr010Mst" parameterType="CmMap">
+		INSERT INTO /* If_BrPr010Mapper.insertBrPr010Mst */ 
+		TSI_PD_M(
+			V_RECORD_ID
+			, V_RECEIP_STATUS
+			, V_VENDOR_ID
+			, V_VENDOR_LABOR_ID
+			, V_IMPORT_YN
+			, V_FLAG_IMP
+			, V_F_MAKER_NM
+			, V_L_MAKER_NM
+			, V_BM_ID
+			, V_DEL_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sRecordId}
+			, #{i_sReceipStatus}
+			, #{i_sCompanycd}
+			, #{i_sCompanyLabor}
+			, #{i_sImportyn}
+			, #{i_sImport}
+			, #{i_sF_mager_nm}
+			, #{i_sL_mager_nm}
+			, #{i_sUserid}
+			, 'N'
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	<insert id="insertBrPr010Prod" parameterType="CmMap">
+		INSERT INTO /* If_BrPr010Mapper.insertBrPr010Prod */ 
+		TSI_PD_D
+		(
+			V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_PRODUCT_NM_KO
+			, V_PRODUCT_NM_EN
+			, V_PRODUCT_NM_CN
+			, V_BRAND_CD
+			, V_STOCK_DTM
+			, V_TYPE
+			, V_CATEGORY1
+			, V_CATEGORY2
+			, V_FUNC_YN
+			, V_CNTR_FORM_ETC
+			, V_CNTR_MATR_ETC
+			, V_CAPACITY
+			, V_CNTR_FORM
+			, V_CNTR_MATR
+			, V_FREE_GN
+			, V_MUSOGU_CONT
+			, V_SOGU_CONT
+			, V_SHELF_LIFE
+			, V_PAO
+			, V_ORIGIN_YN
+			, V_ORIGIN_DIV
+			, V_KID_GUIDE_YN			
+			, V_PACKET_UNIT
+			, V_STABILITY_FILE_YN
+			, V_REFER_RECORD_ID
+			, V_REFER_PRODUCT_CD
+			, V_CONTENT_NUM
+			, V_PON_MSG
+			, V_LEAVEON_YN
+			, V_DEL_YN
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sRecordId}
+			, #{i_sProduct_Refcd}
+			, #{i_sProduct_RefNm}
+			, #{i_sProduct_RefNm_En}
+			, #{i_sProduct_RefNm_Cn}
+			, #{i_sBrand}
+			, REPLACE(#{i_sStockDt},'-','')
+			, #{i_sType}
+			, #{i_sCategory1}
+			, #{i_sCategory2}
+			, NVL(#{i_sFuncyn},'N')
+			, #{i_sCntrFormEtc}
+			, #{i_sCntrMatrEtc}
+			, #{i_sProductCapacity}
+			, #{i_sCntrForm}
+			, #{i_sCntrMatr}
+			, #{i_sSogugn}
+			, #{i_sMusogucont}
+			, #{i_sSogucont}
+			, #{i_sLife}
+			, #{i_sPao}
+			, NVL(#{i_sOriginYn},'Y')
+			, #{i_sOriginDiv}	
+			, NVL(#{i_sKidYn},'N')
+			, #{i_sPacketUnit}
+			, NVL(#{i_sStabilityFileYn},'N')
+			, #{i_sGiReferRecordId}
+			, #{i_sGiReferProductCd}
+			, #{i_sCNnum}
+			, #{i_sPonMsg}
+			, #{i_sLeaveonYn}
+			, 'N'
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<insert id="insertBrPr010ProdNation" parameterType="CmMap">
+		INSERT /* If_BrPr010Mapper.insertBrPr010ProdNation */
+		INTO TSI_PD_NA_L(
+			V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_NATION_CD
+			, V_REG_USER_ID
+			, V_REG_DTM
+			, V_REVIWER_ID
+		)VALUES(
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, #{i_sExp}
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			, #{i_sRaUser}
+		)
+	</insert>
+	
+	<insert id="insertBrPr010ProdFunc" parameterType="CmMap">
+		INSERT /* If_BrPr010Mapper.insertBrPr010ProdFunc */
+		INTO TSI_PDFC_L(
+			V_RECORD_ID
+			, V_PRODUCT_CD
+			, V_FUNC_CD
+			, V_REG_USER_ID
+			, V_REG_DTM
+		)VALUES(
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, #{i_sFuncCode}
+			, #{i_sLoginUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	<update id="updateBrPr010ProdNation" parameterType="CmMap">
+		MERGE /* If_BrPr010Mapper.updateBrPr010ProdNation */ 
+			INTO TSI_PD_NA_L A
+		USING DUAL
+		ON (A.V_RECORD_ID = #{i_sRecordId} AND A.V_PRODUCT_CD = #{i_sProductCd} AND V_NATION_CD = #{i_sNationCd} AND 'N' = #{i_sChkVal})
+		WHEN MATCHED THEN
+		  UPDATE SET 
+		             A.V_UPDATE_USER_ID = #{i_sLoginUserId}
+		            , A.V_UPDATE_DTM = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		  DELETE WHERE (A.V_RECORD_ID = #{i_sRecordId} AND A.V_NATION_CD = #{i_sNationCd} AND A.V_PRODUCT_CD = #{i_sProductCd})
+		WHEN NOT MATCHED THEN
+		  INSERT
+		  (
+			  A.V_RECORD_ID
+			  , A.V_PRODUCT_CD
+			  , A.V_NATION_CD
+			  , A.V_REG_USER_ID
+			  , A.V_REG_DTM
+			  , A.V_UPDATE_USER_ID
+			  , A.V_UPDATE_DTM
+			  )
+		  VALUES
+		 (
+			 #{i_sRecordId}
+			 ,#{i_sProductCd}
+			 ,#{i_sNationCd}
+			 ,#{i_sLoginUserId}
+			 ,TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			 ,#{i_sLoginUserId}
+			 ,TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		 )
+
+	</update>
+</mapper>

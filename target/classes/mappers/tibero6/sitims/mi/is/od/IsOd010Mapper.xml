@@ -1,0 +1,744 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : IsOd010Mapper.xml
+    Description   : 원료 DB 조회
+
+    ==개정이력========================================
+    구분               					 파일명       					ID			사용자		날짜
+    ========== ======= =========   ===================
+    Batch Coding System  111988214A_.pdf       1111		 관리자        최초 생성
+-->
+
+<mapper namespace="IsOd010Mapper">
+
+	<sql id="IsOd010Mapper.IsOd010ListInclude">
+			SELECT 
+			X.*
+		FROM 
+		(
+			SELECT	
+				  MATE.*
+			FROM
+			(
+				SELECT	
+					  MST.V_ODMDB_ID
+					, MST.V_ODMMAT_CD
+					, MST.V_MAKER
+					, NVL(MST.V_FLAG_FLAVOR,'N') AS V_FLAG_FLAVOR
+					, DECODE(MST.V_USE_YN,'Y','사용중','N','사용안함') AS V_USE_YN
+					, MST.V_REG_DTM
+					, TO_DATE(SUBSTRING(MST.V_REG_DTM,'1','8'), 'yyyy/mm/dd') AS N_V_REG_DTM  
+					, B.V_BAN
+					, L.V_LIMIT
+					, M.V_MAT_NM
+					, NVL(M.V_ALLERGEN_YN, 'N') AS V_ALLERGEN_YN
+				FROM TODM_MAT_M MST
+				<!-- 원료명( 구성 성분명을 '/' 구분자를 사용하여 JOIN )을 가져오기 위해 INNER JOIN -->
+				INNER JOIN
+				(
+					SELECT
+		     			  TRM.V_ODMDB_ID
+						, LISTAGG(X.V_CON_NM_EN,' / ') WITHIN GROUP(ORDER BY X.V_CON_NM_EN) AS V_MAT_NM
+						, X.V_ALLERGEN_YN
+					FROM
+						TODM_RTCON_M TRM
+					INNER JOIN
+					(
+						SELECT
+							  TCM.V_CON_CD 
+							, TCM.N_VER_SEQ 
+							, TCM.V_CON_NM_EN
+							, TCM.V_ALLERGEN_YN
+						FROM
+							TSI_CON_M TCM
+					)X
+					ON
+					(
+							TRM.V_CON_CD = X.V_CON_CD
+						AND TRM.N_CON_CD_VER = X.N_VER_SEQ
+					)
+					GROUP BY TRM.V_ODMDB_ID, X.V_ALLERGEN_YN
+				)M
+				ON
+					MST.V_ODMDB_ID  = M.V_ODMDB_ID
+				<!-- 원료 구성 성분에 대한 '사용금지' 리스트 LEFT OUTER JOIN -->
+				LEFT OUTER JOIN
+				(
+					SELECT 
+						  TRM.V_ODMDB_ID
+						, REGEXP_REPLACE(LISTAGG(X.COMM_NM,',') WITHIN GROUP(ORDER BY X.COMM_NM), '([^,]+)(,\1)+', '\1') AS V_BAN
+				  	FROM 
+				  		TODM_RTCON_M TRM
+				 	INNER JOIN 
+				 	(
+						SELECT 
+				   			  TCBD.V_CON_CD
+							, TCBD.N_VER_SEQ
+							, DECODE(TCBD.V_GL_CD, 'KO', '한국', 'CN', '중국', 'AE', '아세안', 'EU', '유럽', 'US', '미국') AS COMM_NM
+			   		  	FROM 
+			   		  		TSI_CON_BAN_D TCBD
+			   	     	WHERE 1=1
+			   	     		AND TCBD.V_FLAG = 'B'
+				 	)X
+		   			ON 
+		   			(
+							TRM.V_CON_CD = X.V_CON_CD
+						AND TRM.N_CON_CD_VER = X.N_VER_SEQ
+		   			)
+		   		 	GROUP BY TRM.V_ODMDB_ID
+				) B
+				ON
+					MST.V_ODMDB_ID  = B.V_ODMDB_ID
+				<!-- 원료 구성 성분에 대한 '배합제한' 리스트 LEFT OUTER JOIN -->
+				LEFT OUTER JOIN
+				(
+					SELECT 
+						  TRM.V_ODMDB_ID
+						, REGEXP_REPLACE(LISTAGG(X.COMM_NM,',') WITHIN GROUP(ORDER BY X.COMM_NM), '([^,]+)(,\1)+', '\1') AS V_LIMIT
+				  	FROM 
+				  		TODM_RTCON_M TRM
+				 	INNER JOIN 
+				 	(
+						SELECT 
+				   			  TCBD.V_CON_CD
+							, TCBD.N_VER_SEQ
+							, DECODE(TCBD.V_GL_CD, 'KO', '한국', 'CN', '중국', 'AE', '아세안', 'EU', '유럽', 'US', '미국') AS COMM_NM
+			   		  	FROM 
+			   		  		TSI_CON_BAN_D TCBD
+			   	     	WHERE 1=1
+			   	     		AND TCBD.V_FLAG = 'L'
+				 	)X
+		   			ON 
+		   			(
+							TRM.V_CON_CD = X.V_CON_CD
+						AND TRM.N_CON_CD_VER = X.N_VER_SEQ
+		   			)
+		   		 	GROUP BY TRM.V_ODMDB_ID
+				) L
+				ON
+					MST.V_ODMDB_ID  = L.V_ODMDB_ID
+			WHERE 1=1
+			<!-- ODM사 -->
+			<if test="vVendorId != null and vVendorId != ''">
+				AND MST.V_VENDOR_ID = #{vVendorId}
+			</if>
+			<!-- 향코드 여부 -->
+			<if test="vFlagFlavor != null and vFlagFlavor != 'All'">
+				AND MST.V_FLAG_FLAVOR = #{vFlagFlavor}
+			</if>
+			<!-- 권한 -->
+			<if test="s_sysadmin_yn != 'Y'.toString()">
+				<choose>
+					<when test="s_trnsctreqid == 'TEMP001'">
+				AND	MST.V_REG_USERID = #{s_userid}
+					</when>
+					<otherwise>
+<!-- 				AND MST.V_VENDOR_ID = #{s_trnsctreqid} -->
+					</otherwise>			
+				</choose>
+			</if>
+			<!-- 제조사 -->
+			<if test="vMaker != null and vMaker != ''">
+			  	AND MST.V_MAKER LIKE UPPER('%'||TRIM(#{vMaker})||'%') 
+			</if>
+			<!-- 알러젠 포함여부 -->
+			<if test="vAllergenYn != null and vAllergenYn != 'All'">
+				AND M.V_ALLERGEN_YN = #{vAllergenYn}
+			</if>
+			<!-- ########################### [s] 검색조건(성분코드, 성분영문, CAS NO) ############################ -->
+			<if test="vSearchCondition == 'Y'.toString()">
+			  	AND
+			  	(
+				  	 MST.V_ODMDB_ID IN (
+						SELECT 
+							V_ODMDB_ID
+						FROM 
+							TODM_RTCON_M TRM
+						WHERE 1=1
+							AND ( 
+							<!-- 검색조건 中 원료코드 -->
+							 MST.V_ODMMAT_CD LIKE UPPER('%'||TRIM(#{i_sSearchNm})||'%')
+							<!-- 성분코드 -->
+							OR V_CON_CD LIKE UPPER('%'||TRIM(#{i_sSearchNm})||'%')
+				  			OR EXISTS (
+				  				SELECT * 
+				  				FROM 
+				  					TSI_CON_M 
+				  				WHERE 1=1
+				  					AND V_CON_CD = TRM.V_CON_CD
+				  					AND N_VER_SEQ = TRM.N_CON_CD_VER
+									<!-- 성분 영문명 -->
+							  		AND V_CON_NM_EN LIKE UPPER('%'||TRIM(#{i_sSearchNm})||'%')
+							)
+							<!-- CAS NO -->
+							OR EXISTS (
+				  				SELECT * 
+				  				FROM 
+				  					TSI_CON_CAS_D TCCD 
+				  				WHERE 1=1
+				  					AND V_CON_CD = TRM.V_CON_CD
+				  					AND N_VER_SEQ = TRM.N_CON_CD_VER
+				  					AND TRM.V_CON_CAS_NO LIKE '%'||TRIM(#{i_sSearchNm})||'%'
+<!-- 				  					AND V_CAS_NO LIKE '%'||TRIM(#{i_sSearchNm})||'%' -->
+				  			)
+					)
+				)
+				<!-- 향코드 여부가 'Y'이거나, 알러젠 포함여부가 'Y'일 때, 원료 알러젠 성분 정보 테이블에 있는 성분도 체크해야 한다. -->
+				<if test="vFlagFlavor == 'Y'.toString() or vAllergenYn == 'Y'.toString()">
+					OR
+					MST.V_ODMDB_ID IN (
+						SELECT 
+							V_ODMDB_ID
+						FROM 
+							TODM_RTCON_AL_D TRAD
+						WHERE 1=1
+					<!-- 성분코드 -->
+				<if test="i_sOpt eq 'vConCd'.toString()">
+							AND V_CON_CD = TRIM(#{i_sSearchNm})
+				</if>
+				  			AND EXISTS (
+				  				SELECT * 
+				  				FROM 
+				  					TSI_CON_M 
+				  				WHERE 1=1
+				  					AND V_CON_CD = TRAD.V_CON_CD
+				  					AND N_VER_SEQ = TRAD.N_CON_CD_VER
+					<!-- 성분 영문명 -->
+				<if test="i_sOpt eq 'vConNmEn'.toString()">
+							  		AND V_CON_NM_EN LIKE UPPER('%'||TRIM(#{i_sSearchNm})||'%')
+				</if>
+							)
+					<!-- CAS NO -->
+				<if test="i_sOpt eq 'vConCasNo'.toString()">
+							AND EXISTS (
+				  				SELECT * 
+				  				FROM 
+				  					TSI_CON_CAS_D TCCD 
+				  				WHERE 1=1
+				  					AND V_CON_CD = TRAD.V_CON_CD
+				  					AND N_VER_SEQ = TRAD.N_CON_CD_VER
+				  					AND V_CAS_NO LIKE '%'||TRIM(#{i_sSearchNm})||'%'
+				  			)
+				</if>
+					)
+				</if>
+			  	)
+			</if>
+			<!-- ########################### [e] 검색조건(성분코드, 성분영문, CAS NO) ############################ -->
+			
+			<!-- ################################### [s] '사용금지' 검색조건 ################################### -->
+			<if test="vSearchComBan == 'Y'.toString()">
+				AND 
+				(
+					MST.V_ODMDB_ID IN (
+					SELECT 
+						V_ODMDB_ID
+					FROM 
+						TODM_RTCON_M TRM
+					WHERE 1=1
+				  		AND EXISTS (
+					  		SELECT * 
+					  		FROM 
+					  			TSI_CON_BAN_D 
+						  	WHERE 1=1
+					  			AND V_CON_CD = TRM.V_CON_CD
+					  			AND N_VER_SEQ = TRM.N_CON_CD_VER
+					  			AND V_FLAG = 'B'
+				<if test="arrConBan != null">
+					<foreach collection="arrConBan" item="item" separator="," close=")" open="AND V_GL_CD IN (">
+						#{item}
+					</foreach>
+				</if>
+					  	)
+					)
+				<!-- 향코드 여부가 'Y'이거나, 알러젠 포함여부가 'Y'일 때, 원료 알러젠 성분 정보 테이블에 있는 성분도 체크해야 한다. -->
+				<if test="vFlagFlavor == 'Y'.toString() or vAllergenYn == 'Y'.toString()">
+					OR
+					MST.V_ODMDB_ID IN (
+					SELECT 
+						V_ODMDB_ID
+					FROM 
+						TODM_RTCON_AL_D TRAD
+					WHERE 1=1
+				  		AND EXISTS (
+					  		SELECT * 
+					  		FROM 
+					  			TSI_CON_BAN_D 
+						  	WHERE 1=1
+					  			AND V_CON_CD = TRAD.V_CON_CD
+					  			AND N_VER_SEQ = TRAD.N_CON_CD_VER
+					  			AND V_FLAG = 'B'
+				<if test="arrConBan != null">
+					<foreach collection="arrConBan" item="item" separator="," close=")" open="AND V_GL_CD IN (">
+						#{item}
+					</foreach>
+				</if>
+					  	)
+					)
+				</if>
+				)
+			</if>
+			<!-- ################################### [e] '사용금지' 검색조건 ################################### -->
+			
+			<!-- ################################### [s] '배합제한' 검색조건 ################################### -->
+			<if test="vSearchComLimit == 'Y'.toString()">
+				AND
+				(	
+					MST.V_ODMDB_ID IN (
+					SELECT 
+						V_ODMDB_ID
+					FROM 
+						TODM_RTCON_M TRM
+					WHERE 1=1
+					  	AND EXISTS (
+					  		SELECT * 
+					  		FROM 
+					  			TSI_CON_BAN_D 
+						  	WHERE 1=1
+					  			AND V_CON_CD = TRM.V_CON_CD
+					  			AND N_VER_SEQ = TRM.N_CON_CD_VER
+					  			AND V_FLAG = 'L'
+				<if test="arrConLimit != null">
+					<foreach collection="arrConLimit" item="item" separator="," close=")" open="AND V_GL_CD IN (">
+						#{item}
+					</foreach>
+				</if>
+					  	)
+					)
+				<!-- 향코드 여부가 'Y'이거나, 알러젠 포함여부가 'Y'일 때, 원료 알러젠 성분 정보 테이블에 있는 성분도 체크해야 한다. -->
+				<if test="vFlagFlavor == 'Y'.toString() or vAllergenYn == 'Y'.toString()">
+					OR
+					MST.V_ODMDB_ID IN (
+					SELECT 
+						V_ODMDB_ID
+					FROM 
+						TODM_RTCON_AL_D TRAD
+					WHERE 1=1
+					  	AND EXISTS (
+					  		SELECT * 
+					  		FROM 
+					  			TSI_CON_BAN_D 
+						  	WHERE 1=1
+					  			AND V_CON_CD = TRAD.V_CON_CD
+					  			AND N_VER_SEQ = TRAD.N_CON_CD_VER
+					  			AND V_FLAG = 'L'
+				<if test="arrConLimit != null">
+					<foreach collection="arrConLimit" item="item" separator="," close=")" open="AND V_GL_CD IN (">
+						#{item}
+					</foreach>
+				</if>
+					  	)
+					)
+				</if>
+				)
+			</if>
+			<!-- ################################### [e] '배합제한' 검색조건 ################################### -->
+			) MATE
+		)X
+	</sql>
+
+	<select id="IsOd010Mapper.IsOd010ListCnt" parameterType="Map" resultType="java.lang.Integer">
+		/* IsOd010Mapper.IsOd010ListCnt */
+		SELECT 
+			COUNT(*)
+		FROM
+		(  
+		<include refid="IsOd010Mapper.IsOd010ListInclude"/>
+		)
+	</select>
+	
+	<select id="IsOd010Mapper.IsOd010List" parameterType="Map" resultType="CmMap">
+		/* IsOd010Mapper.IsOd010List */
+		SELECT * FROM
+		(SELECT ROW_NUMBER() OVER(ORDER BY
+					<choose> 
+						<when test="i_sSortCol != null and i_sSortCol != '' and i_sSortDir != null and i_sSortDir != '' ">
+							${i_sSortCol} ${i_sSortDir}
+						</when>	 
+						<otherwise>
+							V_REG_DTM DESC
+						</otherwise>	
+					</choose>
+					) AS N_NUM
+					
+					,T.* 
+		FROM
+			(
+		<include refid="IsOd010Mapper.IsOd010ListInclude"/>
+			) T
+		 ) TEMP
+		 WHERE 1=1
+		<if test='i_sFlagExcelAll != "Y"'>
+		 AND TEMP.N_NUM BETWEEN #{i_iStartRownum} AND #{i_iEndRownum}
+		</if>
+	</select>
+	
+	<!-- ODM사 정보 리스트 조회 -->
+	<select id="IsOd010Mapper.selectIsOd010OdmCompanyInfoList" resultType="CmMap">
+		/* IsOdMapper.selectIsOd010OdmCompanyInfoList */
+		SELECT
+			  DISTINCT (TVI.V_VENDOR_ID)
+			, TVI.V_VENDOR_NM
+		FROM
+			TODM_VD_I TVI
+		RIGHT JOIN  TODM_MAT_M TMM ON TMM.V_VENDOR_ID = TVI.V_VENDOR_ID 
+		WHERE V_VENDOR_NM IS NOT NULL
+	</select>
+	
+	<!-- 원료 정보 조회 -->
+	<select id="IsOd010Mapper.selectIsOd011MatInfo" parameterType="Map" resultType="CmMap">
+		/* IsOd010Mapper.selectIsOd011MatInfo */
+		SELECT	
+			  MST.V_ODMDB_ID
+			, MST.V_ODMMAT_CD      
+			, MST.V_VENDOR_ID
+			, (SELECT V_VENDOR_NM FROM TODM_VD_I WHERE V_VENDOR_ID = MST.V_VENDOR_ID) AS V_VENDOR_NM
+			, NVL(MST.V_FLAG_FLAVOR,'N') AS V_FLAG_FLAVOR  
+			, MST.V_FLAVOR_COMPANY
+			, NVL(MST.V_FLAVOR,'N') AS V_FLAVOR        
+			, MST.V_ISFILE_YN
+			, MST.V_REG_USER_ID
+			, MST.V_REG_DTM        
+			, TO_DATE(SUBSTRING(MST.V_REG_DTM,'1','8'), 'yyyy/mm/dd') AS N_V_REG_DTM         
+			, MST.V_UPDATE_USER_ID          
+			, MST.V_UPDATE_DTM         
+			, MST.V_USE_YN        
+			, MST.V_MAKER         
+			, MST.V_MAKER_CD       
+			, MST.V_COMMENT       
+			, MST.V_EXTRACT_YN
+			, MST.V_SOLUBILITY
+			, MST.V_SHAPE	
+			, MST.V_CATEGORY
+			, MST.V_MANUFACTURE
+			, MST.V_OIL_YN
+<!-- 			, MST.V_COMPLETE_YN -->
+		FROM	
+			TODM_MAT_M MST
+		WHERE 1=1
+			AND MST.V_ODMDB_ID = #{i_sOdmdb_id}
+	</select>
+	
+	<!-- 원료 구성성분 리스트 조회 -->
+	<select id="IsOd010Mapper.selectIsOd011ConListInMat" parameterType="Map" resultType="CmMap">
+		/* IsOd010Mapper.selectIsOd011ConListInMat */
+		SELECT 
+			*
+		FROM
+		(
+			SELECT	
+				 TRM.V_CON_CD
+			   , TRM.N_CON_CD_VER 
+			   , TRM.V_CON_CD||'_'||TRM.N_CON_CD_VER AS V_CON_FCD
+			   , TRM.V_ODMDB_ID||DECODE(TRM.V_CON_CD,NULL,'', '_'||TRM.V_CON_CD) AS V_KEY
+			   , TCCD.V_CON_NM_KO
+			   , TCCD.V_CON_NM_EN
+			   , TRM.V_CON_CAS_NO
+			   , TCCD.V_CAS_NO_LIST
+			   , BB.V_BAN
+			   , CC.V_LIMIT
+			   , TO_CHAR(TRM.N_CON_IN_PER, 'FM9990.00000000000000') AS V_CON_IN_PER
+			   , TRM.V_CARRYOVER_YN
+			   , TRM.V_REMARK
+			   , TCCD.V_ALLERGEN_YN
+			FROM	
+				TODM_RTCON_M TRM
+			INNER JOIN 
+			(
+				SELECT	
+					  TCM.V_CON_CD
+					, TCM.N_VER_SEQ 
+					, TCC.V_CAS_NO_LIST
+					, TCM.V_CON_NM_KO
+					, TCM.V_CON_NM_EN
+					, TCM.V_ALLERGEN_YN
+				FROM
+					TSI_CON_M TCM
+				INNER JOIN 
+				(
+					SELECT
+						  V_CON_CD 
+						, N_VER_SEQ 
+						, LISTAGG(V_CAS_NO, ',') WITHIN GROUP (ORDER BY V_CON_CD ASC, N_VER_SEQ ASC) AS V_CAS_NO_LIST
+					FROM
+						TSI_CON_CAS_D 
+					GROUP BY V_CON_CD, N_VER_SEQ 
+						
+				)TCC
+				ON
+				(
+					TCM.V_CON_CD = TCC.V_CON_CD
+					AND TCM.N_VER_SEQ = TCC.N_VER_SEQ
+				)
+			)TCCD
+			ON
+			(
+				    TRM.V_CON_CD = TCCD.V_CON_CD  
+				AND TRM.N_CON_CD_VER = TCCD.N_VER_SEQ
+			)
+			LEFT OUTER JOIN
+			(
+				SELECT
+					  TCM.V_CON_CD 
+					, TCM.N_VER_SEQ 
+					, REGEXP_REPLACE(LISTAGG(B.COMM_NM,',') WITHIN GROUP(ORDER BY B.COMM_NM), '([^,]+)(,\1)+', '\1') AS V_BAN
+				FROM
+					TSI_CON_M TCM
+				INNER JOIN
+				(
+					SELECT
+						  TCBD.V_CON_CD 
+						, TCBD.N_VER_SEQ 
+			   			, DECODE(TCBD.V_GL_CD, 'KO', '한국', 'CN', '중국', 'AE', '아세안', 'EU', '유럽', 'US', '미국') AS COMM_NM
+		   		  	FROM 
+		   		  		TSI_CON_BAN_D TCBD
+		   		  	WHERE 1=1
+		   		  		AND TCBD.V_FLAG = 'B'
+				)B
+				ON
+				(
+						TCM.V_CON_CD = B.V_CON_CD
+					AND TCM.N_VER_SEQ = B.N_VER_SEQ
+				)
+				GROUP BY TCM.V_CON_CD, TCM.N_VER_SEQ
+			)BB
+			ON
+			(
+					TRM.V_CON_CD = BB.V_CON_CD
+				AND TRM.N_CON_CD_VER = BB.N_VER_SEQ
+			)
+			LEFT OUTER JOIN
+			(
+				SELECT
+					  TCM.V_CON_CD 
+					, TCM.N_VER_SEQ 
+					, REGEXP_REPLACE(LISTAGG(L.COMM_NM,',') WITHIN GROUP(ORDER BY L.COMM_NM), '([^,]+)(,\1)+', '\1') AS V_LIMIT
+				FROM
+					TSI_CON_M TCM
+				INNER JOIN
+				(
+					SELECT
+						  TCBD.V_CON_CD 
+						, TCBD.N_VER_SEQ 
+			   			, DECODE(TCBD.V_GL_CD, 'KO', '한국', 'CN', '중국', 'AE', '아세안', 'EU', '유럽', 'US', '미국') AS COMM_NM
+		   		  	FROM 
+		   		  		TSI_CON_BAN_D TCBD
+		   		  	WHERE 1=1
+		   		  		AND TCBD.V_FLAG = 'L'
+				)L
+				ON
+				(
+						TCM.V_CON_CD = L.V_CON_CD
+					AND TCM.N_VER_SEQ = L.N_VER_SEQ
+				)
+				GROUP BY TCM.V_CON_CD, TCM.N_VER_SEQ
+			)CC
+			ON
+			(
+					TRM.V_CON_CD = CC.V_CON_CD
+				AND TRM.N_CON_CD_VER = CC.N_VER_SEQ
+			)
+			WHERE V_ODMDB_ID = #{i_sOdmdb_id}
+			ORDER BY N_SEQ ASC
+		)X
+	</select>
+	
+	<!-- 원료 종합성분 조회(알러젠 포함) -->
+	<select id="IsOd010Mapper.selectIsOd011TotalConListInMat" parameterType="Map" resultType="CmMap">
+		/* IsOd010Mapper.selectIsOd011TotalConListInMat */
+		SELECT
+			   V_ODMDB_ID
+			 , V_CON_CD
+			 , V_CON_NM_KO
+			 , V_CON_NM_EN
+			 , V_ALLERGEN_YN
+			 , SUM(N_CON_IN_PER) AS N_CON_IN_PER
+			 , TO_CHAR(SUM(N_CON_IN_PER),'FM9990.00000000000000') AS V_CON_IN_PER
+			 , SUM(N_REAL_CON_IN_PER) AS N_REAL_CON_IN_PER
+  			 , TO_CHAR(SUM(N_REAL_CON_IN_PER),'FM9990.00000000000000') AS V_REAL_CON_IN_PER
+		FROM
+		(
+			SELECT
+				*
+			FROM
+			(
+				SELECT
+					  TRM.V_ODMDB_ID
+					, TRM.V_CON_CD
+					, '' AS V_UCON_CD
+					, TRM.N_CON_IN_PER
+					, TRM.N_CON_IN_PER AS N_REAL_CON_IN_PER
+					, TCM.V_CON_NM_KO
+					, TCM.V_CON_NM_EN
+					, TCM.V_ALLERGEN_YN
+				FROM
+					TODM_RTCON_M TRM
+				INNER JOIN
+					TSI_CON_M TCM
+				ON
+				(
+						TRM.V_CON_CD = TCM.V_CON_CD
+					AND TRM.N_CON_CD_VER = TCM.N_VER_SEQ
+				)
+				UNION ALL
+				SELECT
+					  TRAD.V_ODMDB_ID
+					, TRAD.V_CON_CD
+					, TRAD.V_UCON_CD
+					, TRAD.N_CON_IN_PER
+					, ((SELECT N_CON_IN_PER FROM TODM_RTCON_M trm WHERE V_ODMDB_ID = TRAD.V_ODMDB_ID AND V_CON_CD = TRAD.V_UCON_CD)/100)*TRAD.N_CON_IN_PER AS N_REAL_CON_IN_PER
+					, TCM.V_CON_NM_KO
+					, TCM.V_CON_NM_EN
+					, TCM.V_ALLERGEN_YN
+				FROM
+					TODM_RTCON_AL_D TRAD
+				INNER JOIN
+					TSI_CON_M TCM
+				ON
+				(
+						TRAD.V_CON_CD = TCM.V_CON_CD
+					AND TRAD.N_CON_CD_VER = TCM.N_VER_SEQ
+				)
+				
+			)
+			WHERE V_ODMDB_ID = #{i_sOdmdb_id}
+		)X
+		GROUP BY 
+			  V_ODMDB_ID
+		    , V_CON_CD
+		    , V_CON_NM_KO
+		    , V_CON_NM_EN
+		    , V_ALLERGEN_YN
+		    ORDER BY N_REAL_CON_IN_PER DESC
+	</select>
+	
+	<!-- 원료에 포함된 알러젠 리스트 조회 -->
+	<select id="IsOd010Mapper.selectIsOd011AllergenListInMat" parameterType="Map" resultType="CmMap">
+		/* IsOd010Mapper.selectIsOd011AllergenListInMat */
+		SELECT *
+		FROM
+		(
+			SELECT	
+		    	  TRAD.V_ODMDB_ID
+		    	, TRAD.N_SEQ_NO
+				, TRAD.V_CON_CD
+				, TRAD.N_CON_CD_VER 
+				, TRAD.V_UCON_CD
+				, TRAD.N_UCON_CD_VER 
+				, TRAD.V_CON_TYPE
+				, TRAD.V_ODMDB_ID||DECODE(TRAD.V_UCON_CD,NULL,'', '_'||TRAD.V_UCON_CD) AS V_KEY
+				, TCCD.V_CON_NM_KO
+				, TCCD.V_CON_NM_EN
+				, TRAD.V_CON_CAS_NO
+				, TCCD.V_CAS_NO_LIST			
+				, BB.V_BAN
+			    , CC.V_LIMIT
+				, TRAD.N_CON_IN_PER
+				, TO_CHAR(TRAD.N_CON_IN_PER, 'FM9990.00000000000000') AS V_CON_IN_PER
+				, TRAD.V_REMARK
+				, TCCD.V_ALLERGEN_YN
+			FROM 
+				TODM_RTCON_AL_D TRAD
+			INNER JOIN 
+<!-- 			LEFT OUTER JOIN -->
+			(
+				SELECT	
+					  TCM.V_CON_CD
+					, TCM.N_VER_SEQ 
+					, TCC.V_CAS_NO_LIST
+					, TCM.V_CON_NM_KO
+					, TCM.V_CON_NM_EN
+					, TCM.V_ALLERGEN_YN
+				FROM 
+					TSI_CON_M TCM
+				INNER JOIN 
+				(
+					SELECT
+						  V_CON_CD 
+						, N_VER_SEQ 
+						, LISTAGG(V_CAS_NO, ',') WITHIN GROUP (ORDER BY V_CON_CD ASC, N_VER_SEQ ASC) AS V_CAS_NO_LIST
+					FROM
+						TSI_CON_CAS_D 
+					GROUP BY V_CON_CD, N_VER_SEQ 
+						
+				)TCC
+				ON
+				(
+					TCM.V_CON_CD = TCC.V_CON_CD
+					AND TCM.N_VER_SEQ = TCC.N_VER_SEQ
+				)
+			)TCCD
+			ON
+			(
+				    TRAD.V_CON_CD = TCCD.V_CON_CD  
+				AND TRAD.N_CON_CD_VER = TCCD.N_VER_SEQ
+			)
+			LEFT OUTER JOIN
+			(
+				SELECT
+					  TCM.V_CON_CD 
+					, TCM.N_VER_SEQ 
+					, REGEXP_REPLACE(LISTAGG(B.COMM_NM,',') WITHIN GROUP(ORDER BY B.COMM_NM), '([^,]+)(,\1)+', '\1') AS V_BAN
+				FROM
+					TSI_CON_M TCM
+				INNER JOIN
+				(
+					SELECT
+						  TCBD.V_CON_CD 
+						, TCBD.N_VER_SEQ 
+			   			, DECODE(TCBD.V_GL_CD, 'KO', '한국', 'CN', '중국', 'AE', '아세안', 'EU', '유럽', 'US', '미국') AS COMM_NM
+		   		  	FROM 
+		   		  		TSI_CON_BAN_D TCBD
+		   		  	WHERE 1=1
+		   		  		AND TCBD.V_FLAG = 'B'
+				)B
+				ON
+				(
+						TCM.V_CON_CD = B.V_CON_CD
+					AND TCM.N_VER_SEQ = B.N_VER_SEQ
+				)
+				GROUP BY TCM.V_CON_CD, TCM.N_VER_SEQ
+			)BB
+			ON
+			(
+					TRAD.V_CON_CD = BB.V_CON_CD
+				AND TRAD.N_CON_CD_VER = BB.N_VER_SEQ
+			)
+			LEFT OUTER JOIN
+			(
+				SELECT
+					  TCM.V_CON_CD 
+					, TCM.N_VER_SEQ 
+					, REGEXP_REPLACE(LISTAGG(L.COMM_NM,',') WITHIN GROUP(ORDER BY L.COMM_NM), '([^,]+)(,\1)+', '\1') AS V_LIMIT
+				FROM
+					TSI_CON_M TCM
+				INNER JOIN
+				(
+					SELECT
+						  TCBD.V_CON_CD 
+						, TCBD.N_VER_SEQ 
+			   			, DECODE(TCBD.V_GL_CD, 'KO', '한국', 'CN', '중국', 'AE', '아세안', 'EU', '유럽', 'US', '미국') AS COMM_NM
+		   		  	FROM 
+		   		  		TSI_CON_BAN_D TCBD
+		   		  	WHERE 1=1
+		   		  		AND TCBD.V_FLAG = 'L'
+				)L
+				ON
+				(
+						TCM.V_CON_CD = L.V_CON_CD
+					AND TCM.N_VER_SEQ = L.N_VER_SEQ
+				)
+				GROUP BY TCM.V_CON_CD, TCM.N_VER_SEQ
+			)CC
+			ON
+			(
+					TRAD.V_CON_CD = CC.V_CON_CD
+				AND TRAD.N_CON_CD_VER = CC.N_VER_SEQ
+			)
+		)X
+		WHERE V_ODMDB_ID = #{i_sOdmdb_id}
+	    ORDER BY N_SEQ_NO ASC 		
+	</select>
+	
+</mapper>

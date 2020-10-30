@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : UserMapper.xml
+    Description   : User 관리
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2018.03.27  손홍신       1.0        최초 생성
+-->
+<mapper namespace="User">
+	<!-- 1. 사용자번호 조회 -->
+	<select id="selectUserNo" resultType="string">
+		SELECT /* User.selectUserNo */
+			   USER_NO 
+		  FROM TZF_USER_M
+		 WHERE LOGIN_ID = #{LOGIN_ID}
+	</select>
+		
+ 	<!--  조회  -->
+ 	<select id="selectUserList" parameterType="Map" resultType="upperKeyMap" >
+        select /* user.selectUserList */
+               a.user_no
+             , a.user_nm
+             , a.login_id
+             , a.user_lvl
+             , a.use_yn
+             , d.user_lvl as im_user_lvl
+             , code.comm_cd_nm as im_user_lvl_nm
+             , reguser.user_nm as reg_user_nm
+             , moduser.user_nm as mod_user_nm
+             , to_char(a.reg_dtm, 'YYYY-MM-DD HH24:MI:SS') as reg_dtm
+             , to_char(a.mod_dtm, 'YYYY-MM-DD HH24:MI:SS') as mod_dtm
+             , a.user_desc
+             , a.dept_cd
+             , a.email
+             , a.phone_no
+             , a.sms_cert_num
+             , dept.v_dept_nm
+          from tzf_user_m a
+          left outer join (select * from tzf_user_d where user_tp = 'IM') d
+          on a.user_no = d.user_no
+          left outer join (select * from tzf_commcd_d where grp_cd = 'MO003') code
+            on d.user_lvl = code.comm_cd
+          left outer join (select * from tzf_user_m where sys_id = 'SITIMS') reguser
+            on a.reg_user_no = reguser.user_no
+          left outer join (select * from tzf_user_m where sys_id = 'SITIMS') moduser
+            on a.mod_user_no = moduser.user_no
+          left outer join  (select * from TSI_DEPT_I) dept
+            on a.dept_cd = dept.v_dept_cd
+         where a.sys_id = 'SITIMS'
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(LOGIN_ID)">
+           and a.login_id like '%' || #{LOGIN_ID} || '%'
+         </if>
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_NM)">
+           and a.user_nm like '%' || #{USER_NM} || '%'
+         </if>
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_DESC)">
+           and a.user_desc like '%' || #{USER_DESC} || '%'
+         </if>
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USE_YN)">
+           and a.use_yn =  #{USE_YN} 
+         </if>
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(DEPT_CD)">
+           and a.dept_cd =  #{DEPT_CD} 
+         </if>
+         order by user_nm
+    </select>
+	
+	<!-- 3. 사용자 저장 -->
+	<insert id="insert" parameterType="Map">
+		INSERT /* User.insertUser */
+		  INTO TZF_USER_M(
+		    USER_NO,
+		    USER_NM,
+		    PWD,
+		    TMP_PWD_YN,
+		    USER_DFN_NO,
+		    USER_DESC,
+		    LOGIN_ID,
+		    CO_CD,
+		    USE_YN,
+		    SYS_ID,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP,
+		    DEPT_CD,
+		    EMAIL,
+		    PHONE_NO
+		  ) VALUES
+			(
+				LPAD(TZF_USER_M_SEQ.NEXTVAL, 8, '0'),
+			    #{USER_NM},
+			    #{PWD},
+			    'N',
+			    #{USER_DFN_NO},
+			    #{USER_DESC},
+			    #{LOGIN_ID},
+			    'SINC',
+			    #{USE_YN},
+			    #{SYS_ID},
+			    #{session.USER_NO},
+			    SYSDATE,
+			    #{REG_IP},
+			    #{DEPT_CD},
+			    #{EMAIL},
+			    #{PHONE_NO}
+			)
+	</insert>
+	
+	<!-- 4. 권한별 사용자 저장 -->
+	<insert id="insertRoleUser" parameterType="Map">
+		INSERT /* User.insertRoleUser */
+		INTO TZF_USERROLE_L(
+		    USER_NO,
+		    ROLE_NO,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+			#{USER_NO},
+		    #{ROLE_NO},
+		    #{REG_USER_NO},
+		    SYSDATE,
+		    #{REG_IP}
+			)
+	</insert>
+	
+	<!-- 4. 권한별 사용자 저장(배치) -->
+	<insert id="insertRoleUserBatch" parameterType="Map">
+		INSERT /* User.insertRoleUserBatch */
+		   ALL 
+		<foreach item="param" collection="list" index="idx" open="" separator="" close="">
+		INTO TZF_USERROLE_L(
+		    USER_NO,
+		    ROLE_NO,
+		    REG_USER_NO,
+		    REG_DTM,
+		    REG_IP
+		  ) VALUES
+			(
+				#{param.USER_NO},
+			    #{param.ROLE_NO},
+			    #{param.REG_USER_NO},
+			    SYSDATE,
+			    #{param.REG_IP}
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<!-- 5. 사용자 수정 -->
+	<update id="updateUser" parameterType="Map">
+		UPDATE /* User.updateUser */
+			TZF_USER_M SET 
+		   	USER_NM   	= #{USER_NM},
+			PWD 		= #{PWD},
+			TMP_PWD_YN  = #{TMP_PWD_YN},
+			USER_DFN_NO = #{USER_DFN_NO},
+			LOGIN_ID    = #{LOGIN_ID},
+			USE_YN		= #{USE_YN},
+			CO_CD      	= #{CO_CD},
+			MOD_USER_NO      = #{session.USER_NO},
+			MOD_DTM     = SYSDATE,
+			MOD_IP      = #{MOD_IP},
+			DEPT_CD		= #{DEPT_CD},
+			EMAIL		= #{EMAIL},
+			PHONE_NO    = #{PHONE_NO}
+			,IF_YN		= 'N'
+		WHERE USER_NO   = #{USER_NO}
+	</update>
+	
+	<!-- 6. 사용자 삭제 -->
+	<delete id="deleteUser" parameterType="Map">
+		DELETE /* User.deleteUser */
+		  FROM TZF_USER_M 
+		 WHERE USER_NO = #{USER_NO}
+	</delete>
+	
+	<!-- 7. 사용자 저장(MERGE) -->
+	<insert id="saveMerge" parameterType="Map">
+		MERGE /* User.saveMerge */
+		  INTO TZF_USER_M
+      USING DUAL
+         ON (USER_NO   = #{USER_NO})
+      WHEN MATCHED
+      THEN
+          UPDATE 
+             SET 
+                 USER_NM   	= #{USER_NM},
+                 PWD 		= #{PWD},
+                 TMP_PWD_YN  = #{TMP_PWD_YN},
+                 USER_DFN_NO = #{USER_DFN_NO},
+                 LOGIN_ID    = #{LOGIN_ID},
+                 USE_YN		= #{USE_YN},
+                 CO_CD      	= #{CO_CD},
+                 MOD_USER_NO      = #{session.USER_NO},
+                 MOD_DTM     = SYSDATE,
+                 MOD_IP      = #{MOD_IP},
+                 DEPT_CD	 = #{DEPT_CD},
+                 EMAIL		 = #{EMAIL},
+                 PHONE_NO    = #{PHONE_NO}
+        WHEN NOT MATCHED
+        THEN 
+        	INSERT(        
+                    USER_NO,
+                    USER_NM,
+                    PWD,
+                    TMP_PWD_YN,
+                    USER_DFN_NO,
+                    LOGIN_ID,
+                    CO_CD,
+                    USE_YN,
+                    REG_USER_NO,
+                    REG_DTM,
+                    REG_IP,
+                    DEPT_CD,
+                    EMAIL,
+                    PHONE_NO
+                  ) VALUES
+                  (
+                    LPAD(TZF_USER_M_SEQ.NEXTVAL, 8, '0'),
+                      #{USER_NM},
+                      #{PWD},
+                      #{TMP_PWD_YN},
+                      #{USER_DFN_NO},
+                      #{LOGIN_ID},
+                      #{CO_CD},
+                      #{USE_YN},
+                      #{session.USER_NO},
+                      SYSDATE,
+                      #{REG_IP},
+                      #{DEPT_CD},
+                      #{EMAIL},
+                      #{PHONE_NO}
+                  )
+	</insert>
+	
+	<!-- 8. 사용자 수정(PWD 변경X) -->
+	<insert id="updateUserWithoutPwd" parameterType="Map">
+		UPDATE /* User.updateUserWithoutPwd */
+			TZF_USER_M SET 
+		   	USER_NM   	= #{USER_NM},
+			TMP_PWD_YN  = #{TMP_PWD_YN},
+			USER_DFN_NO = #{USER_DFN_NO},
+			LOGIN_ID    = #{LOGIN_ID},
+			USE_YN		= #{USE_YN},
+			CO_CD      	= #{CO_CD},
+			MOD_USER_NO      = #{session.USER_NO},
+			MOD_DTM     = SYSDATE,
+			MOD_IP      = #{MOD_IP},
+			DEPT_CD		= #{DEPT_CD},
+			EMAIL		= #{EMAIL},
+			PHONE_NO    = #{PHONE_NO}
+			,IF_YN		= 'N'
+		WHERE USER_NO   = #{USER_NO}
+	</insert>
+
+	 <!--  중복 아이디 체크를 위해 조회  -->
+ 	<select id="selectLoginIdCount" parameterType="Map" resultType="int" >
+        select /* user.selectLoginIdCount */
+               count(login_id)
+          from tzf_user_m
+         where login_id = #{LOGIN_ID}
+           and sys_id   = #{SYS_ID}
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(USER_NO)">
+            <![CDATA[ and user_no <> #{USER_NO} ]]>
+         </if>
+    </select>
+    
+        <!--  수정   -->
+    <update id="update" parameterType="Map">
+    	update /* User.update */
+    	       tzf_user_m
+    	   set user_nm 	= #{USER_NM}
+    	     , login_id = #{LOGIN_ID}
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(PWD)">
+             , pwd      = #{PWD}
+         </if>
+    	     , user_desc 	= #{USER_DESC}
+    	     , use_yn 	    = #{USE_YN}
+    	     , mod_user_no	= #{session.USER_NO}
+    	   	 , mod_dtm      = SYSDATE
+    	   	 , dept_cd		= #{DEPT_CD}
+    	   	 , email		= #{EMAIL}
+    	   	 , PHONE_NO    = #{PHONE_NO}
+    	 where user_no      = #{USER_NO}
+    </update>
+    
+    <!-- 개인정보 수정 -->
+    <update id="updatePwd" parameterType="Map">
+    	update /* User.updatePwd */
+    	       tzf_user_m
+    	   set
+    	     mod_dtm      = SYSDATE
+             , phone_no		= #{PHONE_NO}
+         <if test="@com.shinsegae_inc.core.mapper.MyBatisCmpr@isNotEmpty(PWD)">
+            , pwd      = #{PWD}
+         </if>
+    	    , mod_user_no	= #{session.USER_NO}
+    	 where user_no      = #{USER_NO}
+    </update>
+
+</mapper>

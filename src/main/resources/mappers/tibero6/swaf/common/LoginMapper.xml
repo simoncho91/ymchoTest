@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+ 
+<mapper namespace="Login">
+ 
+ 	<select id="selectLogin" resultType="String" parameterType="Map" >
+		SELECT /* Login.selectLogin */
+               PWD
+		  FROM TZF_USER_M
+		 WHERE LOGIN_ID = #{USER_ID}
+		   AND SYS_ID   = #{SYS_ID}
+		   AND USE_YN   = 'Y'
+    </select>
+    
+	<select id="selectUser" parameterType="Map" resultType="upperKeyMap">
+		SELECT /* Login.selectUser */
+		       TUM.USER_NO
+             , TUM.LOGIN_ID
+		     , TUM.USER_NM   AS LOGIN_NM
+		     , TUM.USER_LVL  AS LOGIN_LVL
+		     , TUM.SYS_ID
+		     , TUM.DEPT_CD
+		     , DEPT.V_DEPT_NM AS DEPT_NM
+		     , (SELECT 
+		     		WM_CONCAT(DISTINCT ROLE_NO)
+		     	FROM 
+		     		TZF_USERROLE_L TUL 
+		     	WHERE 
+		     		TUL.USER_NO = TUM.USER_NO GROUP BY TUM.USER_NO) ROLE_NO
+		  FROM TZF_USER_M TUM
+		   LEFT OUTER JOIN
+		     	TSI_DEPT_I DEPT
+            ON TUM.DEPT_CD = DEPT.V_DEPT_CD
+		 WHERE TUM.LOGIN_ID = #{USER_ID}
+		   AND TUM.SYS_ID   = #{SYS_ID}
+		   AND TUM.USE_YN   = 'Y'
+    </select>
+
+	<select id="selectUserNo" parameterType="Map" resultType="upperKeyMap">
+		SELECT /* Login.selectUserNo */
+		       TUM.USER_NO
+             , TUM.LOGIN_ID
+		     , TUM.USER_NM   AS LOGIN_NM
+		     , TUM.USER_LVL  AS LOGIN_LVL
+		     , TUM.SYS_ID
+		     , TUM.DEPT_CD
+		     , (SELECT 
+		     		WM_CONCAT(DISTINCT ROLE_NO)
+		     	FROM 
+		     		TZF_USERROLE_L TUL 
+		     	WHERE 
+		     		TUL.USER_NO = TUM.USER_NO GROUP BY TUM.USER_NO) ROLE_NO
+		  FROM TZF_USER_M TUM
+		 WHERE TUM.USER_NO  = #{USER_NO}
+		   AND TUM.SYS_ID   = #{SYS_ID}
+		   AND TUM.USE_YN   = 'Y'
+    </select>
+        <!-- 비밀번호 초기화를 위한 수정 -->
+    <update id="updateForInitPwd" parameterType="Map">
+    	UPDATE /* Login.updateForInitPwd */
+    	       TZF_USER_M
+    	   SET
+    	     MOD_DTM = SYSDATE
+    	    , MOD_USER_NO = #{USER_NO}
+            , SMS_CERT_NUM      = #{CERT_NUM}
+            , IF_YN		= 'N'
+    	 WHERE USER_NO      = #{USER_NO}
+    </update>
+        <!-- 비밀번호 초기화 -->
+    <update id="InitPwd" parameterType="Map">
+    	UPDATE /* Login.InitPwd */
+    	       TZF_USER_M
+    	   SET
+    	     MOD_DTM = SYSDATE
+    	    , MOD_USER_NO = #{USER_NO}
+            , PWD      = #{PWD}
+            , TMP_PWD_YN      = #{PWD_YN}
+            , IF_YN		= 'N'
+    	 WHERE USER_NO      = #{USER_NO}
+    </update>
+</mapper>

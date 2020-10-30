@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxPopLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+<script type='text/javascript'>
+var layoutMain,grdMain,frmSearch,chkRowId;
+$(function(){
+
+	layoutMain = new dhx.Layout('layoutObj',{
+	     css: "dhx_layout-cell--border_top",
+			rows:[
+				{id:'form'} //header:'검색조건',
+				,{id:'grid',height:'75%'}
+				,{id:'page'}
+			]		
+	});
+	var a = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		rows:[
+			{type:'input',id:'i_sSearchName',name:'i_sSearchName',value:'[(${reqVo.i_sInput})]' ,label:'이름' ,labelPosition: "left", labelWidth: "80", width: "250", gravity: false,hidden: true}
+		]
+	});
+	a.attach(frmSearch);
+	
+	var	str	= '';
+	str	+= '<table class="sty_sort" id="tbl_search" style="border-top: 2px solid #191919;">';
+	str	+= '  <colgroup>';
+	str	+= '    <col style="width:95px;">';
+	str	+= '    <col style="">';
+	str	+= '  </colgroup>';
+	str	+= '  <tbody>';
+	str	+= '    <tr>';
+	str	+= '      <th>검색 조건</th>';
+	str	+= '      <td><input name="i_sSearchName" id="i_sSearchName" class="inp_sty01" type="text" value=\"[(${reqVo.i_sInput})]\" placeholder="이름" style="margin-right:8px;width: 308px;"><a href="javascript:fn_search();" class="btnA bg_dark">조회</a></td>';
+	str	+= '    </tr>';
+	str	+= '  </tbody>';
+	str	+= '</table>';
+	a.attachHTML(str);
+
+    var b = layoutMain.getCell('grid');
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null,{
+		columns:[        
+			//{ width: 50, id: "n_num" , header: [{ text: "No." ,align:"center" }],align:"right",hidden:false}
+			{ width: 160, id: "v_user_nm" , header: [{ text: "이름" ,align:"center" }],align:"center",hidden:false}
+			,{ width: 200, id: "v_vendor_nm" , header: [{ text: "회사명",align:"center"  }],align:"left",hidden:false}
+			,{ width: 200, id: "v_user_id" , header: [{ text: "담당자 ID" ,align:"center" }],align:"left",hidden:false}
+		]
+		,fitToContainer: false
+		,headerRowHeight: 46
+	    ,resizable: true
+	    ,autoWidth: true
+	    ,selection: "row"
+        ,multiselection : false 
+		,data:dcGrdMain
+	});
+	b.attach(grdMain);
+
+    grdMain.events.on("CellDblClick", function(row,col,e){
+    	var data = grdMain.data.getItem(row.id);
+    	parent.[(${reqVo.i_sCmFunction})](data);
+    });
+	 grdMain.events.on("cellClick", function(r,c,e){
+		 chkRowId = r.id;
+		 $('#main_radio_'+r.n_num).prop('checked',true);
+	 });
+
+/*  	var gridMainToolbar = new dhx.Toolbar(null,{
+		data:[
+			{type: "spacer"}
+// 		 	,{type:"button",icon:"dxi-plus",value:"선택",id:'btnSel'},
+		 	,{type:"button",icon:"dxi-search",value:"조회",id:'btnSearch'}
+ 		]
+ 	});
+ 	layoutMain.getCell('toolbar').attach(gridMainToolbar);
+    
+    gridMainToolbar.events.on("Click", function(id){
+    	if(id=='btnSel'){
+        	var data = grdMain.data.getItem(chkRowId);
+        	parent.[(${reqVo.i_sCmFunction})](data);
+    	}else if(id=='btnSearch'){
+    	    mainPage.search();    		
+    	}
+    }); */
+    
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/cm/pop/getOdmUserList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['radio','n_num']
+       		, pageSize : 50
+       		, succSearchFunc : succFunc
+    });
+    mainPage.initPaging();
+});
+var succFunc = function(data){
+	console.log(data);	
+	if(data.length == 1){
+		parent.[(${reqVo.i_sCmFunction})](data[0]);
+	}
+}
+$(document).on('keyup','#i_sSearchName',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+function fn_radioClick(rowId,obj){
+	chkRowId = rowId;
+}
+function fn_search() {	 
+	frmSearch.setValue({ "i_sSearchName": $('#i_sSearchName').val()});
+    mainPage.search(1);
+}
+function fn_close() {
+	fn_popClose();
+}
+</script>
+</html>

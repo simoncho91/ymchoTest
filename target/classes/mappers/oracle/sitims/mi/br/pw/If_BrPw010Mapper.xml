@@ -1,0 +1,597 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SQL File Name : If_BrPw010Mapper.xml
+    Description   : 국내검토
+
+    ==개정이력========================================
+    수정일                수정자       Version    Query Id
+    ========== ======= =========   ===================
+    2020.09.11  jjw       1.0        최초 생성
+-->
+<mapper namespace="If_BrPw010Mapper">
+	<update id="updateBrPw010Report" parameterType="CmMap">
+		UPDATE /* If_BrPw010Mapper.updateBrPw010Report */
+			TODM_PDEF_R_M SET
+				V_REPORT_NO			= #{i_sReportNo}
+				,V_REPORT_DTM		= REPLACE(#{i_sReportDtm},'-','')				
+				,V_UPDATE_USER_ID	= #{pUpdateUserId}                       
+				,V_UPDATE_DTM       = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		WHERE 1=1
+		AND V_RECORD_ID	=	#{i_sRecordId}
+		AND V_PRODUCT_CD	=	#{i_sProductCd}
+	</update>
+	
+	<insert id="insertProcessMAY_CON_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessMAY_CON_D */
+			INTO TODM_MAY_CON_D(
+				V_RECORD_ID
+				, V_PROUCT_CD
+				, N_PART_NO
+				, N_VER_SEQ
+				, V_MAY_CONTAIN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			,#{i_sProductCd}
+			, N_PART_NO
+			, N_VER_SEQ
+			, V_MAY_CONTAIN
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_MAY_CON_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PROUCT_CD = #{i_sReferProductCd}
+	</insert>
+	
+	<insert id="insertProcessPDCONM_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDCONM_D */
+			INTO TODM_PDCONM_D(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_PART_NO
+				, V_CONTENT_NM
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			,#{i_sProductCd}
+			, N_PART_NO
+			, V_CONTENT_NM
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDCONM_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+	<insert id="insertProcessPDCP_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDCP_D */
+			INTO TODM_PDCP_D(
+				V_PRODUCT_CD
+				, N_PART_NO
+				, V_RAW_CD
+				, V_CON_CD
+				, N_VER_SEQ
+				, N_CONCD_VER_SEQ
+				, N_RAW_PER
+				, N_COMP_IN_PER
+				, V_FUNC_NM_EN
+				, V_FUNC_NM_KO
+				, V_FUNC_NM_CN
+				, V_FUNC_NM_JP
+				, V_FUNC_NM_EU
+				, V_COMP_CLAIM_YN
+				, V_CON_NM_CN
+				, V_CON_NM_EN
+				, V_CON_NM_JP
+				, V_CON_NM_KO
+				, V_CON_NM_EU
+				, V_COMP_CAS_NO
+				, V_ZGLOBAL
+				, V_ZGLLIM
+				, V_ETC_YN
+				, V_COMP_ORIGIN_FC
+				, V_ODMDB_ID
+				, V_COMP_ORIGIN_FC_EN
+				, V_CARRYOVER_YN
+				, V_CLAIM_ACTIVE_ING
+				, V_CLAIM_EFFECT
+				, V_CLAIM_EFFECT_ETC
+				, V_SUB_RAW_CD
+				, N_SUB_RAW_PER
+				, V_CON_TYPE
+				, V_ACTIVE_YN
+				, N_CON_IN_PER_ORG
+				, V_CLAIM_REPORT_NO
+				, V_CLAIM_SUPPORT
+				, V_INACTIVE_ALL
+				, V_ALLERGEN_FUNC
+				, V_REMARK
+				, V_ALLERGEN_YN
+				, V_REV_MODI_FLAG
+				, V_UCON_CD
+				, N_UCON_CD_VER
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sProductCd}
+				, N_PART_NO
+				, V_RAW_CD
+				, V_CON_CD
+				, N_VER_SEQ
+				, N_CONCD_VER_SEQ
+				, N_RAW_PER
+				, N_COMP_IN_PER
+				, V_FUNC_NM_EN
+				, V_FUNC_NM_KO
+				, V_FUNC_NM_CN
+				, V_FUNC_NM_JP
+				, V_FUNC_NM_EU
+				, V_COMP_CLAIM_YN
+				, V_CON_NM_CN
+				, V_CON_NM_EN
+				, V_CON_NM_JP
+				, V_CON_NM_KO
+				, V_CON_NM_EU
+				, V_COMP_CAS_NO
+				, V_ZGLOBAL
+				, V_ZGLLIM
+				, V_ETC_YN
+				, V_COMP_ORIGIN_FC
+				, V_ODMDB_ID
+				, V_COMP_ORIGIN_FC_EN
+				, V_CARRYOVER_YN
+				, V_CLAIM_ACTIVE_ING
+				, V_CLAIM_EFFECT
+				, V_CLAIM_EFFECT_ETC
+				, V_SUB_RAW_CD
+				, N_SUB_RAW_PER
+				, V_CON_TYPE
+				, V_ACTIVE_YN
+				, N_CON_IN_PER_ORG
+				, V_CLAIM_REPORT_NO
+				, V_CLAIM_SUPPORT
+				, V_INACTIVE_ALL
+				, V_ALLERGEN_FUNC
+				, V_REMARK
+				, V_ALLERGEN_YN
+				, V_REV_MODI_FLAG
+				, V_UCON_CD
+				, N_UCON_CD_VER
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDCP_D
+		WHERE 1=1
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDFG_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDFG_D */
+			INTO TODM_PDFG_D(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_PART_NO
+				, N_VER_SEQ
+				, V_FRAGRANCE
+				, V_MANUFACTURE
+				, V_FRAGRANCE_SMELL
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			,#{i_sProductCd}
+			, N_PART_NO
+			, N_VER_SEQ
+			, V_FRAGRANCE
+			, V_MANUFACTURE
+			, V_FRAGRANCE_SMELL
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDFG_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDPR_CP_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDPR_CP_D */
+			INTO TODM_PDPR_CP_D(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_PART_NO
+				, N_VER_SEQ
+				, N_PRC_PART_SEQ
+				, N_SEQ_NO
+				, V_RAW_CD
+				, V_CON_CD
+				, V_DIV
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			,#{i_sProductCd}
+			, N_PART_NO
+			, N_VER_SEQ
+			, N_PRC_PART_SEQ
+			, N_SEQ_NO
+			, V_RAW_CD
+			, V_CON_CD
+			, V_DIV
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDPR_CP_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDPR_M" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDPR_M */
+			INTO TODM_PDPR_M(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_PART_NO
+				, N_VER_SEQ
+				, V_DIV
+				, V_BRIEF_DESC
+				, V_BRIEF_CK
+				, V_DEGASSING
+				, V_DEGASSING_CK
+				, V_COOLING
+				, V_COOLING_CK
+				, V_FILTRATION
+				, V_FILTRATION_CK
+				, V_STORAGE
+				, V_STORAGE_CK
+				, V_COMPLETE_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, N_PART_NO
+			, N_VER_SEQ
+			, V_DIV
+			, V_BRIEF_DESC
+			, V_BRIEF_CK
+			, V_DEGASSING
+			, V_DEGASSING_CK
+			, V_COOLING
+			, V_COOLING_CK
+			, V_FILTRATION
+			, V_FILTRATION_CK
+			, V_STORAGE
+			, V_STORAGE_CK
+			, V_COMPLETE_YN
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDPR_M
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDPR_PT_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDPR_PT_D */
+			INTO TODM_PDPR_PT_D(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_PART_NO
+				, N_VER_SEQ
+				, N_PRC_PART_SEQ
+				, V_DIV
+				, V_PART_NM
+				, V_PART_DESC
+				, V_DEL_YN
+				, V_IF_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, N_PART_NO
+			, N_VER_SEQ
+			, N_PRC_PART_SEQ
+			, V_DIV
+			, V_PART_NM
+			, V_PART_DESC
+			, V_DEL_YN	
+			, 'N'
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDPR_PT_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDIG_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDIG_D */
+			INTO TODM_PDIG_D(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_PART_NO
+				, N_VER_SEQ
+				, V_MATRMEMO
+				, V_MATRMEMO_EN
+				, V_MATRMEMO_CN
+				, V_MATRMEMO_EU
+				, V_MATRMEMO_FR
+				, V_MATRMEMO_EU2
+				, V_GUBUN
+				, V_FINAL_YN
+				, V_MATRMEMO_AL
+				, V_MATRMEMO_EN_AL
+				, V_MATRMEMO_CN_AL
+				, V_IF_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, N_PART_NO
+			, N_VER_SEQ
+			, V_MATRMEMO
+			, V_MATRMEMO_EN
+			, V_MATRMEMO_CN
+			, V_MATRMEMO_EU
+			, V_MATRMEMO_FR
+			, V_MATRMEMO_EU2
+			, V_GUBUN
+			, V_FINAL_YN
+			, V_MATRMEMO_AL
+			, V_MATRMEMO_EN_AL
+			, V_MATRMEMO_CN_AL
+			, 'N'
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDIG_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDIG_NA_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDIG_NA_D */
+			INTO TODM_PDIG_NA_D(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_VER_SEQ
+				, V_MATRMEMO
+				, V_MATRMEMO_EN
+				, V_MATRMEMO_CH
+				, V_MATRMEMO_AL
+				, V_MATRMEMO_EN_AL
+				, V_MATRMEMO_CH_AL
+				, V_GUBUN
+				, V_FINAL_YN
+				, N_PART_NO
+				, V_CONTENT_NM
+				, V_MODI_FLAG
+				, V_MODI_REG_DTM
+				, V_FINAL_DTM
+				, V_IF_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, N_VER_SEQ
+			, V_MATRMEMO
+			, V_MATRMEMO_EN
+			, V_MATRMEMO_CH
+			, V_MATRMEMO_AL
+			, V_MATRMEMO_EN_AL
+			, V_MATRMEMO_CH_AL
+			, V_GUBUN
+			, V_FINAL_YN
+			, N_PART_NO
+			, V_CONTENT_NM
+			, V_MODI_FLAG
+			, V_MODI_REG_DTM
+			, V_FINAL_DTM
+			, 'N'
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDIG_NA_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDSP_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDSP_D */
+			INTO TODM_PDSP_D(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_PART_NO
+				, N_SEQ_NO
+				, V_SPEC_DIV_CD
+				, V_SPECIFICATION
+				, V_METHOD
+				, V_REMARK
+				, V_SP_OPT_NM                         
+				, V_EQUIPMENT     
+				, V_UNIT          
+				, V_FLAG_IMP    
+				, V_IF_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, N_PART_NO
+			, N_SEQ_NO
+			, V_SPEC_DIV_CD
+			, V_SPECIFICATION
+			, V_METHOD
+			, V_REMARK
+			, V_SP_OPT_NM                         
+			, V_EQUIPMENT     
+			, V_UNIT          
+			, V_FLAG_IMP    
+			, 'N'
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDSP_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDMD_D" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDMD_D */
+			INTO TODM_PDMD_D(
+				V_RECORD_ID				
+				, V_PRODUCT_CD
+				, V_CLASS_CD
+				, V_MSDS_VAL
+				, V_IF_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, V_CLASS_CD
+			, V_MSDS_VAL
+			, 'N'
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDMD_D
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDEF_L" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDEF_L */
+			INTO TODM_PDEFR_L(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_SEQ_NO
+				, V_ODMDB_ID
+				, V_ODMDB_NM
+				, V_WEIGHT
+				, V_UNIT
+				, V_IF_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, N_SEQ_NO
+			, V_ODMDB_ID
+			, V_ODMDB_NM
+			, V_WEIGHT
+			, V_UNIT
+			, 'N'
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDEFR_L
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDEF_R_M" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDEF_R_M */
+			INTO TODM_PDEF_R_M(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_FUNC_NO
+				, V_LAB_NO
+				, V_STAND_TEST_CD
+				, V_EFFECT_CD
+				, V_HOWTO_METHOD
+				, V_FUNC_TYPE_CD
+				, V_FUNC_INGRI_CD
+				, V_FUNC_MAT_CD
+				, V_ADD_CAUTION
+				, V_BF_PRODUCT_NM
+				, V_CERTI_NO
+				, V_CERT_DTM
+				, V_EFFECT_MAT_NM
+				, V_SPF_LV
+				, V_PA_LV_CD
+				, V_WATER_PROOF_CD
+				, V_REPORT_NO
+				, V_REPORT_DTM
+				, V_FINISH_YN
+				, V_IF_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, N_FUNC_NO
+			, V_LAB_NO
+			, V_STAND_TEST_CD
+			, V_EFFECT_CD
+			, V_HOWTO_METHOD
+			, V_FUNC_TYPE_CD
+			, V_FUNC_INGRI_CD
+			, V_FUNC_MAT_CD
+			, V_ADD_CAUTION
+			, V_BF_PRODUCT_NM
+			, V_CERTI_NO
+			, V_CERT_DTM
+			, V_EFFECT_MAT_NM
+			, V_SPF_LV
+			, V_PA_LV_CD
+			, V_WATER_PROOF_CD
+			, V_REPORT_NO
+			, V_REPORT_DTM
+			, V_FINISH_YN
+			, 'N'
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDEF_R_M
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+		
+	<insert id="insertProcessPDEFR_L" parameterType="CmMap">
+		INSERT /* If_BrPw010Mapper.insertProcessPDEFR_L */
+			INTO TODM_PDEF_L(
+				V_RECORD_ID
+				, V_PRODUCT_CD
+				, N_SEQ_NO
+				, V_EFFECT_CD
+				, V_EFFECT_ETC
+				, V_IF_YN
+				, V_REG_USER_ID
+				, V_REG_DTM
+		)
+		SELECT
+			#{i_sRecordId}
+			, #{i_sProductCd}
+			, N_SEQ_NO
+			, V_EFFECT_CD
+			, V_EFFECT_ETC
+			, 'N'
+			, #{pRegUserId}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		FROM TODM_PDEF_L
+		WHERE 1=1
+		AND V_RECORD_ID = #{i_sReferRecordId}
+		AND V_PRODUCT_CD = #{i_sReferProductCd}
+	</insert>
+	
+</mapper>

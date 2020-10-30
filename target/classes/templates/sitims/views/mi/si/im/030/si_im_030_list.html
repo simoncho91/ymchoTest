@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout :: layout(~{::script})}">
+<script th:src="@{/js/includeDhtmlx6.js}"></script>
+
+<script type="text/javascript" src="/sitims/js/util/cm_function.js"></script>
+<script type='text/javascript'>
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+
+var dcGrdMain;
+var checkboxConfig;
+
+// 레이아웃 변수 설정
+var layoutMain,grdMain,dcGrdMain,frmSearch,mainPage;
+var	i_iNowPageNo	= 1;
+var	i_iPageSize		= 50;
+
+// 레이아웃 초기화
+$(function(){
+	layoutMain = new dhx.Layout("layoutObj",{
+	     css: "dhx_layout-cell--border_top",
+		rows:[
+			{id:'form', gravity: false, height: "60px", css: "dhx_layout-cell--border_bottom"}
+			,{id:'toolbar'}
+			 ,{rows: [
+                 {cols:[
+                  	 {id: "grid", width: "500px"}
+                  	 ,{rows:[
+                  		  {id: "toolbarSub", gravity:false}
+                  		 ,{id: "subForm"}
+                  	 ],width: "100px",resizable: true}
+	 				]}
+                ],header:"목록", resizable: true
+           }
+         ,{id:'page'}
+		]
+	});
+
+	// 폼 설정 - 검색조건
+	var frmSearchCell = layoutMain.getCell('form');
+	frmSearch = new dhx.Form(null,{
+		cols:[
+			{type: "input" , id:"i_sSearchNm", name:"i_sSearchNm", label:"검색명", labelPosition: "left", labelWidth: "100", width: "520", gravity: false, icon: "dxi dxi-magnify", required: false, placeholder: "영문명 or 한글명 or 중문명 or 불어명 or 일문명"}
+			,{type: "input", id:"i_sFuncId", name: "i_sFuncId", width:"15", gravity: false, hidden:true}
+			,{type: "label", name: "i_sNone", width:"15", gravity: false}
+			,{type: "checkbox", id:"i_sNewChkVal", name: "i_sNewChkVal",label: "신규 단어 보기", labelWidth: "110", labelPosition: "right", width:"130", gravity: false, css : "mt_08"}
+			]
+		});
+	frmSearchCell.attach(frmSearch);
+		
+	// grid 메인
+	var gridCell = layoutMain.getCell('grid');    
+	dcGrdMain = new dhx.DataCollection();
+	grdMain = new dhx.Grid(null, {
+		columns:[
+		//	{ width: 60, id: "n_num"      , header: [{ text: "No",align:"center" }], align:"right", autoWidth: false }
+			 { width: 100, id: "v_func_nm_en"     , header: [{ text: "FUNCTION(영문)",align:"center"}],align:"left" }
+			, { width: 100, id: "v_func_nm_ko"      , header: [{ text: "FUNCTION(한글)",align:"center"}],align:"left" }
+			, { width: 100, id: "v_func_nm_cn"      , header: [{ text: "FUNCTION(중문)",align:"center"}],align:"left" }
+			, { width: 100, id: "v_func_nm_eu"      , header: [{ text: "FUNCTION(불어)",align:"center"}],align:"left" }
+			, { width: 100, id: "v_func_nm_jp"      , header: [{ text: "FUNCTION(일문)",align:"center"}],align:"left" }
+			, { hidden: true, width: 100, id: "v_func_id"      , header: [{ text: "FUNCTION ID"}] }
+		]
+		,autoWidth: true
+    	,headerRowHeight: 46
+	    ,resizable: true
+	    ,selection: "row" 
+	    ,data: dcGrdMain
+	});
+	
+	gridCell.attach(grdMain);
+	
+	//팝업 -> Form서브
+	subForm = new dhx.Form(null, {
+		rows:[
+			{type:'input',id:'v_func_nm_en',name:'v_func_nm_en',label:'영문명' ,labelPosition: "left", labelWidth: "60", width: "450", placeholder:"영문명을 입력해주세요", gravity: false, required: true, validation : fn_checkLen, errorMessage : '문자가 너무 깁니다.'}
+			,{type:'input',id:'v_func_nm_ko',name:'v_func_nm_ko',label:'한글명' ,labelPosition: "left", labelWidth: "60", width: "450", placeholder:"한글명을 입력해주세요", gravity: false, required: true , validation : fn_checkLen, errorMessage : '문자가 너무 깁니다.'}
+			,{type:'input',id:'v_func_nm_cn',name:'v_func_nm_cn',label:'중문명' ,labelPosition: "left", labelWidth: "60", width: "450", placeholder:"중문명을 입력해주세요", gravity: false, validation : fn_checkLen, errorMessage : '문자가 너무 깁니다.' }
+			,{type:'input',id:'v_func_nm_eu',name:'v_func_nm_eu',label:'불어명' ,labelPosition: "left", labelWidth: "60", width: "450", placeholder:"불어명을 입력해주세요", gravity: false, validation : fn_checkLen, errorMessage : '문자가 너무 깁니다.' }
+			,{type:'input',id:'v_func_nm_jp',name:'v_func_nm_jp',label:'일문명' ,labelPosition: "left", labelWidth: "60", width: "450", placeholder:"일문명을 입력해주세요", gravity: false, validation : fn_checkLen, errorMessage : '문자가 너무 깁니다.' }
+			,{type:'input',id:'v_func_id',name:'v_func_id',label:'기능명', hidden: true }
+			]
+	  });
+	
+	  layoutMain.getCell("subForm").attach(subForm);
+	 
+	 gridListToolbar = new dhx.Toolbar(null, {
+		 css: "dhx_widget--bordered dhx_widget--bg_gray",
+	 	 data: [
+	 		 {id:"btnAdd", icon:"dxi dxi-plus",value:"신규"},
+	 		 {type: "separator"},
+	 		 {id:"btnMod", icon: "dxi dxi-check", value:"저장"},
+	 		{type: "separator"},
+	 		 {id:"btnDel", icon: "dxi dxi-delete", value:"삭제"}
+	 	 ]
+	 });
+	 
+ 	 layoutMain.getCell("toolbarSub").attach(gridListToolbar);
+
+ 	 gridListToolbar.events.on("Click",function(id,e){
+ 		if(id=='btnAdd'){
+    		fn_add();
+    	} else if(id=='btnMod'){
+    		fn_save();
+    	} else if(id=='btnDel'){
+    		fn_del();
+    	}
+ 	 });
+ 	 
+ 	grdMain.events.on("CellClick", function(row,column,e){
+	  saveMode = "U";
+	     fn_s_gridToForm(grdMain, subForm);
+	 }); 
+ 	 
+    mainPage = new CmDhtmlx6Paging({
+    		layout:layoutMain
+    		, name : 'mainPage'
+       		, gridData : dcGrdMain
+       		, grid 	 : grdMain
+    		, url : "/si/im/030/selectList.do"
+    		, frmSearch: frmSearch
+    		, gridPageCell : layoutMain.getCell('page')
+       		, denySortCol : ['n_num']
+    });
+    mainPage.initPaging();
+
+	subForm.events.on('ValidationFail', function (id,component) {
+		var	val	= component.config.value;
+		if (val == '')
+			component.config.errorMessage	= component.config.placeholder;
+		else {
+			component.config.errorMessage	= '문자가 너무 깁니다.';
+		}
+	});
+});
+
+
+// 초기화 후 function 이벤트
+// 리스트 조회
+function fn_search() {
+	var labelRequired;
+	frmSearch.forEach(function(item, index, array) {
+		
+		console.log(item.config);
+		
+		if(item.config.required && fn_isNull(item.config.value)){
+			labelRequired=item.config.label;
+			return; 
+		}		
+	});
+	if(!fn_isNull(labelRequired)){
+		alert(labelRequired + "을 입력 후 검색바랍니다.");
+		return;
+	}
+	
+    mainPage.search(1);
+}
+
+function fn_add(){
+		 saveMode = "I";
+		 grdMain.selection.setCell(grdMain.data.getId(-1), false);
+		 subForm.clear();
+	}
+
+function fn_check_word() {
+	var bValid = true;
+	var postParam = fn_getPostParam(subForm);
+	fn_s_ajaxSaveForm({ async: false,url  : "/si/im/030/check_word.do", postParam   : {i_sCategory: 'en' , i_sSearchNm:   postParam.v_func_nm_en}
+					, success     : function(data) {
+						if (data.data != '0') {
+							bValid	= false;
+						}
+					}
+	});
+
+	return bValid;
+}
+
+//신규등록  function
+function fn_save() {
+ var postParam = fn_getPostParam(subForm);
+
+ if (saveMode == 'I') {
+ 	rowIndex = 0;
+	  if (!fn_s_validateForm(subForm)) {
+		  return;
+	  }
+		dhx.confirm({
+			header : "알림",
+			text : fn_check_word() ? "등록 하시겠습니까?" : "영문명 [" + postParam.v_func_nm_en + "]으로 등록 된 배합목적이 있습니다.<br/> 등록 하시겠습니까?",
+			buttons : ["예","아니오"],
+			buttonsAlignment: "center",
+			css: "custom-class"
+		}).then( function (result) {
+			if(result){
+			 	$.ajax({
+					  url  : "/si/im/030/si_im_030_save.do"
+					, type : "POST"
+			        , data : postParam
+			        , dataType : "json"
+			        , success : function(xhr){
+			        	dhx.alert({
+			        		header : "알림",
+			        		text : xhr.message,
+			        		buttons : ["확인"],
+			        		buttonsAlignment: "center",
+			        		css: "custom-class"
+			        	});
+			        	fn_saveSuccess();
+					}
+			     }); 
+				
+			}
+			else{
+				return;
+			}
+		});
+ } else {
+	if (fn_check_changeItem()) {
+		fn_s_alertMsg('변경 사항이 없습니다.');
+		return;
+	}
+	// 수정 function
+     rowIndex = grdMain.data.getIndex(grdMain.selection.getCell().row.id);
+
+     if (!fn_s_validateForm(subForm)) {
+    	 return;
+     }
+		dhx.confirm({
+			header : "알림",
+			text : "수정 하시겠습니까?",
+			buttons : ["예","아니오"],
+			buttonsAlignment: "center",
+			css: "custom-class"
+		}).then( function (result) {
+			if(result){
+				$.ajax({
+					  url  : "/si/im/030/si_im_030_modify.do"
+					, type : "POST"
+			        , data : postParam
+			        , dataType : "json"
+			        , success : function(xhr){
+			        	dhx.alert({
+			        		header : "알림",
+			        		text : xhr.message,
+			        		buttons : ["확인"],
+			        		buttonsAlignment: "center",
+			        		css: "custom-class"
+			        	});
+			        	fn_saveSuccess();
+					}
+			     }); 
+			}
+			else{
+				return;
+			}
+		});
+ }
+ 
+}
+
+function fn_del() {
+// 	if(!fn_s_validateForm(subForm)){
+// 		return;
+// 	}
+	if (saveMode != 'U')
+		return ;
+
+	dhx.confirm({
+		header : "알림",
+		text : "삭제하시겠습니까?",
+		buttons : ["예","아니오"],
+		buttonsAlignment: "center",
+		css: "custom-class"
+	}).then( function (result) {
+		if(result){
+			var postParam = fn_getPostParam(subForm);
+			
+		 	$.ajax({
+				  url  : "/si/im/030/si_im_030_del.do"
+				, type : "POST"
+		        , data : postParam
+		        , dataType : "json"
+		        , success : function(xhr){
+		        	dhx.alert({
+		        		header : "알림",
+		        		text : xhr.message,
+		        		buttons : ["확인"],
+		        		buttonsAlignment: "center",
+		        		css: "custom-class"
+		        	});
+		        	subForm.clear();
+		        	mainPage.search();
+				}
+		     }); 
+		}
+		else{
+			return;
+		}
+	});
+}
+
+function fn_check_changeItem() {
+	var	selCell	= grdMain.selection.getCell();
+	var	bRtn	= true;
+	var	cols	= '';
+
+	subForm.forEach(function(item, index, array) {
+		cols	+= '|' + item.config.id;
+	});
+
+	subForm.forEach(function(item, index, array) {
+		var itemId = item.config.id;
+		if (-1 < cols.indexOf(itemId)) {
+			if (selCell.row[itemId] != subForm.getItem(itemId).getValue()) {
+				bRtn	= false;
+			}
+		}
+	});
+	
+	return bRtn;
+}
+
+function fn_excel() {
+	fn_excel_download("/si/im/030/si_im_030_list_excel.do", mainPage.postParam);
+}
+
+function fn_saveSuccess() {
+	 mainPage.search();
+	 fn_add();
+	}
+
+$(document).on('keyup','#i_sSearchNm',function(e){
+	if(e.keyCode == 13){
+		fn_search();
+	}
+});
+
+function fn_checkLen(value) {
+	return value.length <= 100;
+}
+
+</script>
+</html>

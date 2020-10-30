@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+//layout
+var layoutMain;
+var commFormData;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var grdMain;
+
+//layout - c
+var frmMain;
+var cboUseYn;
+var toolbarMain;
+
+//local variable
+var rowIndex = 0;
+var saveMode = 'I';
+var userNo;
+
+// 첨부NO 
+//var atchNo = '';
+
+$(function(){
+
+	/****************************************************************************************************
+	 * 초기화
+	 ****************************************************************************************************/
+	// Layout
+    dhtmlx.image_path = dhtmlx_image_path;
+	layoutMain = new dhtmlXLayoutObject({
+	    parent: "layoutObj",
+	    pattern: "3T",
+        //pattern: "4I",	// 첨부레이어 추가
+	    skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+	});
+	
+	/* Form-조건 */
+	var a = layoutMain.cells('a');
+	a.setText('검색조건');
+	a.setHeight(SearchFormHeight[1]);
+	var str =  [ { type:'settings', position:'label-left', labelWidth:'80', inputWidth:'172', offsetLeft:'10', offsetTop:'1'}
+				,{ type: "label", list:[
+				                	{ type:"input" , name:"LOGIN_ID", label:"로그인ID", className:"offsetRight"},
+				                	{ type:"newcolumn"   },
+				                	{ type:"input" , name:"USER_NM", label:"사용자명", className:"offsetRight", value:""},
+				                    { type:"newcolumn"   },
+				                	{ type:"input" , name:"USER_DESC", label:"설명", className:"offsetRight", value:""},
+				                    { type:"newcolumn"   },
+				                    { type: "combo", label: "사용여부", name: "USE_YN"},
+				                    { type:"newcolumn"   },
+				                    { type: "combo", label: "부서", name: "DEPT_CD"}
+				                   ]
+				}
+	          ];
+	frmSearch = a.attachForm(str);
+	var dhxCombo = frmSearch.getCombo("USE_YN");
+	dhxCombo.load("/dhtmlx/data/comboYNa.json");
+	/* Form-조건 */
+	
+	frmSearch.getCombo("USE_YN").readonly(true);
+	frmSearch.getCombo("DEPT_CD").readonly(true);
+	
+	/* Grid-메인 */
+	var b = layoutMain.cells('b');
+	b.setText('사용자 목록');
+	grdMain = b.attachGrid();
+	grdMain.setHeader(["NO","","로그인ID","사용자명","사용유무","설명","","등록자","수정자","장애처리 권한","등록일시","수정일시","부서","이메일","전화번호"]);
+	grdMain.setColumnIds("NO,USER_NO,LOGIN_ID,USER_NM,USE_YN,USER_DESC,PWD,REG_USER_NM,MOD_USER_NM,IM_USER_LVL_NM,REG_DTM,MOD_DTM,V_DEPT_NM,EMAIL,PHONE_NO");
+	grdMain.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+	grdMain.setInitWidths('40,0,100,120,60,200,0,100,100,110,140,140,100,100,*,*');
+	grdMain.setColumnHidden(13,true);
+	grdMain.setColumnHidden(14,true);
+
+//     b.attachStatusBar({
+//         text: "<div><span id='pagingArea'></span>&nbsp;<span id='infoArea'></span></div>",
+//         paging: true
+//     });
+//     grdMain.enablePaging(true,50,10,"pagingArea",true,"infoArea");
+ 
+	fn_initGrid(grdMain);
+	/* Grid-메인 */
+	
+	
+    layoutSub = new dhtmlXLayoutObject({
+        parent: layoutMain.cells('c'),
+        pattern: "2E"
+    });
+	
+	/* Form-마스터 */
+	var c = layoutSub.cells('a');
+	c.setText('등록');
+	c.setWidth(RegisterFormWidth[1]); 
+	var str = [{ type:'settings', position:'label-left', labelWidth:'120', inputWidth:'200', offsetLeft:'10', offsetTop:'1'  },
+	           { type: "label", list: [
+	                { type:"input"  , name:"LOGIN_ID"   , label: "로그인ID", maxLength:"20"   , validate: "NotEmpty", required:"true", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"input"  , name:"USER_NM"   , label: "사용자명", maxLength:"20"  , validate: "NotEmpty", required:"true", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"password"  , name:"PWD" , label: "비밀번호", maxLength:"30", validate: "NotEmpty", required:"true", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"combo"  , name:"USE_YN"    , label: "사용여부", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"input"  , name:"EMAIL"    , label: "이메일", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"input"  , name:"PHONE_NO"    , label: "전화번호", className:"offsetRight" }
+	            ]},
+	            {type: "label", list: [
+	                { type:"combo"  , name:"DEPT_CD"    , label: "부서", className:"offsetRight"}
+	            ]},
+	            {type: "label", list: [
+	                { type:"input"  , name:"USER_DESC"   , label: "설명", maxLength:"100", className:"offsetRight" }
+	            ]},
+	            { type:"hidden"  , name:"USER_NO"},
+                { type:"hidden"  , name:"ROLE_NO"}
+	          ]
+	frmMain = c.attachForm(str);
+	frmMain.bind(grdMain);
+	
+	cboUseYn = frmMain.getCombo("USE_YN");
+	cboUseYn.readonly(true);
+	cboUseYn.load("/dhtmlx/data/comboYN.json");
+	
+	//부서 readOnly
+	frmMain.getCombo("DEPT_CD").readonly(true);
+	
+	toolbarMain = c.attachToolbar({
+	    icons_path: toolbar_icons_path,
+	    items:[
+	          {type:"button", id:"btnNew", text:"신규", img:"addrow.gif", img_disabled:"addrow_dis.gif", action:"fn_new"},
+	          {type:"button", id:"btnDel", text:"삭제", img:"delrow.gif", img_disabled:"delrow_dis.gif", action:"fn_del"},
+	          {type: "separator", id: "sep1"},
+	          {type:"button", id:"btnSave", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_save"}
+	         ]
+	});
+	/* Form-마스터 */
+	
+	
+	
+    /* Form-추가권한 */
+    var d = layoutSub.cells('b')
+    d.setText('추가권한');
+    d.setWidth(RegisterFormWidth[1]); 
+    var str = [{ type:'settings', position:'label-left', labelWidth:'120', inputWidth:'200', offsetLeft:'10', offsetTop:'1'  },
+                {type: "label", list: [
+                    { type:"combo"  , name:"IM_USER_LVL", label: "장애처리 권한", className:"offsetRight" }
+                ]},
+                /* 
+                {type: "label", list: [
+                    { type:"combo"  , name:"TM_USER_LVL"    , label: "테스트관리 권한", validate: "NotEmpty", required:"true", className:"offsetRight" }
+                ]},
+                 */
+                { type:"hidden"  , name:"USER_NO", validate: "NotEmpty", required:"true"}
+              ]
+    frmDetail = d.attachForm(str);
+    frmDetail.bind(grdMain);
+
+    toolbarMain = d.attachToolbar({
+        icons_path: toolbar_icons_path,
+        items:[
+              {type:"button", id:"btnSave", text:"저장", img:"save.gif", img_disabled:"save_dis.gif", action:"fn_save_detail"}
+             ]
+    });
+    /* Form-추가권한 */
+    
+	// DataStore 초기화
+	fn_initDS();
+	
+	// 나머지 초기화
+	layoutMain.setAutoSize("a;b", "b;c");
+	fn_init();
+
+ 	// 첨부파일 영역 초기화 (생성할 layout오브젝트, 멀티업로드, 수정모드)
+	//fn_attachInit(layoutMain.cells('d'), true, true);
+
+    // 최초 조회
+    fn_search();
+
+	/****************************************************************************************************
+	 * 이벤트 생성
+	 ****************************************************************************************************/
+	// 그리드
+	grdMain.attachEvent("onSelectStateChanged",function(id,ind) {
+		//frmMain.setReadonly("LOGIN_ID", true);
+	    frmMain.setRequired("PWD",false);
+	    saveMode = 'U';
+	    
+		// 첨부파일 키값 셋팅
+		//atchNo = grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("ATCH_NO")).getValue();
+		//console.log('onSelectStateChanged : '+atchNo);
+    	
+    	// 첨부파일 영역 초기화/조회
+		//fn_attachInit(layoutMain.cells('d'), true, true);
+     	//fn_attachSearch();
+	});
+	
+    // fn_switchScrn 으로 화면 전환시 수행
+    if ( parent.mdiObj.pages["SYAU0030"].extra != undefined ) {
+		console.log(parent.mdiObj.pages["SYAU0030"].extra);
+    }
+	
+});
+
+
+//DataStore 초기화
+function fn_initDS() {
+    var postParam = new Object();
+    postParam.sqlid = "dsDept:AmUm010Mapper.getSiDeptList:S";
+    postParam.grpcd = "dsImUserLvl:MO003:Y:S";
+                    
+    fn_ajaxGetDsForCombo({
+        postParam : postParam,
+        async:false,
+        success : function(responseData) {
+        	//[combo] 부서 콤보 셋팅
+        	var deptData 	 = responseData.dsDept.options;
+        	var temp     	 = {"options" : []};
+        	temp.options.push(deptData[0]);
+			
+        	for(var i=1; i<deptData.length; i++){
+        		temp.options.push({"text" : deptData[i].CONNECT_TEXT, "value" : deptData[i].ID});
+        	}
+        	
+        	frmSearch.getCombo("DEPT_CD").load(temp);
+        	frmMain.getCombo("DEPT_CD").load(temp);
+        	
+        	//[combo] 장애처리권한 셋팅
+            frmDetail.getCombo("IM_USER_LVL").load(responseData.dsImUserLvl); 
+            //frmDetail.getCombo("IM_USER_LVL").setComboValue("10");
+        }
+    });
+}
+
+
+//조회
+function fn_search() {
+	var postParam = fn_getPostParam(frmSearch);
+	
+	fn_ajaxGetGrid({ gridName         : grdMain
+	         , url                 : "/admin/user/selectList.do"
+	         , postParam           : postParam
+	         , success             : function() {
+	         	// 첨부파일 영역 초기화
+	        	//fn_attachInit(layoutMain.cells('d'), true, true);
+	        	 grdMain.selectRow(rowIndex);
+	         }
+	});
+}
+
+//신규
+function fn_new() {
+	saveMode = 'I';
+	frmMain.clear();
+	frmMain.setItemFocus("LOGIN_ID");    
+	//frmMain.setReadonly("LOGIN_ID", false);
+	frmMain.setRequired("PWD",true);
+
+    frmDetail.clear();
+
+	// 첨부키/첨부파일 영역 초기화
+	//atchNo = '';
+	//fn_attachInit(layoutMain.cells('d'), true, true);
+}
+
+//저장
+function fn_save() {
+	
+	var postParam = fn_getPostParam(frmMain);
+	//postParam.ATCH_NO = atchNo;		// 첨부NO 파라미터 추가
+	if(postParam.PHONE_NO.indexOf("-") > -1){
+		dhtmlx.alert("전화번호에는 -를 기재할수 없습니다.");
+		return;
+	}
+	var sUrl = "";
+
+	if (saveMode == 'I') {
+		rowIndex = 0;
+		sUrl = "/admin/user/insert.do";
+	} else {
+	    rowIndex = grdMain.getRowIndex(grdMain.getSelectedRowId());    
+		sUrl = "/admin/user/update.do";
+	}
+
+	if(fn_s_inputLengthChk(postParam.LOGIN_ID,'로그인ID',20)){
+		return false;
+	}
+	
+	if(fn_s_inputLengthChk(postParam.USER_NM,'사용자명',20)){
+		return false;
+	}
+	
+	if (fn_validateForm(frmMain)) {
+	     fn_ajaxSaveForm({ url      : sUrl
+	              , postParam   : postParam
+	              , postType    : 'save'
+	              , success     : fn_search
+	     });
+	 }
+	
+}
+
+function fn_del() {
+	var postParam = fn_getPostParam(frmMain);
+	postParam.ATCH_NO = grdMain.cells(grdMain.getSelectedRowId(), grdMain.getColIndexById("ATCH_NO")).getValue();
+   rowIndex = 0;
+   if (saveMode == 'U') {
+	   dhtmlx.confirm("삭제하시겠습니까?", function(result){
+		   if (result) {
+		       fn_ajaxSaveForm({ url      : "/admin/user/delete.do"
+				           , postParam   : postParam
+				           , postType    : 'save'
+				           , success     : fn_search
+		           });
+		   }
+	   });
+   }
+}
+
+//추가권한 저장
+function fn_save_detail() {
+    var postParam = fn_getPostParam(frmDetail);
+    var sUrl = "/admin/user/saveDetail.do";
+
+    if (fn_validateForm(frmDetail)) {
+         fn_ajaxSaveForm({ url      : sUrl
+                  , postParam   : postParam
+                  , postType    : 'save'
+                  , success     : fn_search
+         });
+     }
+}
+
+//입력값 체크
+function fn_s_inputLengthChk(val,colNm,len) {
+	var valLen = calculate_byte(val);
+	var result = false;
+	
+	if(valLen > len){
+		dhtmlx.alert(colNm+'의 자릿수가 '+len+'byte 보다 큽니다.');
+		return true;
+	}
+	return result;	
+
+	function calculate_byte( sTargetStr ) {
+		var sTmpStr, sTmpChar;
+		var nOriginLen = 0;
+		var nStrLength = 0;
+
+		sTmpStr = new String(sTargetStr);
+		nOriginLen = sTmpStr.length;
+
+		for ( var i=0 ; i < nOriginLen ; i++ ) {
+			sTmpChar = sTmpStr.charAt(i);
+			
+			if (escape(sTmpChar).length > 4) {
+				nStrLength += 3;
+			}else if (sTmpChar!='\r') {
+				nStrLength ++;
+			}
+		}
+		return nStrLength;
+	}
+}
+</script>
+</html>

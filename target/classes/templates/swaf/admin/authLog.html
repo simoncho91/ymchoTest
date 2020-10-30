@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html th:replace="~{layout/dhtmlxAppLayout_5 :: layout(~{::script})}">
+
+<script th:src="@{/js/includeDhtmlx5.js}"></script>
+<script>
+
+//layout
+var layoutMain;
+
+//layout - a
+var frmSearch;
+
+//layout - b
+var grdMain;
+
+//layout - c
+var grdSub;
+
+//local variable
+var rowIndex = 0;
+
+$(function(){
+
+    /****************************************************************************************************
+     * 초기화
+     ****************************************************************************************************/
+    // Layout
+    dhtmlx.image_path = dhtmlx_image_path;
+    layoutMain = new dhtmlXLayoutObject({
+        parent: "layoutObj",
+        pattern: "3E",
+        skin: dhtmlx_skin // dhx_skyblue, dhx_web, dhx_terrace
+    });
+    
+    /* Form-조건 */
+    var a = layoutMain.cells('a');
+    a.setText('검색조건');
+    a.setHeight(SearchFormHeight[1]);
+    
+    var strLabel =  [{ type: "label", list:[
+											{ type:"combo" , name:"SYS_ID", label:"시스템ID", readonly:true},
+											{ type:"newcolumn"   },
+											{ type:"calendar"  , name:"START_DT" , value:"", label: "시작일", dateFormat:"%Y-%m-%d" },
+											{ type:"newcolumn"   },
+											{ type:"calendar"  , name:"END_DT" , value:"", label: "종료일", dateFormat:"%Y-%m-%d" },
+											{ type:"newcolumn"},
+											{ type: "input", name: "PROC_USER_NO", label: "권한부여자ID" },
+											{ type:"newcolumn"},
+											{ type: "input", name: "PROC_MENU_CD", label: "메뉴ID" },
+											{ type:"newcolumn"}
+					 ]}
+                    ];
+    strLabel.unshift(SearchFormStyle4);
+    frmSearch = a.attachForm(strLabel);
+
+	var today = new Date();
+	frmSearch.setItemValue("START_DT", today);
+	frmSearch.setItemValue("END_DT", today);
+    
+    /* Grid-메인 */
+    var b = layoutMain.cells('b');
+    b.setText('처리 목록');
+    grdMain = b.attachGrid();
+    grdMain.setHeader(["권한처리번호","메뉴코드","메뉴명","처리사용자번호","처리일시","클라이언트IP","서버IP"]);
+    grdMain.setColumnIds("AUTH_PROC_NO,PROC_MENU_CD,PROC_MENU_NM,PROC_USER_NO,PROC_DTM,CLNT_IP,SVR_IP");
+    grdMain.setColTypes("ro,ro,ro,ro,ro,ro,ro");
+    grdMain.setInitWidths('200,*,200,200,200,200');
+    fn_initGrid(grdMain);
+    
+    /* Grid-서브 */
+    var c = layoutMain.cells('c');
+    c.setText('내용');
+    grdSub = c.attachGrid();
+    grdSub.setHeader(["처리순번","대상사용자번호","메뉴ID","메뉴명","권한코드","액션명"]);
+    grdSub.setColumnIds("PROC_SEQ,TGT_USER_NO,MENU_CD,MENU_NM,ROLE_NO,ACTION_NM");
+    grdSub.setColTypes("ro,ro,ro,ro,ro,ro");
+    grdSub.setInitWidths('200,*,200,200');
+    fn_initGrid(grdSub);
+    
+    // DataStore 초기화
+    fn_initDS();
+    // 나머지 초기화
+    //layoutMain.setAutoSize("a;b", "b,c");
+    fn_init();
+
+    // 최초 조회
+    fn_search();
+
+    /****************************************************************************************************
+     * 이벤트 생성
+     ****************************************************************************************************/
+	// grdMain Row Change
+ 	grdMain.attachEvent("onSelectStateChanged",function(id) {
+     	var sAuthProcNo = grdMain.cells(id, grdMain.getColIndexById("AUTH_PROC_NO")).getValue();
+ 		
+     	if(sAuthProcNo != ''){
+     		fn_searchDetail(sAuthProcNo);
+     	}
+ 	});
+});
+
+// DataStore 초기화
+function fn_initDS() {
+
+    var postParam = new Object();
+    postParam.grpcd = "dsSysId:SY002:Y";
+
+    fn_ajaxGetDsForCombo({ postParam : postParam
+		                 , success : 
+		                	 function(responseData) { 
+		                	                            frmSearch.getCombo("SYS_ID").load(responseData.dsSysId); 
+								                	    frmSearch.getCombo("SYS_ID").setComboValue("SITIMS");
+								                	 }
+	});
+}
+
+// 조회
+function fn_search() {
+    if(fn_validateForm(frmSearch)) {
+	    var postParam = fn_getPostParam(frmSearch);
+	    
+	    fn_ajaxGetGrid({ gridName         : grdMain
+	             , url                 : "/dhtmlx/admin/authLog/selectList.do"
+	             , postParam           : postParam
+	             , success             : function(responseData) {
+									                 grdMain.selectRow(rowIndex);
+									                }
+	    });
+    }
+}
+
+// 상세 조회
+function fn_searchDetail(sAuthProcNo) {
+	var postParam = fn_getPostParam(frmSearch);
+	
+	postParam.AUTH_PROC_NO = sAuthProcNo;
+	
+	fn_ajaxGetGrid({ gridName         : grdSub
+             , url                 : "/dhtmlx/admin/authLog/selectDetailList.do"
+             , postParam           : postParam
+             , success             : function(responseData) {
+								                 grdSub.selectRow(rowIndex);
+								                }
+    });
+}
+
+</script>
+</html>
